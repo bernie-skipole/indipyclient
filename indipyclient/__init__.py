@@ -1,0 +1,3 @@
+from .ipyclient import IPyClient
+
+version = "0.0.1"
