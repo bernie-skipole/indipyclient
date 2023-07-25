@@ -273,7 +273,7 @@ class IPyClient(collections.UserDict):
                     event = device.rxvector(root)
                 elif root.tag in DEFTAGS:
                     # device not known, but a def is received
-                    newdevice = _Device(devicename)
+                    newdevice = _Device(devicename, self)
                     event = newdevice.rxvector(root)
                     # no error has occurred, so add this device to self.data
                     self[devicename] = newdevice
@@ -286,7 +286,7 @@ class IPyClient(collections.UserDict):
             except ParseException as pe:
                 # if an EventException is raised, it is because received data is malformed
                 # so print to stderr and continue
-                print(str(pe), file=sys.stderr)
+                reporterror(str(pe))
                 pass
             self.readerque.task_done()
 
@@ -339,21 +339,19 @@ class _Device(collections.UserDict):
     """An instance of this should be created for each device.
     """
 
-    def __init__(self, devicename):
+    def __init__(self, devicename, client):
         super().__init__()
 
         # This device name
         self.devicename = devicename
+
+        self._client = client
 
         # if self.enable is False, this device has been 'deleted'
         self.enable = True
 
         # this is a dictionary of property name to propertyvector this device owns
         self.data = {}
-
-    def _reporterror(self, message):
-        "Prints message to stderr"
-        print(message, file=sys.stderr)
 
 
     def rxvector(self, root):

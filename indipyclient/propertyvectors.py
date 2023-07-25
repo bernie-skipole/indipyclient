@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 from .propertymembers import SwitchMember, LightMember, TextMember, NumberMember, BLOBMember
 
-from .error import ParseException
+from .error import ParseException, reporterror
 
 
 class PropertyVector(collections.UserDict):
@@ -25,11 +25,6 @@ class PropertyVector(collections.UserDict):
         # the device places data in this dataque
         # for the vector to act upon
         self.dataque = asyncio.Queue(4)
-
-
-    def _reporterror(self, message):
-        "Prints message to stderr"
-        print(message, file=sys.stderr)
 
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
@@ -116,6 +111,37 @@ class SwitchVector(PropertyVector):
         for membername, membervalue in event.items():
             self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
 
+    async def send_newSwitchVector(self, timestamp=None, members=[]):
+        """Transmits the vector (newSwitchVector) and members with their values to the driver.        """
+        if not self.device.enable:
+            return
+        if not self.enable:
+            return
+        if not timestamp:
+            timestamp = datetime.datetime.utcnow()
+        if not isinstance(timestamp, datetime.datetime):
+            reporterror("Aborting sending newSwitchVector: The send_newSwitchVector timestamp must be a datetime.datetime object")
+            return
+        xmldata = ET.Element('newSwitchVector')
+        xmldata.set("device", self.devicename)
+        xmldata.set("name", self.name)
+        # note - limit timestamp characters to :21 to avoid long fractions of a second
+        xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
+        # for rule 'OneOfMany' the standard indicates 'Off' should precede 'On'
+        # so make all 'On' values last
+        Offswitches = (switch for switch in self.data.values() if switch.membervalue == 'Off' and switch.name in members)
+        Onswitches = (switch for switch in self.data.values() if switch.membervalue == 'On' and switch.name in members)
+        for switch in Offswitches:
+            xmldata.append(switch.oneswitch())
+        for switch in Onswitches:
+            xmldata.append(switch.oneswitch())
+        await self.driver.send(xmldata)
+
+
+
+
+
+
 
     async def send_setVector(self, message='', timestamp=None, timeout='0', allvalues=True):
         """Transmits the vector (setSwitchVector) and members with their values to the client.
@@ -138,7 +164,7 @@ class SwitchVector(PropertyVector):
            explicit send_setVectorMembers method instead.
         """
         if not isinstance(timeout, str):
-            self._reporterror("Aborting sending setSwitchVector: The given send_setVector timeout value must be a string object")
+            reporterror("Aborting sending setSwitchVector: The given send_setVector timeout value must be a string object")
             return
         if not self.device.enable:
             return
@@ -147,7 +173,7 @@ class SwitchVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setSwitchVector: The given send_setVector timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setSwitchVector: The given send_setVector timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setSwitchVector')
         xmldata.set("device", self.devicename)
@@ -191,7 +217,7 @@ class SwitchVector(PropertyVector):
            just a state or message is to be sent.
         """
         if not isinstance(timeout, str):
-            self._reporterror("Aborting sending setSwitchVector: The given send_setVectorMembers timeout value must be a string object")
+            reporterror("Aborting sending setSwitchVector: The given send_setVectorMembers timeout value must be a string object")
             return
         if not self.device.enable:
             return
@@ -200,7 +226,7 @@ class SwitchVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setSwitchVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setSwitchVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setSwitchVector')
         xmldata.set("device", self.devicename)
@@ -282,7 +308,7 @@ class LightVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setLightVector: The given send_setVector timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setLightVector: The given send_setVector timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setLightVector')
         xmldata.set("device", self.devicename)
@@ -321,7 +347,7 @@ class LightVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setLightVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setLightVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setLightVector')
         xmldata.set("device", self.devicename)
@@ -396,7 +422,7 @@ class TextVector(PropertyVector):
            explicit send_setVectorMembers method instead.
         """
         if not isinstance(timeout, str):
-            self._reporterror("Aborting sending setTextVector: The given send_setVector timeout value must be a string object")
+            reporterror("Aborting sending setTextVector: The given send_setVector timeout value must be a string object")
             return
         if not self.device.enable:
             return
@@ -405,7 +431,7 @@ class TextVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setTextVector: The given send_setVector timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setTextVector: The given send_setVector timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setTextVector')
         xmldata.set("device", self.devicename)
@@ -438,7 +464,7 @@ class TextVector(PropertyVector):
            just a state or message is to be sent.
         """
         if not isinstance(timeout, str):
-            self._reporterror("Aborting sending setTextVector: The given send_setVectorMembers timeout value must be a string object")
+            reporterror("Aborting sending setTextVector: The given send_setVectorMembers timeout value must be a string object")
             return
         if not self.device.enable:
             return
@@ -447,7 +473,7 @@ class TextVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setTextVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setTextVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setTextVector')
         xmldata.set("device", self.devicename)
@@ -519,7 +545,7 @@ class NumberVector(PropertyVector):
            explicit send_setVectorMembers method instead.
         """
         if not isinstance(timeout, str):
-            self._reporterror("Aborting sending setNumberVector: The given send_setVector timeout value must be a string object")
+            reporterror("Aborting sending setNumberVector: The given send_setVector timeout value must be a string object")
             return
         if not self.device.enable:
             return
@@ -528,7 +554,7 @@ class NumberVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setNumberVector: The given send_setVector timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setNumberVector: The given send_setVector timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setNumberVector')
         xmldata.set("device", self.devicename)
@@ -561,7 +587,7 @@ class NumberVector(PropertyVector):
            just a state or message is to be sent.
         """
         if not isinstance(timeout, str):
-            self._reporterror("Aborting sending setNumberVector: The given send_setVectorMembers timeout value must be a string object")
+            reporterror("Aborting sending setNumberVector: The given send_setVectorMembers timeout value must be a string object")
             return
         if not self.device.enable:
             return
@@ -570,7 +596,7 @@ class NumberVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setNumberVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setNumberVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setNumberVector')
         xmldata.set("device", self.devicename)
@@ -611,7 +637,7 @@ class BLOBVector(PropertyVector):
            therefore if you are sending a compressed file, you should set the blobsize
            prior to compression with this method."""
         if not isinstance(blobsize, int):
-            self._reporterror("blobsize rejected, must be an integer object")
+            reporterror("blobsize rejected, must be an integer object")
             return
         member = self.data.get[membername]
         if not member:
@@ -653,7 +679,7 @@ class BLOBVector(PropertyVector):
            will be called, so you do not have to close it.
         """
         if not isinstance(timeout, str):
-            self._reporterror("Aborting sending setBLOBVector: The given send_setVectorMembers timeout value must be a string object")
+            reporterror("Aborting sending setBLOBVector: The given send_setVectorMembers timeout value must be a string object")
             return
         if not self.device.enable:
             return
@@ -662,7 +688,7 @@ class BLOBVector(PropertyVector):
         if not timestamp:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._reporterror("Aborting sending setBLOBVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending setBLOBVector: The given send_setVectorMembers timestamp must be a datetime.datetime object")
             return
         xmldata = ET.Element('setBLOBVector')
         xmldata.set("device", self.devicename)

@@ -17,15 +17,11 @@ class PropertyMember:
             self.label = label
         else:
             self.label = name
-        # self.changed is a flag to indicate the value has changed
-        # initially start with all values have changed
-        self.changed = True
-
 
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
         if value not in allowed:
-            raise ParseException
+            raise ParseException(f"Invalid value:{value}")
         return value
 
 
@@ -44,20 +40,10 @@ class SwitchMember(PropertyMember):
     @membervalue.setter
     def membervalue(self, value):
         if not value:
-            raise ParseException
+            raise ParseException("No value given, should be either On or Off")
         newvalue = self.checkvalue(value, ['On', 'Off'])
         if self._membervalue != newvalue:
-            # when a value has changed, set the changed flag
-            self.changed = True
             self._membervalue = newvalue
-
-    def defswitch(self):
-        """Returns a defSwitch"""
-        xmldata = ET.Element('defSwitch')
-        xmldata.set("name", self.name)
-        xmldata.set("label", self.label)
-        xmldata.text = self._membervalue
-        return xmldata
 
     def oneswitch(self):
         """Returns xml of a oneSwitch"""
@@ -81,20 +67,10 @@ class LightMember(PropertyMember):
     @membervalue.setter
     def membervalue(self, value):
         if not value:
-            raise ParseException
+            raise ParseException("No value given, should be one of 'Idle','Ok','Busy','Alert'")
         newvalue = self.checkvalue(value, ['Idle','Ok','Busy','Alert'])
         if self._membervalue != newvalue:
-            # when a value has changed, set the changed flag
-            self.changed = True
             self._membervalue = newvalue
-
-    def deflight(self):
-        """Returns xml of a defLight"""
-        xmldata = ET.Element('defLight')
-        xmldata.set("name", self.name)
-        xmldata.set("label", self.label)
-        xmldata.text = self._membervalue
-        return xmldata
 
     def onelight(self):
         """Returns xml of a oneLight"""
@@ -118,17 +94,7 @@ class TextMember(PropertyMember):
     @membervalue.setter
     def membervalue(self, value):
         if self._membervalue != value:
-            # when a value has changed, set the changed flag
-            self.changed = True
             self._membervalue = value
-
-    def deftext(self):
-        """Returns a defText"""
-        xmldata = ET.Element('defText')
-        xmldata.set("name", self.name)
-        xmldata.set("label", self.label)
-        xmldata.text = self.membervalue
-        return xmldata
 
     def onetext(self):
         """Returns xml of a oneText"""
@@ -161,16 +127,16 @@ class NumberMember(PropertyMember):
         super().__init__(name, label)
         self.format = format
         if not isinstance(min, str):
-            raise ParseException
+            raise ParseException("minimum value must be given as a string")
         self.min = min
         if not isinstance(max, str):
-            raise ParseException
+            raise ParseException("maximum value must be given as a string")
         self.max = max
         if not isinstance(step, str):
-            raise ParseException
+            raise ParseException("step value must be given as a string")
         self.step = step
         if not isinstance(membervalue, str):
-            raise ParseException
+            raise ParseException("number value must be given as a string")
         self._membervalue = membervalue
 
 
@@ -181,12 +147,10 @@ class NumberMember(PropertyMember):
     @membervalue.setter
     def membervalue(self, value):
         if not isinstance(value, str):
-            raise ParseException
+            raise ParseException("number value must be given as a string")
         if not value:
-            raise ParseException
+            raise ParseException("No number value given")
         if self._membervalue != value:
-            # when a value has changed, set the changed flag
-            self.changed = True
             self._membervalue = value
 
     def format_number(self, value):
@@ -247,17 +211,6 @@ class NumberMember(PropertyMember):
             number = " "*(w-l) + number
         return number
 
-    def defnumber(self):
-        """Returns a defNumber"""
-        xmldata = ET.Element('defNumber')
-        xmldata.set("name", self.name)
-        xmldata.set("label", self.label)
-        xmldata.set("format", self.format)
-        xmldata.set("min", self.min)
-        xmldata.set("max", self.max)
-        xmldata.set("step", self.step)
-        xmldata.text = self._membervalue
-        return xmldata
 
     def onenumber(self):
         """Returns xml of a oneNumber"""
@@ -280,7 +233,7 @@ class BLOBMember(PropertyMember):
     def __init__(self, name, label=None, blobsize=0, blobformat='', membervalue=None):
         super().__init__(name, label)
         if not isinstance(blobsize, int):
-            raise ParseException
+            raise ParseException("blobsize must be given as an integer")
         # membervalue can be a byte string, path, string path or file like object
         self._membervalue = membervalue
         self.blobsize = blobsize
@@ -295,16 +248,8 @@ class BLOBMember(PropertyMember):
     @membervalue.setter
     def membervalue(self, value):
         if not value:
-            raise ParseException
+            raise ParseException("No BLOB value given")
         self._membervalue = value
-
-
-    def defblob(self):
-        """Returns a defBlob, does not contain a membervalue"""
-        xmldata = ET.Element('defBlob')
-        xmldata.set("name", self.name)
-        xmldata.set("label", self.label)
-        return xmldata
 
 
     def oneblob(self):
@@ -323,9 +268,9 @@ class BLOBMember(PropertyMember):
             bytescontent = self._membervalue.read()
             self._membervalue.close()
             if not isinstance(bytescontent, bytes):
-                raise ParseException
+                raise ParseException("The read BLOB is not a bytes object")
             if bytescontent == b"":
-                raise ParseException
+                raise ParseException("The read BLOB value is empty")
             xmldata.text = bytescontent
         else:
             # could be a path to a file
@@ -333,8 +278,8 @@ class BLOBMember(PropertyMember):
                 with open(self._membervalue, "rb") as fp:
                     bytescontent = fp.read()
             except:
-                raise ParseException
+                raise ParseException("Unable to read the given file")
             if bytescontent == b"":
-                raise ParseException
+                raise ParseException("The read BLOB value is empty")
             xmldata.text = bytescontent
         return xmldata
