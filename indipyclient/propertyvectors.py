@@ -115,10 +115,9 @@ class SwitchVector(PropertyVector):
             self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
 
     async def send_newSwitchVector(self, timestamp=None, members=[]):
-        """Transmits the vector (newSwitchVector) and members with their values to the driver.
+        """Transmits the vector (newSwitchVector) and members.
            members is a list of member names to be sent.
-           This method will change the state to busy
-           and send the new vector to the driver."""
+           This method will change the vector state to busy."""
         if not self.device.enable:
             return
         if not self.enable:
