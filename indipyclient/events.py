@@ -19,8 +19,10 @@ from .error import ParseException
 
 class Event:
     "Parent class for events received from drivers"
-    def __init__(self, root):
-        self.devicename = root.get("device")
+    def __init__(self, root, device, client):
+        self.device = device
+        self._client = client
+        self.devicename = self.device.devicename
         self.root = root
         timestamp_string = root.get("timestamp")
         if timestamp_string:
@@ -43,8 +45,8 @@ class Message(Event):
     """This contains attribute 'message' with the message string sent by the remote driver.
        Attribute devicename could be None if the driver is sending a system wide message."""
 
-    def __init__(self, root):
-        super().__init__(root)
+    def __init__(self, root, device, client):
+        super().__init__(root, device, client)
         self.message = root.get("message", "")
 
 
@@ -53,8 +55,8 @@ class delProperty(Event):
        This contains attribute vectorname, if it is None, then the whole device is to be deleted.
        A 'message' attribute contains any message sent by the client with this instruction."""
 
-    def __init__(self, root):
-        super().__init__(root)
+    def __init__(self, root, device, client):
+        super().__init__(root, device, client)
         if self.devicename is None:
             raise ParseException
         self.vectorname = root.get("name")
@@ -63,8 +65,8 @@ class delProperty(Event):
 
 class defVector(Event, UserDict):
     "Parent to def vectors, adds a mapping of membername:value"
-    def __init__(self, root):
-        Event.__init__(self, root)
+    def __init__(self, root, device, client):
+        Event.__init__(self, root, device, client)
         UserDict.__init__(self)
         self.vectorname = root.get("name")
         if self.vectorname is None:
@@ -78,8 +80,7 @@ class defVector(Event, UserDict):
             raise ParseException
         self.state = state
         self.message = root.get("message", "")
-        # vector is the propertyvector this has defined
-        self.vector = None
+
 
     def __setitem__(self, membername):
         raise KeyError
@@ -91,8 +92,8 @@ class defSwitchVector(defVector):
        attributes perm, rule, timeout, and memberlabels which is a dictionary of
        membername:label."""
 
-    def __init__(self, root):
-        defVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        defVector.__init__(self, root, device, client)
         self.perm = root.get("perm")
         if self.perm is None:
             raise ParseException
@@ -126,9 +127,9 @@ class defSwitchVector(defVector):
         if not self.data:
             raise ParseException
 
-    def _makevector(self, properties):
-        """properties is a dictionary of property name to propertyvector this device owns
-           This method updates a property vector and sets it into properties"""
+        # properties is a dictionary of property name to propertyvector this device owns
+        # This method updates a property vector and sets it into properties
+        properties = device.data
 
         # does this vector already exist
         if self.vectorname in properties:
@@ -151,8 +152,8 @@ class defTextVector(defVector):
        attributes perm, timeout, and memberlabels which is a dictionary of
        membername:label."""
 
-    def __init__(self, root):
-        defVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        defVector.__init__(self, root, device, client)
         self.perm = root.get("perm")
         if self.perm is None:
             raise ParseException
@@ -175,9 +176,9 @@ class defTextVector(defVector):
         if not self.data:
             raise ParseException
 
-    def _makevector(self, properties):
-        """properties is a dictionary of property name to propertyvector this device owns
-           This method updates a property vector and sets it into properties"""
+        # properties is a dictionary of property name to propertyvector this device owns
+        # This method updates a property vector and sets it into properties
+        properties = device.data
 
         # does this vector already exist
         if self.vectorname in properties:
@@ -200,8 +201,8 @@ class defNumberVector(defVector):
        attributes perm, timeout, and memberlabels which is a dictionary of
        membername:(label, format, min, max, step)."""
 
-    def __init__(self, root):
-        defVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        defVector.__init__(self, root, device, client)
         self.perm = root.get("perm")
         if self.perm is None:
             raise ParseException
@@ -238,13 +239,10 @@ class defNumberVector(defVector):
             raise ParseException
 
 
-    def _makevector(self, properties):
-        """properties is a dictionary of property name to propertyvector this device owns
-           This method updates a property vector and sets it into properties"""
-        # create a list of number members
-        numbermembers = []
-        for membername, membervalue in self.items():
-            numbermembers.append(propertymembers.NumberMember(membername, *self.memberlabels[membername], membervalue))
+        # properties is a dictionary of property name to propertyvector this device owns
+        # This method updates a property vector and sets it into properties
+        properties = device.data
+
         # does this vector already exist
         if self.vectorname in properties:
             self.vector = properties[self.vectorname]
@@ -264,8 +262,8 @@ class defLightVector(defVector):
     """The remote driver has sent this to define a light vector property, it has further
        attribute memberlabels which is a dictionary of membername:label."""
 
-    def __init__(self, root):
-        defVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        defVector.__init__(self, root, device, client)
         # create object dictionary of member name to value
         # and another dictionary of self.memberlabels with key member name and value being label
         self.memberlabels = {}
@@ -286,9 +284,9 @@ class defLightVector(defVector):
             raise ParseException
 
 
-    def _makevector(self, properties):
-        """properties is a dictionary of property name to propertyvector this device owns
-           This method updates a property vector and sets it into properties"""
+        # properties is a dictionary of property name to propertyvector this device owns
+        # This method updates a property vector and sets it into properties
+        properties = device.data
 
         # does this vector already exist
         if self.vectorname in properties:
@@ -313,8 +311,8 @@ class defBLOBVector(Event):
        However this class does not have an object mapping of member name to value, since
        values are not given in defBLOBVectors"""
 
-    def __init__(self, root):
-        Event.__init__(self, root)
+    def __init__(self, root, device, client):
+        Event.__init__(self, root, device, client)
         if self.devicename is None:
             raise ParseException
         self.vectorname = root.get("name")
@@ -349,9 +347,9 @@ class defBLOBVector(Event):
         if not self.memberlabels:
             raise ParseException
 
-    def _makevector(self, properties):
-        """properties is a dictionary of property name to propertyvector this device owns
-           This method updates a property vector and sets it into properties"""
+        # properties is a dictionary of property name to propertyvector this device owns
+        # This method updates a property vector and sets it into properties
+        properties = device.data
 
         # does this vector already exist
         if self.vectorname in properties:
@@ -368,13 +366,17 @@ class defBLOBVector(Event):
 
 class setVector(Event, UserDict):
     "Parent to set vectors, adds dictionary"
-    def __init__(self, root):
-        Event.__init__(self, root)
+    def __init__(self, root, device, client):
+        Event.__init__(self, root, device, client)
         UserDict.__init__(self)
         if self.devicename is None:
             raise ParseException
         self.vectorname = root.get("name")
         if self.vectorname is None:
+            raise ParseException
+        # This vector must already exist, properties is a dictionary of property name to propertyvector this device owns
+        properties = device.data
+        if not self.vectorname in properties:
             raise ParseException
         state = root.get("state")
         if state and (state in ('Idle','Ok','Busy','Alert')):
@@ -382,21 +384,11 @@ class setVector(Event, UserDict):
         else:
             self.state = None
         self.message = root.get("message", "")
-        # vector is the propertyvector this has changed
-        self.vector = None
 
     def __setitem__(self, membername):
         raise KeyError
 
-    def _makevector(self, properties):
-        """properties is a dictionary of property name to propertyvector this device owns
-           This method updates a property vector"""
-        # This vector must already exist
-        if not self.vectorname in properties:
-            raise ParseException
-        self.vector = properties[self.vectorname]
-        # set changed values into self.vector
-        self.vector._setvector(self)
+
 
 
 
@@ -404,8 +396,8 @@ class setSwitchVector(setVector):
     """The remote driver is setting a Switch vector property, this
        has further attribute timeout."""
 
-    def __init__(self, root):
-        setVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        setVector.__init__(self, root, device, client)
         self.timeout = root.get("timeout", "0")
         # create a dictionary of member name to value
         for member in root:
@@ -424,6 +416,11 @@ class setSwitchVector(setVector):
                 raise ParseException
         if not self.data:
             raise ParseException
+        properties = device.data
+        self.vector = properties[self.vectorname]
+        # set changed values into self.vector
+        self.vector._setvector(self)
+
 
 
 class setTextVector(setVector):
@@ -431,8 +428,8 @@ class setTextVector(setVector):
     """The remote driver is setting a Text vector property, this
        has further attribute timeout."""
 
-    def __init__(self, root):
-        setVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        setVector.__init__(self, root, device, client)
         self.timeout = root.get("timeout", "0")
         # create a dictionary of member name to value
         for member in root:
@@ -445,6 +442,10 @@ class setTextVector(setVector):
                 raise ParseException
         if not self.data:
             raise ParseException
+        properties = device.data
+        self.vector = properties[self.vectorname]
+        # set changed values into self.vector
+        self.vector._setvector(self)
 
 
 class setNumberVector(setVector):
@@ -453,8 +454,8 @@ class setNumberVector(setVector):
        has further attribute timeout. The number values of the
        membername:membervalue are string values."""
 
-    def __init__(self, root):
-        setVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        setVector.__init__(self, root, device, client)
         self.timeout = root.get("timeout", "0")
         # create a dictionary of member name to value
         for member in root:
@@ -467,13 +468,18 @@ class setNumberVector(setVector):
                 raise ParseException
         if not self.data:
             raise ParseException
+        properties = device.data
+        self.vector = properties[self.vectorname]
+        # set changed values into self.vector
+        self.vector._setvector(self)
+
 
 class setLightVector(setVector):
 
     """The remote driver is setting a Light vector property."""
 
-    def __init__(self, root):
-        setVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        setVector.__init__(self, root, device, client)
         # create a dictionary of member name to value
         for member in root:
             if member.tag == "oneLight":
@@ -488,6 +494,10 @@ class setLightVector(setVector):
                 raise ParseException
         if not self.data:
             raise ParseException
+        properties = device.data
+        self.vector = properties[self.vectorname]
+        # set changed values into self.vector
+        self.vector._setvector(self)
 
 
 class setBLOBVector(setVector):
@@ -496,8 +506,8 @@ class setBLOBVector(setVector):
        has further attributes timeout and sizeformat which is a dictionary
        of membername:(size, format)."""
 
-    def __init__(self, root):
-        setVector.__init__(self, root)
+    def __init__(self, root, device, client):
+        setVector.__init__(self, root, device, client)
         self.timeout = root.get("timeout", "0")
         # create a dictionary of member name to value
         # and dictionary sizeformat
@@ -524,3 +534,7 @@ class setBLOBVector(setVector):
                 raise ParseException
         if not self.data:
             raise ParseException
+        properties = device.data
+        self.vector = properties[self.vectorname]
+        # set changed values into self.vector
+        self.vector._setvector(self)

@@ -345,6 +345,7 @@ class _Device(collections.UserDict):
         # This device name
         self.devicename = devicename
 
+        # and the device has a reference to its client
         self._client = client
 
         # if self.enable is False, this device has been 'deleted'
@@ -355,50 +356,31 @@ class _Device(collections.UserDict):
 
 
     def rxvector(self, root):
-        "Handle received data, and return an event"
+        """Handle received data, sets new propertyvector into self.data,
+           or updates existing property vector and returns an event"""
         if not self.enable:
             raise ParseException
         if root.tag == "delProperty":
-            return events.delProperty(root)
+            return events.delProperty(root, self._client)
         elif root.tag == "defSwitchVector":
-            event = events.defSwitchVector(root)
-            event._makevector(self.data)
-            return event
+            return events.defSwitchVector(root, self, self._client)
         elif root.tag == "setSwitchVector":
-            event = events.setSwitchVector(root)
-            event._makevector(self.data)
-            return event
+            return events.setSwitchVector(root, self, self._client)
         elif root.tag == "defLightVector":
-            event = events.defLightVector(root)
-            event._makevector(self.data)
-            return event
+            return events.defLightVector(root, self, self._client)
         elif root.tag == "setLightVector":
-            event = events.setLightVector(root)
-            event._makevector(self.data)
-            return event
+            return events.setLightVector(root, self, self._client)
         elif root.tag == "defTextVector":
-            event = events.defTextVector(root)
-            event._makevector(self.data)
-            return event
+            return events.defTextVector(root, self, self._client)
         elif root.tag == "setTextVector":
-            event = events.setTextVector(root)
-            event._makevector(self.data)
-            return event
+            return events.setTextVector(root, self, self._client)
         elif root.tag == "defNumberVector":
-            event = events.defNumberVector(root)
-            event._makevector(self.data)
-            return event
+            return events.defNumberVector(root, self, self._client)
         elif root.tag == "setNumberVector":
-            event = events.setNumberVector(root)
-            event._makevector(self.data)
-            return event
+            return events.setNumberVector(root, self, self._client)
         elif root.tag == "defBLOBVector":
-            event = events.defBLOBVector(root)
-            event._makevector(self.data)
-            return event
+            return events.defBLOBVector(root, self, self._client)
         elif root.tag == "setBLOBVector":
-            event = events.setBLOBVector(root)
-            event._makevector(self.data)
-            return event
+            return events.setBLOBVector(root, self, self._client)
         else:
             raise ParseException
