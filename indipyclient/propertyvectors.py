@@ -114,10 +114,11 @@ class SwitchVector(PropertyVector):
         for membername, membervalue in event.items():
             self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
 
-    async def send_newSwitchVector(self, timestamp=None, members=[]):
-        """Transmits the vector (newSwitchVector) and members.
-           members is a list of member names to be sent.
-           This method will change the vector state to busy."""
+    async def send_newSwitchVector(self, timestamp=None, members={}):
+        """Transmits the vector (newSwitchVector) and the members given in the members
+           dictionary which consists of member names:values to be sent.
+           This method will set these values into the vector members
+           transmit the xml, and change the vector state to busy."""
         if not self.device.enable:
             return
         if not self.enable:
@@ -133,6 +134,10 @@ class SwitchVector(PropertyVector):
         xmldata.set("name", self.name)
         # note - limit timestamp characters to :21 to avoid long fractions of a second
         xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
+        # set member values
+        for membername, value in members.items():
+            if membername in self:
+                self[membername] = value
         # for rule 'OneOfMany' the standard indicates 'Off' should precede 'On'
         # so make all 'On' values last
         Offswitches = (switch for switch in self.data.values() if switch.membervalue == 'Off' and switch.name in members)
@@ -147,9 +152,11 @@ class SwitchVector(PropertyVector):
 
 class LightVector(PropertyVector):
 
-    """A LightVector is an instrument indicator, and sends one or more members
+    """A LightVector is an instrument indicator, and has one or more members
        with values 'Idle', 'Ok', 'Busy' or 'Alert'. In general a client will
-       indicate this state with different colours."""
+       indicate this state with different colours.
+
+       This class has no 'send_newLightVector method, since lights are read-only"""
 
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
@@ -174,8 +181,6 @@ class LightVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = LightMember(membername, event.memberlabels[membername], membervalue)
-
-
 
 
 
@@ -214,6 +219,34 @@ class TextVector(PropertyVector):
         for membername, membervalue in event.items():
             self.data[membername] = TextMember(membername, event.memberlabels[membername], membervalue)
 
+    async def send_newTextVector(self, timestamp=None, members={}):
+        """Transmits the vector (newTextVector) together with all text members.
+           (The spec requires text vectors to be sent with all members)
+           This method will change any members to the values given in the members dictionary
+           and then transmit the vector and change the vector state to busy."""
+        if not self.device.enable:
+            return
+        if not self.enable:
+            return
+        if not timestamp:
+            timestamp = datetime.datetime.utcnow()
+        if not isinstance(timestamp, datetime.datetime):
+            reporterror("Aborting sending newTextVector: The send_newTextVector timestamp must be a datetime.datetime object")
+            return
+        self.state = 'Busy'
+        xmldata = ET.Element('newTextVector')
+        xmldata.set("device", self.devicename)
+        xmldata.set("name", self.name)
+        # note - limit timestamp characters to :21 to avoid long fractions of a second
+        xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
+        # set member values
+        for membername, value in members.items():
+            if membername in self:
+                self[membername] = value
+        for textmember in self.data.values():
+            xmldata.append(textmember.onetext())
+        await self._client.send(xmldata)
+
 
 
 class NumberVector(PropertyVector):
@@ -225,6 +258,22 @@ class NumberVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
+
+    @staticmethod
+
+    def getfloatvalue(self, membername):
+        "Given a membername of this vector, returns the number as a float"
+        if membername not in self:
+            raise KeyError(f"Unrecognised member: {membername}")
+        member = self.data[membername]
+        return member.getfloatvalue()
+
+    def getformattedvalue(self, membername):
+        "Given a membername of this vector, returns the number as a formatted string"
+        if membername not in self:
+            raise KeyError(f"Unrecognised member: {membername}")
+        member = self.data[membername]
+        return member.getformattedvalue()
 
     @property
     def perm(self):
@@ -248,8 +297,36 @@ class NumberVector(PropertyVector):
         for membername, membervalue in event.items():
             self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
 
+    async def send_newNumberVector(self, timestamp=None, members={}):
+        """Transmits the vector (newNumberVector) together with all number members.
+           (The spec requires number vectors to be sent with all members)
+           This method will change any members to the values given in the members dictionary
+           and then transmit the vector and change the vector state to busy."""
+        if not self.device.enable:
+            return
+        if not self.enable:
+            return
+        if not timestamp:
+            timestamp = datetime.datetime.utcnow()
+        if not isinstance(timestamp, datetime.datetime):
+            reporterror("Aborting sending newNumberVector: The send_newNumberVector timestamp must be a datetime.datetime object")
+            return
+        self.state = 'Busy'
+        xmldata = ET.Element('newNumberVector')
+        xmldata.set("device", self.devicename)
+        xmldata.set("name", self.name)
+        # note - limit timestamp characters to :21 to avoid long fractions of a second
+        xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
+        # set member values
+        for membername, value in members.items():
+            if membername in self:
+                self[membername] = value
+        for numbermember in self.data.values():
+            xmldata.append(numbermember.onenumber())
+        await self._client.send(xmldata)
 
- 
+
+
 class BLOBVector(PropertyVector):
 
     def __init__(self, event):
@@ -297,6 +374,3 @@ class BLOBVector(PropertyVector):
         # create  members
         for membername, label in event.memberlabels.items():
             self.data[membername] = BLOBMember(membername, label)
-
-
-

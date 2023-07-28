@@ -153,9 +153,60 @@ class NumberMember(PropertyMember):
         if self._membervalue != value:
             self._membervalue = value
 
-    def format_number(self, value):
-        """This takes a float, and returns a formatted string
-        """
+
+    def getfloatvalue(self):
+        """The INDI spec allows a number of different number formats, this returns a float.
+           If an error occurs while parsing the number, a TypeError exception is raised."""
+        value = self._membervalue
+        try:
+            if isinstance(value, float):
+                return value
+            if isinstance(value, int):
+                return float(value)
+            if not isinstance(value, str):
+                raise TypeError
+            # negative is True, if the value is negative
+            value = value.strip()
+            negative = value.startswith("-")
+            if negative:
+                value = value.lstrip("-")
+            # Is the number provided in sexagesimal form?
+            if value == "":
+                parts = [0, 0, 0]
+            elif " " in value:
+                parts = value.split(" ")
+            elif ":" in value:
+                parts = value.split(":")
+            elif ";" in value:
+                parts = value.split(";")
+            else:
+                # not sexagesimal
+                parts = [value, "0", "0"]
+            # Any missing parts should have zero
+            if len(parts) == 2:
+                # assume seconds are missing, set to zero
+                parts.append("0")
+            assert len(parts) == 3
+            number_strings = list(x if x else "0" for x in parts)
+            # convert strings to integers or floats
+            number_list = []
+            for part in number_strings:
+                try:
+                    num = int(part)
+                except ValueError:
+                    num = float(part)
+                number_list.append(num)
+            floatvalue = number_list[0] + (number_list[1]/60) + (number_list[2]/360)
+            if negative:
+                floatvalue = -1 * floatvalue
+        except:
+            raise TypeError("Unable to parse the value")
+        return floatvalue
+
+
+    def getformattedvalue(self):
+        """This returns a formatted string"""
+        value = self.getfloatvalue()
         if (not self.format.startswith("%")) or (not self.format.endswith("m")):
             return self.format % value
         # sexagesimal format
