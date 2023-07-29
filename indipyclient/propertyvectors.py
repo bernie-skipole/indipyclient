@@ -123,7 +123,7 @@ class SwitchVector(PropertyVector):
             return
         if not self.enable:
             return
-        if not timestamp:
+        if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
             reporterror("Aborting sending newSwitchVector: The send_newSwitchVector timestamp must be a datetime.datetime object")
@@ -228,7 +228,7 @@ class TextVector(PropertyVector):
             return
         if not self.enable:
             return
-        if not timestamp:
+        if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
             reporterror("Aborting sending newTextVector: The send_newTextVector timestamp must be a datetime.datetime object")
@@ -306,7 +306,7 @@ class NumberVector(PropertyVector):
             return
         if not self.enable:
             return
-        if not timestamp:
+        if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
             reporterror("Aborting sending newNumberVector: The send_newNumberVector timestamp must be a datetime.datetime object")

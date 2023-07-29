@@ -148,6 +148,7 @@ class IPyClient(collections.UserDict):
                 # Send to the port
                 writer.write(binarydata)
                 await writer.drain()
+            self.writerque.task_done()
 
 
     async def _run_rx(self, reader):
@@ -288,7 +289,6 @@ class IPyClient(collections.UserDict):
                 # if an EventException is raised, it is because received data is malformed
                 # so print to stderr and continue
                 reporterror(str(pe))
-                pass
             self.readerque.task_done()
 
 
@@ -314,6 +314,16 @@ class IPyClient(collections.UserDict):
                 if len(self):
                     # clear devices etc
                     self.clear()
+                if not self.writerque.empty():
+                    # empty the queue
+                    while not self.writerque.empty():
+                        xmldata = self.writerque.get_nowait()
+                        self.writerque.task_done()
+                if not self.readerque.empty():
+                    # empty the queue
+                    while not self.readerque.empty():
+                        xmldata = self.readerque.get_nowait()
+                        self.readerque.task_done()
                 await asyncio.sleep(2)
                 continue
             if not len(self):
