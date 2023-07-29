@@ -108,6 +108,7 @@ class IPyClient(collections.UserDict):
         self.connected = False
 
 
+
     async def _comms(self):
         "Create a connection to an INDI port"
         while True:
@@ -306,6 +307,25 @@ class IPyClient(collections.UserDict):
         await self.send(xmldata)
 
 
+    async def _check_connection(self):
+        "check if connection available, clear data if not"
+        while True:
+            if not self.connected:
+                if len(self):
+                    # clear devices etc
+                    self.clear()
+                await asyncio.sleep(2)
+                continue
+            if not len(self):
+                # no devices, so send a getProperties
+                await self.send_getProperties()
+                # wait for a response
+                await asyncio.sleep(5)
+                continue
+            # so this point is reached if the client is connected
+            # and has received properties
+            await asyncio.sleep(0)
+
 
     async def rxevent(self, event):
         """Override this if this client is operating a script to act on received data.
@@ -313,22 +333,20 @@ class IPyClient(collections.UserDict):
            event is an object with attributes according to the data received."""
         pass
 
+
     async def control(self):
         """Override this to operate your own scripts, and transmit updates"""
         while True:
             await asyncio.sleep(0)
-            if not len(self):
-                # no devices, so send a getProperties
-                await self.send_getProperties()
-                # wait for a response
-                await asyncio.sleep(5)
+
 
 
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
-        await asyncio.gather(self._comms(),          # Create a connection to an INDI port, and parse data
-                             self.control(),         # task to operate client algorithms, and transmit updates
-                             self._rxhandler()       # task to handle incoming received data
+        await asyncio.gather(self._comms(),            # Create a connection to an INDI port, and parse data
+                             self._check_connection(), # check if connection available, clear data if not
+                             self.control(),           # task to operate client algorithms, and transmit updates
+                             self._rxhandler()         # task to handle incoming received data
                             )
 
 
