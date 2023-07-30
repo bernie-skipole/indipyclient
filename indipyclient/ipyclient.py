@@ -1,6 +1,6 @@
 
 
-import os, sys, collections, threading, asyncio, pathlib
+import os, sys, collections, threading, asyncio, pathlib, time
 
 from time import sleep
 
@@ -107,21 +107,36 @@ class IPyClient(collections.UserDict):
         # self.connected is True if connection has been made
         self.connected = False
 
+        # timer used to check data received, if no answer, close connection
+        self.timer = None
+
 
 
     async def _comms(self):
         "Create a connection to an INDI port"
         while True:
+            self.timer = None
             try:
                 # start by openning a connection
                 reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
-                self.connected = True
-                print(f"Connected to {self.indihost}:{self.indiport}")
-                await asyncio.gather(self._run_tx(writer), self._run_rx(reader))
             except ConnectionRefusedError:
                 reporterror(f"Connection refused on {self.indihost}:{self.indiport}, re-trying...")
-            except asyncio.IncompleteReadError:
-                reporterror(f"Connection failed on {self.indihost}:{self.indiport}, re-trying...")
+                await asyncio.sleep(2)
+                continue
+            self.connected = True
+            print(f"Connected to {self.indihost}:{self.indiport}")
+            t1 = asyncio.create_task(self._run_tx(writer))
+            t2 = asyncio.create_task(self._run_rx(reader))
+            t3 = asyncio.create_task(self._check_alive(writer))
+            group = asyncio.gather(t1, t2, t3)
+            try:
+                await group
+            except Exception as e:
+                # report failure
+                print(f'Connection failed with: {e}, re-trying...')
+                t1.cancel()
+                t2.cancel()
+                t3.cancel()
             self.connected = False
             await asyncio.sleep(5)
 
@@ -130,6 +145,23 @@ class IPyClient(collections.UserDict):
         "Transmits xmldata, this is an internal method, not normally called by a user."
         if self.connected:
             await self.writerque.put(xmldata)
+
+
+    async def _check_alive(self, writer):
+        while True:
+            await asyncio.sleep(0)
+            if self.timer is None:
+                await asyncio.sleep(0)
+            else:
+                telapsed = time.time() - self.timer
+                if telapsed > 10:
+                    # no response to transmission 10 seconds ago
+                   writer.close()
+                   await writer.wait_closed()
+                   reporterror("Connection timed out")
+                   raise ConnectionRefusedError
+
+
 
     async def _run_tx(self, writer):
         "Monitors self.writerque and if it has data, uses writer to send it"
@@ -149,6 +181,9 @@ class IPyClient(collections.UserDict):
                 writer.write(binarydata)
                 await writer.drain()
             self.writerque.task_done()
+            if self.timer is None:
+                # set a timer going
+                self.timer = time.time()
 
 
     async def _run_rx(self, reader):
@@ -241,6 +276,8 @@ class IPyClient(collections.UserDict):
                 continue
             if not data:
                 continue
+            # data received
+            self.timer = None
             if b">" in data:
                 binarydata = binarydata + data
                 yield binarydata
