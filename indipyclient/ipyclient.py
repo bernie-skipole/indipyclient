@@ -124,6 +124,11 @@ class IPyClient(collections.UserDict):
                 reporterror(f"Connection refused on {self.indihost}:{self.indiport}, re-trying...")
                 await asyncio.sleep(2)
                 continue
+            except Exception as e:
+                # report failure
+                print(f'Connection failed with: {e}, re-trying...')
+                await asyncio.sleep(2)
+                continue
             self.connected = True
             print(f"Connected to {self.indihost}:{self.indiport}")
             t1 = asyncio.create_task(self._run_tx(writer))
@@ -172,7 +177,7 @@ class IPyClient(collections.UserDict):
                    writer.close()
                    await writer.wait_closed()
                    reporterror("Connection timed out")
-                   raise ConnectionTimeOut(f"No response from the last transmission has been received in {self.timeout} seconds")
+                   raise ConnectionTimeOut(f"No response from the last transmission after {self.timeout} seconds")
             # so the connection is up, check devices exist
             if not len(self):
                 # no devices, so send a getProperties
