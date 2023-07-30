@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 from . import events
 
-from .error import ParseException, reporterror
+from .error import ParseException, ConnectionTimeOut, reporterror
 
 
 # All xml data received from the driver should be contained in one of the following tags
@@ -107,8 +107,9 @@ class IPyClient(collections.UserDict):
         # self.connected is True if connection has been made
         self.connected = False
 
-        # timer used to check data received, if no answer, close connection
+        # timer used to check data received, if no answer in self.timeout seconds, close connection
         self.timer = None
+        self.timeout = 10
 
 
 
@@ -138,7 +139,21 @@ class IPyClient(collections.UserDict):
                 t2.cancel()
                 t3.cancel()
             self.connected = False
+            if len(self):
+                # clear devices etc
+                self.clear()
+            if not self.writerque.empty():
+                # empty the queue
+                while not self.writerque.empty():
+                    xmldata = self.writerque.get_nowait()
+                    self.writerque.task_done()
+            if not self.readerque.empty():
+                # empty the queue
+                while not self.readerque.empty():
+                    xmldata = self.readerque.get_nowait()
+                    self.readerque.task_done()
             await asyncio.sleep(5)
+
 
 
     async def send(self, xmldata):
@@ -150,17 +165,20 @@ class IPyClient(collections.UserDict):
     async def _check_alive(self, writer):
         while True:
             await asyncio.sleep(0)
-            if self.timer is None:
-                await asyncio.sleep(0)
-            else:
+            if not self.timer is None:
                 telapsed = time.time() - self.timer
-                if telapsed > 10:
+                if telapsed > self.timeout:
                     # no response to transmission 10 seconds ago
                    writer.close()
                    await writer.wait_closed()
                    reporterror("Connection timed out")
-                   raise ConnectionRefusedError
-
+                   raise ConnectionTimeOut(f"No response from the last transmission has been received in {self.timeout} seconds")
+            # so the connection is up, check devices exist
+            if not len(self):
+                # no devices, so send a getProperties
+                await self.send_getProperties()
+                # wait for a response
+                await asyncio.sleep(5)
 
 
     async def _run_tx(self, writer):
@@ -331,47 +349,18 @@ class IPyClient(collections.UserDict):
 
     async def send_getProperties(self, devicename=None, vectorname=None):
         """Sends a getProperties request."""
-        xmldata = ET.Element('getProperties')
-        xmldata.set("version", "1.7")
-        if devicename is None:
+        if self.connected:
+            xmldata = ET.Element('getProperties')
+            xmldata.set("version", "1.7")
+            if devicename is None:
+                await self.send(xmldata)
+                return
+            xmldata.set("device", devicename)
+            if vectorname is None:
+                await self.send(xmldata)
+                return
+            xmldata.set("name", vectorname)
             await self.send(xmldata)
-            return
-        xmldata.set("device", devicename)
-        if vectorname is None:
-            await self.send(xmldata)
-            return
-        xmldata.set("name", vectorname)
-        await self.send(xmldata)
-
-
-    async def _check_connection(self):
-        "check if connection available, clear data if not"
-        while True:
-            if not self.connected:
-                if len(self):
-                    # clear devices etc
-                    self.clear()
-                if not self.writerque.empty():
-                    # empty the queue
-                    while not self.writerque.empty():
-                        xmldata = self.writerque.get_nowait()
-                        self.writerque.task_done()
-                if not self.readerque.empty():
-                    # empty the queue
-                    while not self.readerque.empty():
-                        xmldata = self.readerque.get_nowait()
-                        self.readerque.task_done()
-                await asyncio.sleep(2)
-                continue
-            if not len(self):
-                # no devices, so send a getProperties
-                await self.send_getProperties()
-                # wait for a response
-                await asyncio.sleep(5)
-                continue
-            # so this point is reached if the client is connected
-            # and has received properties
-            await asyncio.sleep(0)
 
 
     async def rxevent(self, event):
@@ -391,7 +380,6 @@ class IPyClient(collections.UserDict):
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         await asyncio.gather(self._comms(),            # Create a connection to an INDI port, and parse data
-                             self._check_connection(), # check if connection available, clear data if not
                              self.control(),           # task to operate client algorithms, and transmit updates
                              self._rxhandler()         # task to handle incoming received data
                             )
