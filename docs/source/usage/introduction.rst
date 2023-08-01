@@ -1,8 +1,11 @@
-# indipyclient
-Python class for creating INDI client scripts
+Introduction
+============
+
 
 This is under development and not yet ready for use
 
+indipyclient
+^^^^^^^^^^^^
 
 This is a pure python package, with no dependencies, providing a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.
 
@@ -10,7 +13,7 @@ This is a companion package to 'indipydriver' which can be used to create INDI d
 
 INDI - Instrument Neutral Distributed Interface.
 
-See https://en.wikipedia.org/wiki/Instrument_Neutral_Distributed_Interface
+For further information on INDI, see :ref:`references`.
 
 The INDI protocol is defined so that drivers should operate with any INDI client.
 
@@ -40,3 +43,8 @@ Having created an instance of your IPyClient subclass, you would run the client 
 
 asyncio.run(client.asyncrun())
 
+
+Issues
+^^^^^^
+
+When transmitting or receiving BLOBS the entire BLOB is loaded into memory, which may cause issues if the BLOB is large. It is suggested that very large binary objects should be transferred by some other method.
