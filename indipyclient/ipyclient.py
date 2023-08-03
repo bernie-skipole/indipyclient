@@ -109,7 +109,7 @@ class IPyClient(collections.UserDict):
 
         # timer used to check data received, if no answer in self.timeout seconds, close connection
         self.timer = None
-        self.timeout = 10
+        self.timeout = 15
 
 
 
@@ -173,7 +173,7 @@ class IPyClient(collections.UserDict):
             if not self.timer is None:
                 telapsed = time.time() - self.timer
                 if telapsed > self.timeout:
-                    # no response to transmission 10 seconds ago
+                    # no response to transmission self.timer seconds ago
                    writer.close()
                    await writer.wait_closed()
                    reporterror("Connection timed out")
