@@ -381,14 +381,19 @@ class IPyClient(collections.UserDict):
             await asyncio.sleep(0)
 
 
-
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
-        await asyncio.gather(self._comms(),            # Create a connection to an INDI port, and parse data
-                             self.control(),           # task to operate client algorithms, and transmit updates
-                             self._rxhandler()         # task to handle incoming received data
-                            )
-
+        t1 = asyncio.create_task(self._comms())        # Create a connection to an INDI port, and parse data
+        t2 = asyncio.create_task(self.control())       # task to operate client algorithms, and transmit updates
+        t3 = asyncio.create_task(self._rxhandler())    # task to handle incoming received data
+        try:
+            await asyncio.gather(t1, t2, t3)
+        except Exception as e:
+            # report failure
+            print(f'Client terminated with: {e}')
+            t1.cancel()
+            t2.cancel()
+            t3.cancel()
 
 
 
