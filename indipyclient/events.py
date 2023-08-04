@@ -390,8 +390,6 @@ class setVector(Event, UserDict):
 
 
 
-
-
 class setSwitchVector(setVector):
     """The remote driver is setting a Switch vector property, this
        has further attribute timeout."""
@@ -420,7 +418,6 @@ class setSwitchVector(setVector):
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
         self.vector._setvector(self)
-
 
 
 class setTextVector(setVector):

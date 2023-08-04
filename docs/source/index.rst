@@ -7,7 +7,7 @@ indipyclient = Python tools to create INDI clients
    :maxdepth: 1
 
    usage/introduction
-   usage/summary
+   usage/example
    usage/events
    usage/references
 

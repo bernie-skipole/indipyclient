@@ -85,9 +85,8 @@ def blob_xml_bytes(xmldata):
 class IPyClient(collections.UserDict):
 
 
-    def __init__(self, blobfolder, indihost="localhost", indiport=7624, **clientdata):
+    def __init__(self, indihost="localhost", indiport=7624, **clientdata):
         "An instance of this is a mapping of devicename to device object"
-        self.blobfolder = blobfolder
 
         self.indihost = indihost
         self.indiport = indiport
@@ -107,16 +106,15 @@ class IPyClient(collections.UserDict):
         # self.connected is True if connection has been made
         self.connected = False
 
-        # timer used to check data received, if no answer in self.timeout seconds, close connection
-        self.timer = None
-        self.timeout = 15
-
+        # timer used to check data received, if no answer in self._timeout seconds, close connection
+        self._timer = None
+        self._timeout = 15
 
 
     async def _comms(self):
         "Create a connection to an INDI port"
         while True:
-            self.timer = None
+            self._timer = None
             try:
                 # start by openning a connection
                 reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
@@ -170,14 +168,14 @@ class IPyClient(collections.UserDict):
     async def _check_alive(self, writer):
         while True:
             await asyncio.sleep(0)
-            if not self.timer is None:
-                telapsed = time.time() - self.timer
-                if telapsed > self.timeout:
-                    # no response to transmission self.timer seconds ago
+            if not self._timer is None:
+                telapsed = time.time() - self._timer
+                if telapsed > self._timeout:
+                    # no response to transmission self._timer seconds ago
                    writer.close()
                    await writer.wait_closed()
                    reporterror("Connection timed out")
-                   raise ConnectionTimeOut(f"No response from the last transmission after {self.timeout} seconds")
+                   raise ConnectionTimeOut(f"No response from the last transmission after {self._timeout} seconds")
             # so the connection is up, check devices exist
             if not len(self):
                 # no devices, so send a getProperties
@@ -204,9 +202,9 @@ class IPyClient(collections.UserDict):
                 writer.write(binarydata)
                 await writer.drain()
             self.writerque.task_done()
-            if self.timer is None:
+            if self._timer is None:
                 # set a timer going
-                self.timer = time.time()
+                self._timer = time.time()
 
 
     async def _run_rx(self, reader):
@@ -300,7 +298,7 @@ class IPyClient(collections.UserDict):
             if not data:
                 continue
             # data received
-            self.timer = None
+            self._timer = None
             if b">" in data:
                 binarydata = binarydata + data
                 yield binarydata
@@ -357,16 +355,28 @@ class IPyClient(collections.UserDict):
         if self.connected:
             xmldata = ET.Element('getProperties')
             xmldata.set("version", "1.7")
-            if devicename is None:
+            if not devicename:
                 await self.send(xmldata)
                 return
             xmldata.set("device", devicename)
-            if vectorname is None:
-                await self.send(xmldata)
-                return
-            xmldata.set("name", vectorname)
+            if vectorname:
+                xmldata.set("name", vectorname)
             await self.send(xmldata)
 
+    async def send_enableBLOB(self, value, devicename, vectorname=None):
+        """Sends an enableBLOB instruction."""
+        if self.connected:
+            if value not in ("Never", "Also", "Only"):
+                return
+            xmldata = ET.Element('enableBLOB')
+            if not devicename:
+                # a devicename is required
+                return
+            xmldata.set("device", devicename)
+            if vectorname:
+                xmldata.set("name", vectorname)
+            xmldata.text = value
+            await self.send(xmldata)
 
     async def rxevent(self, event):
         """Override this if this client is operating a script to act on received data.

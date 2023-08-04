@@ -272,8 +272,7 @@ class NumberMember(PropertyMember):
 
 
 class BLOBMember(PropertyMember):
-    """Contains a 'binary large object' such as an image, the value should be
-       either a bytes object, a file-like object, or a path to a file.
+    """Contains a 'binary large object' such as an image.
 
        blobsize is the size of the BLOB before any compression, if left at
        zero, the length of the BLOB will be used.
