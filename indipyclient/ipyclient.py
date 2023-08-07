@@ -96,6 +96,7 @@ class IPyClient(collections.UserDict):
 
         # create queue where client will put xml data to be transmitted
         self.writerque = asyncio.Queue(4)
+
         # and create readerque where received xmldata will be put
         self.readerque = asyncio.Queue(4)
         # self.data is a dictionary of devicename to device object
@@ -109,6 +110,8 @@ class IPyClient(collections.UserDict):
         # timer used to check data received, if no answer in self._timeout seconds, close connection
         self._timer = None
         self._timeout = 15
+        # this is populated with the running loop once it is available
+        self.loop = None
 
     def __setitem__(self, device):
         "Devices are added by being learnt from the driver, they cannot be manually added"
@@ -397,6 +400,7 @@ class IPyClient(collections.UserDict):
 
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
+        self.loop = asyncio.get_running_loop()
         t1 = asyncio.create_task(self._comms())        # Create a connection to an INDI port, and parse data
         t2 = asyncio.create_task(self.control())       # task to operate client algorithms, and transmit updates
         t3 = asyncio.create_task(self._rxhandler())    # task to handle incoming received data

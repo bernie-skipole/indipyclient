@@ -46,11 +46,11 @@ class SwitchMember(PropertyMember):
         if self._membervalue != newvalue:
             self._membervalue = newvalue
 
-    def oneswitch(self):
-        """Returns xml of a oneSwitch"""
+    def oneswitch(self, newvalue):
+        """Returns xml of a oneSwitch with the new value to send"""
         xmldata = ET.Element('oneSwitch')
         xmldata.set("name", self.name)
-        xmldata.text = self._membervalue
+        xmldata.text = newvalue
         return xmldata
 
 
@@ -71,13 +71,6 @@ class LightMember(PropertyMember):
         if self._membervalue != newvalue:
             self._membervalue = newvalue
 
-    def onelight(self):
-        """Returns xml of a oneLight"""
-        xmldata = ET.Element('oneLight')
-        xmldata.set("name", self.name)
-        xmldata.text = self._membervalue
-        return xmldata
-
 
 class TextMember(PropertyMember):
     """Contains a text string"""
@@ -95,11 +88,11 @@ class TextMember(PropertyMember):
         if self._membervalue != value:
             self._membervalue = value
 
-    def onetext(self):
+    def onetext(self, newvalue):
         """Returns xml of a oneText"""
         xmldata = ET.Element('oneText')
         xmldata.set("name", self.name)
-        xmldata.text = self.membervalue
+        xmldata.text = newvalue
         return xmldata
 
 
@@ -257,11 +250,11 @@ class NumberMember(PropertyMember):
         return number
 
 
-    def onenumber(self):
+    def onenumber(self, newvalue):
         """Returns xml of a oneNumber"""
         xmldata = ET.Element('oneNumber')
         xmldata.set("name", self.name)
-        xmldata.text = self._membervalue
+        xmldata.text = newvalue
         return xmldata
 
 

@@ -23,11 +23,9 @@ class PropertyVector(collections.UserDict):
         self.group = group
         self.state = state
         # if self.enable is False, this property ignores incoming traffic
-        # and (apart from delProperty) does not transmit anything
         self.enable = True
-        # the device places data in this dataque
-        # for the vector to act upon
-        self.dataque = asyncio.Queue(4)
+
+
 
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
@@ -131,30 +129,44 @@ class SwitchVector(PropertyVector):
         xmldata.set("name", self.name)
         # note - limit timestamp characters to :21 to avoid long fractions of a second
         xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
-        # set member values
+        # set member values to send
+        sendvalues = {}
         for membername, value in members.items():
+            # check this membername exists
             if membername in self:
-                self[membername] = value
+                sendvalues[membername] = value
         # for rule 'OneOfMany' the standard indicates 'Off' should precede 'On'
         # so make all 'On' values last
-        Offswitches = (switch for switch in self.data.values() if switch.membervalue == 'Off' and switch.name in members)
-        Onswitches = (switch for switch in self.data.values() if switch.membervalue == 'On' and switch.name in members)
-        for switch in Offswitches:
-            xmldata.append(switch.oneswitch())
-        for switch in Onswitches:
-            xmldata.append(switch.oneswitch())
+        Offswitches = []
+        Onswitches = []
+        for mname, value in sendvalues.items():
+            if value == 'Off':
+                # create list of (memberswitch, new value) tuples
+                Offswitches.append( ( self.data[mname], value ) )
+            elif value == 'On':
+               Onswitches.append( ( self.data[mname], value ) )
+        for switch,value in Offswitches:
+            xmldata.append(switch.oneswitch(value))
+        for switch, value in Onswitches:
+            xmldata.append(switch.oneswitch(value))
         return xmldata
 
 
     async def send_newSwitchVector(self, timestamp=None, members={}):
         """Transmits the vector (newSwitchVector) and the members given in the members
            dictionary which consists of member names:values to be sent.
-           This method will set these values into the vector members
-           transmit the xml, and change the vector state to busy."""
+           This method will transmit the xml, and change the vector state to busy."""
         xmldata = self._newSwitchVector(timestamp, members)
         if xmldata is None:
             return
         await self._client.send(xmldata)
+
+
+    def syncsend_newSwitchVector(self, timestamp=None, members={}):
+        "Synchronous version of send_newSwitchVector, typically used from another thread"
+        sendcoro = self.send_newSwitchVector(self, timestamp=None, members={})
+        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
+        future.result()
 
 
 
@@ -246,24 +258,29 @@ class TextVector(PropertyVector):
         xmldata.set("name", self.name)
         # note - limit timestamp characters to :21 to avoid long fractions of a second
         xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
-        # set member values
-        for membername, value in members.items():
-            if membername in self:
-                self[membername] = value
-        for textmember in self.data.values():
-            xmldata.append(textmember.onetext())
+        # set member values to send
+        for membername, textmember in self.data.items():
+            if membername in members:
+                xmldata.append(textmember.onetext(members[membername]))
+            else:
+                xmldata.append(textmember.onetext(textmember.membervalue))
         return xmldata
 
 
     async def send_newTextVector(self, timestamp=None, members={}):
         """Transmits the vector (newTextVector) together with all text members.
            (The spec requires text vectors to be sent with all members)
-           This method will change any members to the values given in the members dictionary
-           and then transmit the vector and change the vector state to busy."""
+           This method will transmit the vector and change the vector state to busy."""
         xmldata = self._newTextVector(timestamp, members)
         if xmldata is None:
             return
         await self._client.send(xmldata)
+
+    def syncsend_newTextVector(self, timestamp=None, members={}):
+        "Synchronous version of send_newTextVector, typically used from another thread"
+        sendcoro = self.send_newTextVector(self, timestamp=None, members={})
+        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
+        future.result()
 
 
 
@@ -333,24 +350,29 @@ class NumberVector(PropertyVector):
         xmldata.set("name", self.name)
         # note - limit timestamp characters to :21 to avoid long fractions of a second
         xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
-        # set member values
-        for membername, value in members.items():
-            if membername in self:
-                self[membername] = value
-        for numbermember in self.data.values():
-            xmldata.append(numbermember.onenumber())
+        # set member values to send
+        for membername, numbermember in self.data.items():
+            if membername in members:
+                xmldata.append(numbermember.onenumber(members[membername]))
+            else:
+                xmldata.append(numbermember.onenumber(numbermember.membervalue))
         return xmldata
 
-
     async def send_newNumberVector(self, timestamp=None, members={}):
-        """Transmits the vector (newNumberVector) together with all number members.
+        """Transmits the vector (newNumberVector) with new number members
+           togther with any unchanged numbers.
            (The spec requires number vectors to be sent with all members)
-           This method will change any members to the values given in the members dictionary
-           and then transmit the vector and change the vector state to busy."""
+           This method will transmit the vector and change the vector state to busy."""
         xmldata = self._newNumberVector(timestamp, members)
         if xmldata is None:
             return
         await self._client.send(xmldata)
+
+    def syncsend_newNumberVector(self, timestamp=None, members={}):
+        "Synchronous version of send_newNumberVector, typically used from another thread"
+        sendcoro = self.send_newNumberVector(self, timestamp=None, members={})
+        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
+        future.result()
 
 
 
