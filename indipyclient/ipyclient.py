@@ -370,6 +370,13 @@ class IPyClient(collections.UserDict):
                 xmldata.set("name", vectorname)
             await self.send(xmldata)
 
+    def syncsend_getProperties(self, devicename=None, vectorname=None):
+        "Synchronous version of send_getProperties, typically used from another thread"
+        sendcoro = self.send_getProperties(devicename, vectorname)
+        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
+        future.result()
+
+
     async def send_enableBLOB(self, value, devicename, vectorname=None):
         """Sends an enableBLOB instruction."""
         if self.connected:
@@ -384,6 +391,13 @@ class IPyClient(collections.UserDict):
                 xmldata.set("name", vectorname)
             xmldata.text = value
             await self.send(xmldata)
+
+    def syncsend_enableBLOB(self, value, devicename, vectorname=None)
+        "Synchronous version of send_enableBLOB, typically used from another thread"
+        sendcoro = self.send_enableBLOB(value, devicename, vectorname)
+        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
+        future.result()
+
 
     async def rxevent(self, event):
         """Override this if this client is operating a script to act on received data.

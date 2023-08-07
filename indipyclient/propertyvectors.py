@@ -164,7 +164,7 @@ class SwitchVector(PropertyVector):
 
     def syncsend_newSwitchVector(self, timestamp=None, members={}):
         "Synchronous version of send_newSwitchVector, typically used from another thread"
-        sendcoro = self.send_newSwitchVector(self, timestamp=None, members={})
+        sendcoro = self.send_newSwitchVector(timestamp, members)
         future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
         future.result()
 
@@ -278,7 +278,7 @@ class TextVector(PropertyVector):
 
     def syncsend_newTextVector(self, timestamp=None, members={}):
         "Synchronous version of send_newTextVector, typically used from another thread"
-        sendcoro = self.send_newTextVector(self, timestamp=None, members={})
+        sendcoro = self.send_newTextVector(timestamp, members)
         future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
         future.result()
 
@@ -370,7 +370,7 @@ class NumberVector(PropertyVector):
 
     def syncsend_newNumberVector(self, timestamp=None, members={}):
         "Synchronous version of send_newNumberVector, typically used from another thread"
-        sendcoro = self.send_newNumberVector(self, timestamp=None, members={})
+        sendcoro = self.send_newNumberVector(timestamp, members)
         future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
         future.result()
 
