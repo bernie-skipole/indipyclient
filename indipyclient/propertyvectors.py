@@ -114,11 +114,8 @@ class SwitchVector(PropertyVector):
         for membername, membervalue in event.items():
             self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
 
-    async def send_newSwitchVector(self, timestamp=None, members={}):
-        """Transmits the vector (newSwitchVector) and the members given in the members
-           dictionary which consists of member names:values to be sent.
-           This method will set these values into the vector members
-           transmit the xml, and change the vector state to busy."""
+    def _newSwitchVector(self, timestamp=None, members={}):
+        "Creates the xmldata for sending a newSwitchVector"
         if not self.device.enable:
             return
         if not self.enable:
@@ -126,7 +123,7 @@ class SwitchVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            reporterror("Aborting sending newSwitchVector: The send_newSwitchVector timestamp must be a datetime.datetime object")
+            reporterror("Aborting sending newSwitchVector: The newSwitchVector timestamp must be a datetime.datetime object")
             return
         self.state = 'Busy'
         xmldata = ET.Element('newSwitchVector')
@@ -146,7 +143,19 @@ class SwitchVector(PropertyVector):
             xmldata.append(switch.oneswitch())
         for switch in Onswitches:
             xmldata.append(switch.oneswitch())
+        return xmldata
+
+
+    async def send_newSwitchVector(self, timestamp=None, members={}):
+        """Transmits the vector (newSwitchVector) and the members given in the members
+           dictionary which consists of member names:values to be sent.
+           This method will set these values into the vector members
+           transmit the xml, and change the vector state to busy."""
+        xmldata = self._newSwitchVector(timestamp, members)
+        if xmldata is None:
+            return
         await self._client.send(xmldata)
+
 
 
 
@@ -219,11 +228,9 @@ class TextVector(PropertyVector):
         for membername, membervalue in event.items():
             self.data[membername] = TextMember(membername, event.memberlabels[membername], membervalue)
 
-    async def send_newTextVector(self, timestamp=None, members={}):
-        """Transmits the vector (newTextVector) together with all text members.
-           (The spec requires text vectors to be sent with all members)
-           This method will change any members to the values given in the members dictionary
-           and then transmit the vector and change the vector state to busy."""
+
+    def _newTextVector(self, timestamp=None, members={}):
+       "Creates the xmldata for sending a newTextVector"
         if not self.device.enable:
             return
         if not self.enable:
@@ -245,6 +252,17 @@ class TextVector(PropertyVector):
                 self[membername] = value
         for textmember in self.data.values():
             xmldata.append(textmember.onetext())
+        return xmldata
+
+
+    async def send_newTextVector(self, timestamp=None, members={}):
+        """Transmits the vector (newTextVector) together with all text members.
+           (The spec requires text vectors to be sent with all members)
+           This method will change any members to the values given in the members dictionary
+           and then transmit the vector and change the vector state to busy."""
+        xmldata = self._newTextVector(timestamp, members)
+        if xmldata is None:
+            return
         await self._client.send(xmldata)
 
 
@@ -297,11 +315,9 @@ class NumberVector(PropertyVector):
         for membername, membervalue in event.items():
             self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
 
-    async def send_newNumberVector(self, timestamp=None, members={}):
-        """Transmits the vector (newNumberVector) together with all number members.
-           (The spec requires number vectors to be sent with all members)
-           This method will change any members to the values given in the members dictionary
-           and then transmit the vector and change the vector state to busy."""
+
+    def _newNumberVector(self, timestamp=None, members={}):
+       "Creates the xmldata for sending a newNumberVector"
         if not self.device.enable:
             return
         if not self.enable:
@@ -323,6 +339,17 @@ class NumberVector(PropertyVector):
                 self[membername] = value
         for numbermember in self.data.values():
             xmldata.append(numbermember.onenumber())
+        return xmldata
+
+
+    async def send_newNumberVector(self, timestamp=None, members={}):
+        """Transmits the vector (newNumberVector) together with all number members.
+           (The spec requires number vectors to be sent with all members)
+           This method will change any members to the values given in the members dictionary
+           and then transmit the vector and change the vector state to busy."""
+        xmldata = self._newNumberVector(timestamp, members)
+        if xmldata is None:
+            return
         await self._client.send(xmldata)
 
 

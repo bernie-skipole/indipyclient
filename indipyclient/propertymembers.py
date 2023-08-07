@@ -11,12 +11,13 @@ from .error import ParseException
 class PropertyMember:
     "Parent class of SwitchMember etc"
 
-    def __init__(self, name, label=None):
+    def __init__(self, name, label=None, membervalue=None):
         self.name = name
         if label:
             self.label = label
         else:
             self.label = name
+        self._membervalue = membervalue
 
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
@@ -24,18 +25,18 @@ class PropertyMember:
             raise ParseException(f"Invalid value:{value}")
         return value
 
+    @property
+    def membervalue(self):
+        return self._membervalue
+
 
 class SwitchMember(PropertyMember):
     """A SwitchMember can only have one of 'On' or 'Off' values"""
 
     def __init__(self, name, label=None, membervalue="Off"):
-        super().__init__(name, label)
-        # membervalue should be either 'Off' or 'On'
-        self._membervalue = membervalue
-
-    @property
-    def membervalue(self):
-        return self._membervalue
+        super().__init__(name, label, membervalue)
+        if membervalue not in ('On', 'Off'):
+            raise ParseException(f"Invalid switch value {membervalue}, should be either On or Off")
 
     @membervalue.setter
     def membervalue(self, value):
@@ -57,12 +58,10 @@ class LightMember(PropertyMember):
     """A LightMember can only have one of 'Idle', 'Ok', 'Busy' or 'Alert' values"""
 
     def __init__(self, name, label=None, membervalue="Idle"):
-        super().__init__(name, label)
-        self._membervalue = membervalue
+        super().__init__(name, label, membervalue)
+        if membervalue not in ('Idle','Ok','Busy','Alert'):
+            raise ParseException(f"Invalid light value {membervalue}, should be one of 'Idle','Ok','Busy','Alert'")
 
-    @property
-    def membervalue(self):
-        return self._membervalue
 
     @membervalue.setter
     def membervalue(self, value):
@@ -84,15 +83,15 @@ class TextMember(PropertyMember):
     """Contains a text string"""
 
     def __init__(self, name, label=None, membervalue=""):
-        super().__init__(name, label)
-        self._membervalue = membervalue
+        super().__init__(name, label, membervalue)
+        if not isinstance(membervalue, str):
+            raise ParseException("The text value must be given as a string")
 
-    @property
-    def membervalue(self):
-        return self._membervalue
 
     @membervalue.setter
     def membervalue(self, value):
+        if not isinstance(value, str):
+            raise ParseException("The text value must be given as a string")
         if self._membervalue != value:
             self._membervalue = value
 
@@ -124,7 +123,7 @@ class NumberMember(PropertyMember):
     """
 
     def __init__(self, name, label=None, format='', min='0', max='0', step='0', membervalue='0'):
-        super().__init__(name, label)
+        super().__init__(name, label, membervalue)
         self.format = format
         if not isinstance(min, str):
             raise ParseException("minimum value must be given as a string")
@@ -137,12 +136,7 @@ class NumberMember(PropertyMember):
         self.step = step
         if not isinstance(membervalue, str):
             raise ParseException("number value must be given as a string")
-        self._membervalue = membervalue
 
-
-    @property
-    def membervalue(self):
-        return self._membervalue
 
     @membervalue.setter
     def membervalue(self, value):
@@ -281,18 +275,12 @@ class BLOBMember(PropertyMember):
     """
 
     def __init__(self, name, label=None, blobsize=0, blobformat='', membervalue=None):
-        super().__init__(name, label)
+        super().__init__(name, label, membervalue)
         if not isinstance(blobsize, int):
             raise ParseException("blobsize must be given as an integer")
         # membervalue can be a byte string, path, string path or file like object
-        self._membervalue = membervalue
         self.blobsize = blobsize
         self.blobformat = blobformat
-
-
-    @property
-    def membervalue(self):
-        return self._membervalue
 
 
     @membervalue.setter

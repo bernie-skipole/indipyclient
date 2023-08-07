@@ -110,6 +110,10 @@ class IPyClient(collections.UserDict):
         self._timer = None
         self._timeout = 15
 
+    def __setitem__(self, device):
+        "Devices are added by being learnt from the driver, they cannot be manually added"
+        raise KeyError
+
 
     async def _comms(self):
         "Create a connection to an INDI port"
@@ -336,7 +340,7 @@ class IPyClient(collections.UserDict):
                     newdevice = _Device(devicename, self)
                     event = newdevice.rxvector(root)
                     # no error has occurred, so add this device to self.data
-                    self[devicename] = newdevice
+                    self.data[devicename] = newdevice
                 else:
                     # device not known, not a def, so ignore it
                     self.readerque.task_done()
@@ -426,6 +430,10 @@ class _Device(collections.UserDict):
 
         # this is a dictionary of property name to propertyvector this device owns
         self.data = {}
+
+    def __setitem__(self, propertyname):
+        "Properties are added by being learnt from the driver, they cannot be manually added"
+        raise KeyError
 
 
     def rxvector(self, root):
