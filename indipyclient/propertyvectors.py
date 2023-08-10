@@ -162,13 +162,6 @@ class SwitchVector(PropertyVector):
         await self._client.send(xmldata)
 
 
-    def syncsend_newSwitchVector(self, timestamp=None, members={}):
-        "Synchronous version of send_newSwitchVector, typically used from another thread"
-        sendcoro = self.send_newSwitchVector(timestamp, members)
-        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
-        future.result()
-
-
 
 
 class LightVector(PropertyVector):
@@ -276,12 +269,6 @@ class TextVector(PropertyVector):
             return
         await self._client.send(xmldata)
 
-    def syncsend_newTextVector(self, timestamp=None, members={}):
-        "Synchronous version of send_newTextVector, typically used from another thread"
-        sendcoro = self.send_newTextVector(timestamp, members)
-        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
-        future.result()
-
 
 
 class NumberVector(PropertyVector):
@@ -367,12 +354,6 @@ class NumberVector(PropertyVector):
         if xmldata is None:
             return
         await self._client.send(xmldata)
-
-    def syncsend_newNumberVector(self, timestamp=None, members={}):
-        "Synchronous version of send_newNumberVector, typically used from another thread"
-        sendcoro = self.send_newNumberVector(timestamp, members)
-        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
-        future.result()
 
 
 

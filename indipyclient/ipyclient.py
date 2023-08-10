@@ -8,7 +8,7 @@ from datetime import datetime
 
 import xml.etree.ElementTree as ET
 
-from . import events
+from . import events, sync
 
 from .error import ParseException, ConnectionTimeOut, reporterror
 
@@ -113,6 +113,11 @@ class IPyClient(collections.UserDict):
         # this is populated with the running loop once it is available
         self.loop = None
 
+        self.synclock = threading.Event()
+
+        self.sync = sync.SyncMethods(self)
+
+
     def __setitem__(self, device):
         "Devices are added by being learnt from the driver, they cannot be manually added"
         raise KeyError
@@ -165,11 +170,15 @@ class IPyClient(collections.UserDict):
             await asyncio.sleep(5)
 
 
-
     async def send(self, xmldata):
         "Transmits xmldata, this is an internal method, not normally called by a user."
         if self.connected:
             await self.writerque.put(xmldata)
+
+
+    async def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
+        "Transmits members of the vector with the given vectorname, devicename"
+        ########## new exception
 
 
     async def _check_alive(self, writer):
@@ -370,13 +379,6 @@ class IPyClient(collections.UserDict):
                 xmldata.set("name", vectorname)
             await self.send(xmldata)
 
-    def syncsend_getProperties(self, devicename=None, vectorname=None):
-        "Synchronous version of send_getProperties, typically used from another thread"
-        sendcoro = self.send_getProperties(devicename, vectorname)
-        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
-        future.result()
-
-
     async def send_enableBLOB(self, value, devicename, vectorname=None):
         """Sends an enableBLOB instruction."""
         if self.connected:
@@ -391,13 +393,6 @@ class IPyClient(collections.UserDict):
                 xmldata.set("name", vectorname)
             xmldata.text = value
             await self.send(xmldata)
-
-    def syncsend_enableBLOB(self, value, devicename, vectorname=None)
-        "Synchronous version of send_enableBLOB, typically used from another thread"
-        sendcoro = self.send_enableBLOB(value, devicename, vectorname)
-        future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)
-        future.result()
-
 
     async def rxevent(self, event):
         """Override this if this client is operating a script to act on received data.
@@ -426,6 +421,7 @@ class IPyClient(collections.UserDict):
             t1.cancel()
             t2.cancel()
             t3.cancel()
+
 
 
 
@@ -483,3 +479,8 @@ class _Device(collections.UserDict):
             return events.setBLOBVector(root, self, self._client)
         else:
             raise ParseException
+
+    def _snapshot(self):
+        device = sync.Device(self.devicename)
+        for vectorname, vector in self.data:
+            device[vectorname] = vector._snapshot()
