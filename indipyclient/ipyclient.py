@@ -445,7 +445,7 @@ class _Device(collections.UserDict):
         # this is a dictionary of property name to propertyvector this device owns
         self.data = {}
 
-    def __setitem__(self, propertyname):
+    def __setitem__(self, propertyname, propertyvector):
         "Properties are added by being learnt from the driver, they cannot be manually added"
         raise KeyError
 
@@ -481,6 +481,9 @@ class _Device(collections.UserDict):
             raise ParseException
 
     def _snapshot(self):
-        device = sync.Device(self.devicename)
+        snapdevice = sync.Device(self.devicename)
         for vectorname, vector in self.data:
-            device[vectorname] = vector._snapshot()
+            if not vector.enable:
+                continue
+            snapdevice[vectorname] = vector._snapshot()
+        return snapdevice

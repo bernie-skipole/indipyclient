@@ -57,3 +57,20 @@ class Device(collections.UserDict):
 
         # this is a dictionary of property name to propertyvector this device owns
         self.data = {}
+
+
+class Vector(collections.UserDict):
+
+    def __init__(self, vectortype, name, label, group, state):
+        super().__init__()
+
+        self.vectortype = vectortype
+        self.name = name
+        self.label = label
+        self.group = group
+        self.state = state
+        self.rule = None
+        self.perm = None
+
+        # this is a dictionary of member name to member this vector owns
+        self.data = {}

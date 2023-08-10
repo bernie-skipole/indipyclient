@@ -144,8 +144,6 @@ class defSwitchVector(defVector):
             properties[self.vectorname] = self.vector
 
 
-
-
 class defTextVector(defVector):
 
     """The remote driver has sent this to define a text vector property, it has further

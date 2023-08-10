@@ -7,6 +7,8 @@ import xml.etree.ElementTree as ET
 
 from .propertymembers import SwitchMember, LightMember, TextMember, NumberMember, BLOBMember
 
+from . import sync
+
 from .error import ParseException, reporterror
 
 
@@ -26,7 +28,6 @@ class PropertyVector(collections.UserDict):
         self.enable = True
 
 
-
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
         if value not in allowed:
@@ -41,8 +42,10 @@ class PropertyVector(collections.UserDict):
     def state(self, value):
         self._state = self.checkvalue(value, ['Idle','Ok','Busy','Alert'])
 
+
     def __setitem__(self, membername, value):
-        self.data[membername].membervalue = value
+        "Members are added by being learnt from the driver, they cannot be manually added"
+        raise KeyError
 
     def __getitem__(self, membername):
         return self.data[membername].membervalue
@@ -54,6 +57,14 @@ class PropertyVector(collections.UserDict):
         for membername, membervalue in event.items():
             member = self.data[membername]
             member.membervalue = membervalue
+
+
+    def _snapshot(self):
+        snapvector = sync.Vector(self.__class__.__name__, self.name, self.label, self.group, self.state)
+        for membername, member in self.data:
+            snapvector[membername] = member._snapshot()
+        return snapvector
+
 
 
 
@@ -161,7 +172,11 @@ class SwitchVector(PropertyVector):
             return
         await self._client.send(xmldata)
 
-
+    def _snapshot(self):
+        snapvector = PropertyVector._snapshot(self)
+        snapvector.rule = self.rule
+        snapvector.perm = self.perm
+        return snapvector
 
 
 class LightVector(PropertyVector):
