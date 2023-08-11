@@ -211,6 +211,12 @@ class LightVector(PropertyVector):
         for membername, membervalue in event.items():
             self.data[membername] = LightMember(membername, event.memberlabels[membername], membervalue)
 
+    def _snapshot(self):
+        snapvector = PropertyVector._snapshot(self)
+        snapvector.rule = None
+        snapvector.perm = "ro"
+        return snapvector
+
 
 
 class TextVector(PropertyVector):
@@ -283,6 +289,12 @@ class TextVector(PropertyVector):
         if xmldata is None:
             return
         await self._client.send(xmldata)
+
+    def _snapshot(self):
+        snapvector = PropertyVector._snapshot(self)
+        snapvector.rule = None
+        snapvector.perm = self.perm
+        return snapvector
 
 
 
@@ -370,6 +382,13 @@ class NumberVector(PropertyVector):
             return
         await self._client.send(xmldata)
 
+    def _snapshot(self):
+        snapvector = PropertyVector._snapshot(self)
+        snapvector.rule = None
+        snapvector.perm = self.perm
+        return snapvector
+
+
 
 
 class BLOBVector(PropertyVector):
@@ -419,3 +438,9 @@ class BLOBVector(PropertyVector):
         # create  members
         for membername, label in event.memberlabels.items():
             self.data[membername] = BLOBMember(membername, label)
+
+    def _snapshot(self):
+        snapvector = PropertyVector._snapshot(self)
+        snapvector.rule = None
+        snapvector.perm = self.perm
+        return snapvector
