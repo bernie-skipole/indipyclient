@@ -8,7 +8,7 @@ from datetime import datetime
 
 import xml.etree.ElementTree as ET
 
-from . import events, sync
+from . import events, snap
 
 from .error import ParseException, ConnectionTimeOut, reporterror
 
@@ -113,7 +113,7 @@ class IPyClient(collections.UserDict):
         # this is populated with the running loop once it is available
         self.loop = None
 
-        self.sync = sync.SyncMethods(self)
+        self.snap = snap.Snap(self)
 
 
     def __setitem__(self, device):
@@ -175,8 +175,26 @@ class IPyClient(collections.UserDict):
 
 
     async def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
-        "Transmits members of the vector with the given vectorname, devicename"
-        ########## new exception
+        "Transmits the vector and members with the given vectorname, devicename"
+        if devicename not in self.data:
+            reporterror(f"Failed to send vector: Device {devicename} not recognised")
+        device = self.data["devicename"]
+        if vectorname not in device:
+            reporterror(f"Failed to send vector: Vector {vectorname} not recognised")
+        try:
+            vector = device[vectorname]
+            if vector.__class__.__name__ == "SwitchVector":
+                await vector.send_newSwitchVector(timestamp, members)
+            elif vector.__class__.__name__ == "TextVector":
+                await vector.send_newTextVector(timestamp, members)
+            elif vector.__class__.__name__ == "NumberVector":
+                await vector.send_newNumberVector(timestamp, members)
+            elif vector.__class__.__name__ == "BLOBVector":
+                await vector.send_newBLOBVector(timestamp, members)
+            else:
+                reporterror(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
+        except Exception:
+            reporterror(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
 
 
     async def _check_alive(self, writer):

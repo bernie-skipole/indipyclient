@@ -1,7 +1,7 @@
 
 import asyncio, threading
 
-class SyncMethods():
+class Snap():
     "An instance is created if synchronous operations are required"
 
     def __init__(self, client):
