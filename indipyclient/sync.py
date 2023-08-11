@@ -1,5 +1,5 @@
 
-
+import asyncio, threading
 
 class SyncMethods():
     "An instance is created if synchronous operations are required"
@@ -9,17 +9,14 @@ class SyncMethods():
 
     def snapshot(self):
         "Take snapshot of the devices"
-        # Block until it is safe to get hold of client.data
-        self._client.synclock.wait()
-        self._client.synclock.clear()
-        # other threads cannot change the client.data dictionary
-        snap = {}
-        if self._client.data:
-            for devicename, device in self._client.data.items():
-                if not device.enable:
-                    continue
-                snap[devicename] = device._snapshot()
-        self._client.synclock.set()
+        with threading.Lock():
+            # other threads cannot change the client.data dictionary
+            snap = {}
+            if self._client.data:
+                for devicename, device in self._client.data.items():
+                    if not device.enable:
+                        continue
+                    snap[devicename] = device._snapshot()
         # other threads can now access client.data
         # return the snapshot
         return snap

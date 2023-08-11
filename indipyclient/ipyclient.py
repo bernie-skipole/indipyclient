@@ -113,8 +113,6 @@ class IPyClient(collections.UserDict):
         # this is populated with the running loop once it is available
         self.loop = None
 
-        self.synclock = threading.Event()
-
         self.sync = sync.SyncMethods(self)
 
 
@@ -332,38 +330,41 @@ class IPyClient(collections.UserDict):
             await asyncio.sleep(0)
             root = await self.readerque.get()
             devicename = root.get("device")
-            try:
-                if devicename is None:
-                    if root.tag == "message":
-                        # state wide message
-                        self.messages.appendleft( root.get("timestamp", datetime.utcnow().isoformat()) )
-                        # create event
-                        event = events.message(root)
+            # block any other thread from accessing data until update is done
+            with threading.Lock():
+                try:
+                    if devicename is None:
+                        if root.tag == "message":
+                            # state wide message
+                            self.messages.appendleft( root.get("timestamp", datetime.utcnow().isoformat()) )
+                            # create event
+                            event = events.message(root)
+                        else:
+                            # if no devicename and not message, do nothing
+                            self.readerque.task_done()
+                            continue
+                    elif devicename in self:
+                        # device is known about
+                        device = self[devicename]
+                        event = device.rxvector(root)
+                    elif root.tag in DEFTAGS:
+                        # device not known, but a def is received
+                        newdevice = _Device(devicename, self)
+                        event = newdevice.rxvector(root)
+                        # no error has occurred, so add this device to self.data
+                        self.data[devicename] = newdevice
                     else:
-                        # if no devicename and not message, do nothing
+                        # device not known, not a def, so ignore it
                         self.readerque.task_done()
                         continue
-                elif devicename in self:
-                    # device is known about
-                    device = self[devicename]
-                    event = device.rxvector(root)
-                elif root.tag in DEFTAGS:
-                    # device not known, but a def is received
-                    newdevice = _Device(devicename, self)
-                    event = newdevice.rxvector(root)
-                    # no error has occurred, so add this device to self.data
-                    self.data[devicename] = newdevice
-                else:
-                    # device not known, not a def, so ignore it
-                    self.readerque.task_done()
-                    continue
-                # give a script the chance to handle the event
-                await self.rxevent(event)
-            except ParseException as pe:
-                # if an EventException is raised, it is because received data is malformed
-                # so print to stderr and continue
-                reporterror(str(pe))
-            self.readerque.task_done()
+                except ParseException as pe:
+                    # if an EventException is raised, it is because received data is malformed
+                    # so print to stderr and continue
+                    reporterror(str(pe))
+                self.readerque.task_done()
+            # and call the user event handling function
+            await self.rxevent(event)
+
 
 
     async def send_getProperties(self, devicename=None, vectorname=None):
