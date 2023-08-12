@@ -256,7 +256,7 @@ class TextVector(PropertyVector):
 
 
     def _newTextVector(self, timestamp=None, members={}):
-       "Creates the xmldata for sending a newTextVector"
+        "Creates the xmldata for sending a newTextVector"
         if not self.device.enable:
             return
         if not self.enable:
@@ -348,7 +348,7 @@ class NumberVector(PropertyVector):
 
 
     def _newNumberVector(self, timestamp=None, members={}):
-       "Creates the xmldata for sending a newNumberVector"
+        "Creates the xmldata for sending a newNumberVector"
         if not self.device.enable:
             return
         if not self.enable:

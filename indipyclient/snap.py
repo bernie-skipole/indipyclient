@@ -1,5 +1,5 @@
 
-import asyncio, threading, math
+import asyncio, threading, math, collections
 
 class Snap():
     "An instance is created if synchronous operations are required"
@@ -45,7 +45,7 @@ class Snap():
         future.result()
 
 
-    def send_enableBLOB(self, value, devicename, vectorname=None)
+    def send_enableBLOB(self, value, devicename, vectorname=None):
         "Synchronous version of send_enableBLOB"
         sendcoro = self._client.send_enableBLOB(value, devicename, vectorname)
         future = asyncio.run_coroutine_threadsafe(sendcoro, self._client.loop)

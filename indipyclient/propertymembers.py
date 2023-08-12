@@ -27,16 +27,10 @@ class PropertyMember:
             raise ParseException(f"Invalid value:{value}")
         return value
 
-    @property
-    def membervalue(self):
-        return self._membervalue
-
 
     def _snapshot(self):
         snapmember = snap.Member(self.name, self.label, self._membervalue)
         return snapmember
-
-
 
 
 class SwitchMember(PropertyMember):
@@ -46,6 +40,10 @@ class SwitchMember(PropertyMember):
         super().__init__(name, label, membervalue)
         if membervalue not in ('On', 'Off'):
             raise ParseException(f"Invalid switch value {membervalue}, should be either On or Off")
+
+    @property
+    def membervalue(self):
+        return self._membervalue
 
     @membervalue.setter
     def membervalue(self, value):
@@ -71,6 +69,9 @@ class LightMember(PropertyMember):
         if membervalue not in ('Idle','Ok','Busy','Alert'):
             raise ParseException(f"Invalid light value {membervalue}, should be one of 'Idle','Ok','Busy','Alert'")
 
+    @property
+    def membervalue(self):
+        return self._membervalue
 
     @membervalue.setter
     def membervalue(self, value):
@@ -89,6 +90,9 @@ class TextMember(PropertyMember):
         if not isinstance(membervalue, str):
             raise ParseException("The text value must be given as a string")
 
+    @property
+    def membervalue(self):
+        return self._membervalue
 
     @membervalue.setter
     def membervalue(self, value):
@@ -139,6 +143,9 @@ class NumberMember(PropertyMember):
         if not isinstance(membervalue, str):
             raise ParseException("number value must be given as a string")
 
+    @property
+    def membervalue(self):
+        return self._membervalue
 
     @membervalue.setter
     def membervalue(self, value):
@@ -289,6 +296,9 @@ class BLOBMember(PropertyMember):
         self.blobsize = blobsize
         self.blobformat = blobformat
 
+    @property
+    def membervalue(self):
+        return self._membervalue
 
     @membervalue.setter
     def membervalue(self, value):
