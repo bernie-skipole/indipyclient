@@ -1,5 +1,5 @@
 
-import asyncio, threading
+import asyncio, threading, math
 
 class Snap():
     "An instance is created if synchronous operations are required"
@@ -25,6 +25,14 @@ class Snap():
     def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
         "Synchronous version to send a new Vector"
         sendcoro = self._client.send_newVector(devicename, vectorname, timestamp, members)
+        future = asyncio.run_coroutine_threadsafe(sendcoro,
+                                                  self._client.loop)
+        future.result()
+
+
+    def send_snapVector(self, vector, timestamp=None):
+        "Synchronous version to send a snap Vector"
+        sendcoro = self._client.send_snapVector(vector, timestamp=None)
         future = asyncio.run_coroutine_threadsafe(sendcoro,
                                                   self._client.loop)
         future.result()
@@ -58,10 +66,11 @@ class Device(collections.UserDict):
 
 class Vector(collections.UserDict):
 
-    def __init__(self, vectortype, name, label, group, state):
+    def __init__(self, vectortype, devicename, name, label, group, state):
         super().__init__()
 
         self.vectortype = vectortype
+        self.devicename = devicename
         self.name = name
         self.label = label
         self.group = group
@@ -71,3 +80,134 @@ class Vector(collections.UserDict):
 
         # this is a dictionary of member name to member this vector owns
         self.data = {}
+
+
+class Member():
+
+    def __init__(self, name, label=None, membervalue=None):
+        self.name = name
+        if label:
+            self.label = label
+        else:
+            self.label = name
+        self.membervalue = membervalue
+
+
+
+class NumberMember(Member):
+
+    def __init__(self, name, label=None, format='', min='0', max='0', step='0', membervalue='0'):
+        super().__init__(name, label, membervalue)
+        self.format = format
+        self.min = min
+        self.max = max
+        self.step = step
+
+
+    def getfloatvalue(self):
+        """The INDI spec allows a number of different number formats, this returns a float.
+           If an error occurs while parsing the number, a TypeError exception is raised."""
+        value = self.membervalue
+        try:
+            if isinstance(value, float):
+                return value
+            if isinstance(value, int):
+                return float(value)
+            if not isinstance(value, str):
+                raise TypeError
+            # negative is True, if the value is negative
+            value = value.strip()
+            negative = value.startswith("-")
+            if negative:
+                value = value.lstrip("-")
+            # Is the number provided in sexagesimal form?
+            if value == "":
+                parts = [0, 0, 0]
+            elif " " in value:
+                parts = value.split(" ")
+            elif ":" in value:
+                parts = value.split(":")
+            elif ";" in value:
+                parts = value.split(";")
+            else:
+                # not sexagesimal
+                parts = [value, "0", "0"]
+            # Any missing parts should have zero
+            if len(parts) == 2:
+                # assume seconds are missing, set to zero
+                parts.append("0")
+            assert len(parts) == 3
+            number_strings = list(x if x else "0" for x in parts)
+            # convert strings to integers or floats
+            number_list = []
+            for part in number_strings:
+                try:
+                    num = int(part)
+                except ValueError:
+                    num = float(part)
+                number_list.append(num)
+            floatvalue = number_list[0] + (number_list[1]/60) + (number_list[2]/360)
+            if negative:
+                floatvalue = -1 * floatvalue
+        except:
+            raise TypeError("Unable to parse the value")
+        return floatvalue
+
+
+    def getformattedvalue(self):
+        """This returns a formatted string"""
+        value = self.getfloatvalue()
+        if (not self.format.startswith("%")) or (not self.format.endswith("m")):
+            return self.format % value
+        # sexagesimal format
+        if value<0:
+            negative = True
+            value = abs(value)
+        else:
+            negative = False
+        # number list will be degrees, minutes, seconds
+        number_list = [0,0,0]
+        if isinstance(value, int):
+            number_list[0] = value
+        else:
+            # get integer part and fraction part
+            fractdegrees, degrees = math.modf(value)
+            number_list[0] = int(degrees)
+            mins = 60*fractdegrees
+            fractmins, mins = math.modf(mins)
+            number_list[1] = int(mins)
+            number_list[2] = 60*fractmins
+
+        # so number list is a valid degrees, minutes, seconds
+        # degrees
+        if negative:
+            number = f"-{number_list[0]}:"
+        else:
+            number = f"{number_list[0]}:"
+        # format string is of the form  %<w>.<f>m
+        w,f = self.format.split(".")
+        w = w.lstrip("%")
+        f = f.rstrip("m")
+        if (f == "3") or (f == "5"):
+            # no seconds, so create minutes value
+            minutes = float(number_list[1]) + number_list[2]/60.0
+            if f == "5":
+                number += f"{minutes:04.1f}"
+            else:
+                number += f"{minutes:02.0f}"
+        else:
+            number += f"{number_list[1]:02d}:"
+            seconds = float(number_list[2])
+            if f == "6":
+                number += f"{seconds:02.0f}"
+            elif f == "8":
+                number += f"{seconds:04.1f}"
+            else:
+                number += f"{seconds:05.2f}"
+
+        # w is the overall length of the string, prepend with spaces to make the length up to w
+        w = int(w)
+        l = len(number)
+        if w>l:
+            number = " "*(w-l) + number
+        return number

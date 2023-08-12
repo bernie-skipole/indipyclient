@@ -196,6 +196,13 @@ class IPyClient(collections.UserDict):
         except Exception:
             reporterror(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
 
+    async def send_snapVector(self, vector, timestamp=None):
+        "transmits the vector"
+        # get members of the vector
+        members = { membername: member.membervalue for membername, member in vector.data.items() }
+        await self.send_newVector(vector.devicename, vector.name, timestamp, members)
+
+
 
     async def _check_alive(self, writer):
         while True:
@@ -500,7 +507,7 @@ class _Device(collections.UserDict):
             raise ParseException
 
     def _snapshot(self):
-        snapdevice = sync.Device(self.devicename)
+        snapdevice = snap.Device(self.devicename)
         for vectorname, vector in self.data:
             if not vector.enable:
                 continue

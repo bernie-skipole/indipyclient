@@ -3,7 +3,11 @@ from datetime import datetime
 
 import xml.etree.ElementTree as ET
 
+import math
+
 from .error import ParseException
+
+from . import snap
 
 
 class PropertyMember:
@@ -26,6 +30,13 @@ class PropertyMember:
     @property
     def membervalue(self):
         return self._membervalue
+
+
+    def _snapshot(self):
+        snapmember = snap.Member(self.name, self.label, self._membervalue)
+        return snapmember
+
+
 
 
 class SwitchMember(PropertyMember):
@@ -254,6 +265,11 @@ class NumberMember(PropertyMember):
         xmldata.set("name", self.name)
         xmldata.text = newvalue
         return xmldata
+
+    def _snapshot(self):
+        snapmember = snap.NumberMember(self.name, self.label, self.format, self.min, self.max, self.step, self._membervalue)
+        return snapmember
+
 
 
 class BLOBMember(PropertyMember):

@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 from .propertymembers import SwitchMember, LightMember, TextMember, NumberMember, BLOBMember
 
-from . import sync
+from . import snap
 
 from .error import ParseException, reporterror
 
@@ -60,7 +60,7 @@ class PropertyVector(collections.UserDict):
 
 
     def _snapshot(self):
-        snapvector = sync.Vector(self.__class__.__name__, self.name, self.label, self.group, self.state)
+        snapvector = snap.Vector(self.__class__.__name__, self.devicename, self.name, self.label, self.group, self.state)
         for membername, member in self.data:
             snapvector[membername] = member._snapshot()
         return snapvector
