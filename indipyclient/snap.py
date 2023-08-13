@@ -2,7 +2,8 @@
 import asyncio, threading, math, collections
 
 class Snap():
-    "An instance is created if synchronous operations are required"
+    """An instance is created and is available as client.snap, its methods
+       may be useful if synchronous operations are required"""
 
     def __init__(self, client):
         self._client = client
@@ -22,13 +23,18 @@ class Snap():
         return snap
 
 
-    def send_newVector(self, vector, timestamp=None, members={}):
-        "Synchronous version to send a new Vector"
-
+    def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
+        """Synchronous version to send a new Vector, note members is a membername to value dictionary,
+           It could also be a vector, which is itself a membername to value mapping"""
+        if devicename not in self._client:
+            reporterror(f"Failed to send vector: Device {devicename} not recognised")
+            return
+        device = self._client[devicename]
+        if vectorname not in device:
+            reporterror(f"Failed to send vector: Vector {vectorname} not recognised")
+            return
         try:
-            devicename = vector.devicename
-            device = self._client[devicename]
-            propertyvector = device[vector.name]
+            propertyvector = device[vectorname]
             if propertyvector.vectortype == "SwitchVector":
                 sendcoro = propertyvector.send_newSwitchVector(timestamp, members)
             elif propertyvector.vectortype == "TextVector":
@@ -38,13 +44,13 @@ class Snap():
             elif propertyvector.vectortype == "BLOBVector":
                 sendcoro = propertyvector.send_newBLOBVector(timestamp, members)
             else:
-                reporterror("Failed to send invalid vector")
+                reporterror(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
                 return
             future = asyncio.run_coroutine_threadsafe(sendcoro,
                                                   self._client.loop)
             future.result()
         except Exception:
-            reporterror("Failed to send vector")
+            reporterror(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
 
 
     def send_getProperties(self, devicename=None, vectorname=None):
