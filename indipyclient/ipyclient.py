@@ -174,36 +174,6 @@ class IPyClient(collections.UserDict):
             await self.writerque.put(xmldata)
 
 
-    async def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
-        "Transmits the vector and members with the given vectorname, devicename"
-        if devicename not in self.data:
-            reporterror(f"Failed to send vector: Device {devicename} not recognised")
-        device = self.data["devicename"]
-        if vectorname not in device:
-            reporterror(f"Failed to send vector: Vector {vectorname} not recognised")
-        try:
-            vector = device[vectorname]
-            if vector.__class__.__name__ == "SwitchVector":
-                await vector.send_newSwitchVector(timestamp, members)
-            elif vector.__class__.__name__ == "TextVector":
-                await vector.send_newTextVector(timestamp, members)
-            elif vector.__class__.__name__ == "NumberVector":
-                await vector.send_newNumberVector(timestamp, members)
-            elif vector.__class__.__name__ == "BLOBVector":
-                await vector.send_newBLOBVector(timestamp, members)
-            else:
-                reporterror(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
-        except Exception:
-            reporterror(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
-
-    async def send_snapVector(self, vector, timestamp=None):
-        "transmits the vector"
-        # get members of the vector
-        members = { membername: member.membervalue for membername, member in vector.data.items() }
-        await self.send_newVector(vector.devicename, vector.name, timestamp, members)
-
-
-
     async def _check_alive(self, writer):
         while True:
             await asyncio.sleep(0)

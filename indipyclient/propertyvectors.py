@@ -17,6 +17,7 @@ class PropertyVector(collections.UserDict):
 
     def __init__(self, name, label, group, state, device, client):
         super().__init__()
+        self.vectortype = self.__class__.__name__
         self._client = client
         self.device = device
         self.devicename = device.devicename
@@ -58,14 +59,16 @@ class PropertyVector(collections.UserDict):
             member = self.data[membername]
             member.membervalue = membervalue
 
+    def members(self):
+        "Returns a dictionary of member objects"
+        return self.data
+
 
     def _snapshot(self):
-        snapvector = snap.Vector(self.__class__.__name__, self.devicename, self.name, self.label, self.group, self.state)
+        snapvector = snap.Vector(self.vectortype, self.devicename, self.name, self.label, self.group, self.state)
         for membername, member in self.data:
-            snapvector[membername] = member._snapshot()
+            snapvector.data[membername] = member._snapshot()
         return snapvector
-
-
 
 
 class SwitchVector(PropertyVector):

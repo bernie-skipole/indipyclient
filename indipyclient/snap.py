@@ -22,20 +22,29 @@ class Snap():
         return snap
 
 
-    def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
+    def send_newVector(self, vector, timestamp=None, members={}):
         "Synchronous version to send a new Vector"
-        sendcoro = self._client.send_newVector(devicename, vectorname, timestamp, members)
-        future = asyncio.run_coroutine_threadsafe(sendcoro,
-                                                  self._client.loop)
-        future.result()
 
-
-    def send_snapVector(self, vector, timestamp=None):
-        "Synchronous version to send a snap Vector"
-        sendcoro = self._client.send_snapVector(vector, timestamp=None)
-        future = asyncio.run_coroutine_threadsafe(sendcoro,
+        try:
+            devicename = vector.devicename
+            device = self._client[devicename]
+            propertyvector = device[vector.name]
+            if propertyvector.vectortype == "SwitchVector":
+                sendcoro = propertyvector.send_newSwitchVector(timestamp, members)
+            elif propertyvector.vectortype == "TextVector":
+                sendcoro = propertyvector.send_newTextVector(timestamp, members)
+            elif propertyvector.vectortype == "NumberVector":
+                sendcoro = propertyvector.send_newNumberVector(timestamp, members)
+            elif propertyvector.vectortype == "BLOBVector":
+                sendcoro = propertyvector.send_newBLOBVector(timestamp, members)
+            else:
+                reporterror("Failed to send invalid vector")
+                return
+            future = asyncio.run_coroutine_threadsafe(sendcoro,
                                                   self._client.loop)
-        future.result()
+            future.result()
+        except Exception:
+            reporterror("Failed to send vector")
 
 
     def send_getProperties(self, devicename=None, vectorname=None):
@@ -80,6 +89,16 @@ class Vector(collections.UserDict):
 
         # this is a dictionary of member name to member this vector owns
         self.data = {}
+
+    def __setitem__(self, membername, value):
+        self.data[membername].membervalue = value
+
+    def __getitem__(self, membername):
+        return self.data[membername].membervalue
+
+    def members(self):
+        "Returns a dictionary of member objects"
+        return self.data
 
 
 class Member():
