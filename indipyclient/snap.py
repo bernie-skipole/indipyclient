@@ -81,7 +81,7 @@ class Device(collections.UserDict):
 
 class Vector(collections.UserDict):
 
-    def __init__(self, vectortype, devicename, name, label, group, state):
+    def __init__(self, vectortype, devicename, name, label, group, state, timestamp, message):
         super().__init__()
 
         self.vectortype = vectortype
@@ -90,8 +90,11 @@ class Vector(collections.UserDict):
         self.label = label
         self.group = group
         self.state = state
+        self.timestamp = timestamp
+        self.message = message
         self.rule = None
         self.perm = None
+        self.timeout = None
 
         # this is a dictionary of member name to member this vector owns
         self.data = {}

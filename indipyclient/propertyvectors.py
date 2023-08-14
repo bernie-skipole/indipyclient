@@ -55,6 +55,12 @@ class PropertyVector(collections.UserDict):
         "Updates this vector with new values after a set... vector has been received"
         if event.state:
             self.state = event.state
+        if event.timestamp:
+            self.timestamp = event.timestamp
+        if event.message:
+            self.message = event.message
+        if hasattr(event, 'timeout') and event.timeout:
+            self.timeout = event.timeout
         for membername, membervalue in event.items():
             member = self.data[membername]
             member.membervalue = membervalue
@@ -65,7 +71,15 @@ class PropertyVector(collections.UserDict):
 
 
     def _snapshot(self):
-        snapvector = snap.Vector(self.vectortype, self.devicename, self.name, self.label, self.group, self.state)
+        snapvector = snap.Vector(self.vectortype, self.devicename, self.name, self.label,
+                                 self.group, self.state, self.timestamp, self.message)
+
+        if hasattr(self, 'rule'):
+            snapvector.rule = self.rule
+        if hasattr(self, 'perm'):
+            snapvector.perm = self.perm
+        if hasattr(self, 'timeout'):
+            snapvector.timeout = self.timeout
         for membername, member in self.data:
             snapvector.data[membername] = member._snapshot()
         return snapvector
@@ -88,6 +102,9 @@ class SwitchVector(PropertyVector):
         super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
         self.perm = event.perm
         self.rule = event.rule
+        self.timestamp = event.timestamp
+        self.message = event.message
+        self.timeout = event.timeout
         # self.data is a dictionary of switch name : switchmember
         # create  members
         for membername, membervalue in event.items():
@@ -122,6 +139,12 @@ class SwitchVector(PropertyVector):
             self.rule = event.rule
         if event.state:
             self.state = event.state
+        if event.timestamp:
+            self.timestamp = event.timestamp
+        if event.message:
+            self.message = event.message
+        if event.timeout:
+            self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
@@ -175,12 +198,6 @@ class SwitchVector(PropertyVector):
             return
         await self._client.send(xmldata)
 
-    def _snapshot(self):
-        snapvector = PropertyVector._snapshot(self)
-        snapvector.rule = self.rule
-        snapvector.perm = self.perm
-        return snapvector
-
 
 class LightVector(PropertyVector):
 
@@ -192,6 +209,8 @@ class LightVector(PropertyVector):
 
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
+        self.timestamp = event.timestamp
+        self.message = event.message
         # self.data is a dictionary of light name : lightmember
         # create  members
         for membername, membervalue in event.items():
@@ -200,6 +219,10 @@ class LightVector(PropertyVector):
     @property
     def perm(self):
         return "ro"
+
+    @perm.setter
+    def perm(self, value):
+        pass
 
 
     def _defvector(self, event):
@@ -210,13 +233,16 @@ class LightVector(PropertyVector):
             self.group = event.group
         if event.state:
             self.state = event.state
+        if event.timestamp:
+            self.timestamp = event.timestamp
+        if event.message:
+            self.message = event.message
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = LightMember(membername, event.memberlabels[membername], membervalue)
 
     def _snapshot(self):
         snapvector = PropertyVector._snapshot(self)
-        snapvector.rule = None
         snapvector.perm = "ro"
         return snapvector
 
@@ -230,6 +256,9 @@ class TextVector(PropertyVector):
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
         self.perm = event.perm
+        self.timestamp = event.timestamp
+        self.message = event.message
+        self.timeout = event.timeout
         # self.data is a dictionary of text name : textmember
         # create  members
         for membername, membervalue in event.items():
@@ -253,6 +282,12 @@ class TextVector(PropertyVector):
             self.perm = event.perm
         if event.state:
             self.state = event.state
+        if event.timestamp:
+            self.timestamp = event.timestamp
+        if event.message:
+            self.message = event.message
+        if event.timeout:
+            self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = TextMember(membername, event.memberlabels[membername], membervalue)
@@ -293,25 +328,19 @@ class TextVector(PropertyVector):
             return
         await self._client.send(xmldata)
 
-    def _snapshot(self):
-        snapvector = PropertyVector._snapshot(self)
-        snapvector.rule = None
-        snapvector.perm = self.perm
-        return snapvector
-
-
 
 class NumberVector(PropertyVector):
 
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
         self.perm = event.perm
+        self.timestamp = event.timestamp
+        self.message = event.message
+        self.timeout = event.timeout
         # self.data is a dictionary of number name : numbermember
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
-
-    @staticmethod
 
     def getfloatvalue(self, membername):
         "Given a membername of this vector, returns the number as a float"
@@ -345,6 +374,12 @@ class NumberVector(PropertyVector):
             self.perm = event.perm
         if event.state:
             self.state = event.state
+        if event.timestamp:
+            self.timestamp = event.timestamp
+        if event.message:
+            self.message = event.message
+        if event.timeout:
+            self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
@@ -385,13 +420,6 @@ class NumberVector(PropertyVector):
             return
         await self._client.send(xmldata)
 
-    def _snapshot(self):
-        snapvector = PropertyVector._snapshot(self)
-        snapvector.rule = None
-        snapvector.perm = self.perm
-        return snapvector
-
-
 
 
 class BLOBVector(PropertyVector):
@@ -399,6 +427,9 @@ class BLOBVector(PropertyVector):
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
         self.perm = event.perm
+        self.timestamp = event.timestamp
+        self.message = event.message
+        self.timeout = event.timeout
         # self.data is a dictionary of blob name : blobmember
         # create  members
         for membername, label in event.memberlabels.items():
@@ -438,12 +469,12 @@ class BLOBVector(PropertyVector):
             self.perm = event.perm
         if event.state:
             self.state = event.state
+        if event.timestamp:
+            self.timestamp = event.timestamp
+        if event.message:
+            self.message = event.message
+        if event.timeout:
+            self.timeout = event.timeout
         # create  members
         for membername, label in event.memberlabels.items():
             self.data[membername] = BLOBMember(membername, label)
-
-    def _snapshot(self):
-        snapvector = PropertyVector._snapshot(self)
-        snapvector.rule = None
-        snapvector.perm = self.perm
-        return snapvector

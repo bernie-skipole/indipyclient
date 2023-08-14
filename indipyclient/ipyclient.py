@@ -128,6 +128,8 @@ class IPyClient(collections.UserDict):
             try:
                 # start by openning a connection
                 reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
+            except KeyboardInterrupt:
+                raise
             except ConnectionRefusedError:
                 reporterror(f"Connection refused on {self.indihost}:{self.indiport}, re-trying...")
                 await asyncio.sleep(2)
@@ -145,6 +147,11 @@ class IPyClient(collections.UserDict):
             group = asyncio.gather(t1, t2, t3)
             try:
                 await group
+            except KeyboardInterrupt:
+                t1.cancel()
+                t2.cancel()
+                t3.cancel()
+                raise
             except Exception as e:
                 # report failure
                 print(f'Connection failed with: {e}, re-trying...')
@@ -263,6 +270,8 @@ class IPyClient(collections.UserDict):
                     # the message is complete, handle message here
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
+                    except KeyboardInterrupt:
+                        raise
                     except Exception as e:
                         message = b''
                         messagetagnumber = None
@@ -281,6 +290,8 @@ class IPyClient(collections.UserDict):
                 # the message is complete, handle message here
                 try:
                     root = ET.fromstring(message.decode("us-ascii"))
+                except KeyboardInterrupt:
+                    raise
                 except Exception as e:
                     message = b''
                     messagetagnumber = None
@@ -301,6 +312,8 @@ class IPyClient(collections.UserDict):
                 data = await reader.readuntil(separator=b'>')
             except asyncio.LimitOverrunError:
                 data = await reader.read(n=32000)
+            except KeyboardInterrupt:
+                raise
             except Exception:
                 binarydata = b""
                 continue
