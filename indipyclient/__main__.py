@@ -29,11 +29,10 @@ if __name__ == "__main__":
     client = ConsoleClient(indihost=args.host, indiport=args.port)
 
     aloop = asyncio.new_event_loop()
-    iclienttask = aloop.create_task(client.asyncrun())
+    clienttast = aloop.create_task(client.asyncrun())
 
     evl = urwid.AsyncioEventLoop(loop=aloop)
     txt = urwid.Text(u"Hello World")
     fill = urwid.Filler(txt, 'top')
     loop = urwid.MainLoop(fill, event_loop=evl)
-
     loop.run()

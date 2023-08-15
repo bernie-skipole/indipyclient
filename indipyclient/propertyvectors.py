@@ -7,24 +7,60 @@ import xml.etree.ElementTree as ET
 
 from .propertymembers import SwitchMember, LightMember, TextMember, NumberMember, BLOBMember
 
-from . import snap
-
 from .error import ParseException, reporterror
 
 
-class PropertyVector(collections.UserDict):
+class Vector(collections.UserDict):
+
+    def __init__(self, name, label, group, state, timestamp, message):
+        super().__init__()
+
+        self.name = name
+        self.label = label
+        self.group = group
+        self._state = state
+        self.timestamp = timestamp
+        self.message = message
+        self.vectortype = None
+        self.devicename = None
+        self.rule = None
+        self.perm = None
+        self.timeout = None
+
+        # this is a dictionary of member name to member this vector owns
+        self.data = {}
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        self._state = value
+
+    def __setitem__(self, membername, value):
+        self.data[membername].membervalue = value
+
+    def __getitem__(self, membername):
+        return self.data[membername].membervalue
+
+    def members(self):
+        "Returns a dictionary of member objects"
+        return self.data
+
+
+
+
+
+class PropertyVector(Vector):
     "Parent class of SwitchVector etc.."
 
-    def __init__(self, name, label, group, state, device, client):
-        super().__init__()
+    def __init__(self, name, label, group, state, timestamp, message, device, client):
+        super().__init__(name, label, group, state, timestamp, message)
         self.vectortype = self.__class__.__name__
         self._client = client
         self.device = device
         self.devicename = device.devicename
-        self.name = name
-        self.label = label
-        self.group = group
-        self.state = state
         # if self.enable is False, this property ignores incoming traffic
         self.enable = True
 
@@ -65,15 +101,11 @@ class PropertyVector(collections.UserDict):
             member = self.data[membername]
             member.membervalue = membervalue
 
-    def members(self):
-        "Returns a dictionary of member objects"
-        return self.data
-
 
     def _snapshot(self):
-        snapvector = snap.Vector(self.vectortype, self.devicename, self.name, self.label,
-                                 self.group, self.state, self.timestamp, self.message)
-
+        snapvector = Vector(self.name, self.label, self.group, self.state, self.timestamp, self.message)
+        snapvector.vectortype = self.vectortype
+        snapvector.devicename = self.devicename
         if hasattr(self, 'rule'):
             snapvector.rule = self.rule
         if hasattr(self, 'perm'):
@@ -189,14 +221,14 @@ class SwitchVector(PropertyVector):
         return xmldata
 
 
-    async def send_newSwitchVector(self, timestamp=None, members={}):
+    def send_newSwitchVector(self, timestamp=None, members={}):
         """Transmits the vector (newSwitchVector) and the members given in the members
            dictionary which consists of member names:values to be sent.
            This method will transmit the xml, and change the vector state to busy."""
         xmldata = self._newSwitchVector(timestamp, members)
         if xmldata is None:
             return
-        await self._client.send(xmldata)
+        self._client.send(xmldata)
 
 
 class LightVector(PropertyVector):
@@ -319,14 +351,14 @@ class TextVector(PropertyVector):
         return xmldata
 
 
-    async def send_newTextVector(self, timestamp=None, members={}):
+    def send_newTextVector(self, timestamp=None, members={}):
         """Transmits the vector (newTextVector) together with all text members.
            (The spec requires text vectors to be sent with all members)
            This method will transmit the vector and change the vector state to busy."""
         xmldata = self._newTextVector(timestamp, members)
         if xmldata is None:
             return
-        await self._client.send(xmldata)
+        self._client.send(xmldata)
 
 
 class NumberVector(PropertyVector):
@@ -410,7 +442,7 @@ class NumberVector(PropertyVector):
                 xmldata.append(numbermember.onenumber(numbermember.membervalue))
         return xmldata
 
-    async def send_newNumberVector(self, timestamp=None, members={}):
+    def send_newNumberVector(self, timestamp=None, members={}):
         """Transmits the vector (newNumberVector) with new number members
            togther with any unchanged numbers.
            (The spec requires number vectors to be sent with all members)
@@ -418,7 +450,7 @@ class NumberVector(PropertyVector):
         xmldata = self._newNumberVector(timestamp, members)
         if xmldata is None:
             return
-        await self._client.send(xmldata)
+        self._client.send(xmldata)
 
 
 

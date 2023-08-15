@@ -7,11 +7,12 @@ import math
 
 from .error import ParseException
 
-from . import snap
 
 
-class PropertyMember:
-    "Parent class of SwitchMember etc"
+
+
+
+class Member():
 
     def __init__(self, name, label=None, membervalue=None):
         self.name = name
@@ -21,15 +22,27 @@ class PropertyMember:
             self.label = name
         self._membervalue = membervalue
 
+    @property
+    def membervalue(self):
+        return self._membervalue
+
+    @membervalue.setter
+    def membervalue(self, value):
+        self._membervalue = value
+
+
+
+class PropertyMember(Member):
+    "Parent class of SwitchMember etc"
+
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
         if value not in allowed:
             raise ParseException(f"Invalid value:{value}")
         return value
 
-
     def _snapshot(self):
-        snapmember = snap.Member(self.name, self.label, self._membervalue)
+        snapmember = Member(self.name, self.label, self._membervalue)
         return snapmember
 
 
@@ -109,52 +122,14 @@ class TextMember(PropertyMember):
         return xmldata
 
 
-class NumberMember(PropertyMember):
-    """Contains a number, the attributes inform the client how the number should be
-       displayed.
-
-       format is a C printf style format, for example %7.2f means the client should
-       display the number string with seven characters (including the decimal point
-       as a character and leading spaces should be inserted if necessary), and with
-       two decimal digits after the decimal point.
-
-       min is the minimum value
-
-       max is the maximum, if min is equal to max, the client should ignore these.
-
-       step is incremental step values, set to string of zero if not used.
-
-       The above numbers, and the member value must be set as a string, this explicitly
-       controls how numbers are placed in the xml protocol.
-    """
+class ParentNumberMember(Member):
 
     def __init__(self, name, label=None, format='', min='0', max='0', step='0', membervalue='0'):
         super().__init__(name, label, membervalue)
         self.format = format
-        if not isinstance(min, str):
-            raise ParseException("minimum value must be given as a string")
         self.min = min
-        if not isinstance(max, str):
-            raise ParseException("maximum value must be given as a string")
         self.max = max
-        if not isinstance(step, str):
-            raise ParseException("step value must be given as a string")
         self.step = step
-        if not isinstance(membervalue, str):
-            raise ParseException("number value must be given as a string")
-
-    @property
-    def membervalue(self):
-        return self._membervalue
-
-    @membervalue.setter
-    def membervalue(self, value):
-        if not isinstance(value, str):
-            raise ParseException("number value must be given as a string")
-        if not value:
-            raise ParseException("No number value given")
-        if self._membervalue != value:
-            self._membervalue = value
 
 
     def getfloatvalue(self):
@@ -266,6 +241,55 @@ class NumberMember(PropertyMember):
         return number
 
 
+
+class NumberMember(ParentNumberMember):
+    """Contains a number, the attributes inform the client how the number should be
+       displayed.
+
+       format is a C printf style format, for example %7.2f means the client should
+       display the number string with seven characters (including the decimal point
+       as a character and leading spaces should be inserted if necessary), and with
+       two decimal digits after the decimal point.
+
+       min is the minimum value
+
+       max is the maximum, if min is equal to max, the client should ignore these.
+
+       step is incremental step values, set to string of zero if not used.
+
+       The above numbers, and the member value must be set as a string, this explicitly
+       controls how numbers are placed in the xml protocol.
+    """
+
+    def __init__(self, name, label=None, format='', min='0', max='0', step='0', membervalue='0'):
+        super().__init__(name, label, format, min, max, step, membervalue)
+        self.format = format
+        if not isinstance(min, str):
+            raise ParseException("minimum value must be given as a string")
+        self.min = min
+        if not isinstance(max, str):
+            raise ParseException("maximum value must be given as a string")
+        self.max = max
+        if not isinstance(step, str):
+            raise ParseException("step value must be given as a string")
+        self.step = step
+        if not isinstance(membervalue, str):
+            raise ParseException("number value must be given as a string")
+
+    @property
+    def membervalue(self):
+        return self._membervalue
+
+    @membervalue.setter
+    def membervalue(self, value):
+        if not isinstance(value, str):
+            raise ParseException("number value must be given as a string")
+        if not value:
+            raise ParseException("No number value given")
+        if self._membervalue != value:
+            self._membervalue = value
+
+
     def onenumber(self, newvalue):
         """Returns xml of a oneNumber"""
         xmldata = ET.Element('oneNumber')
@@ -274,7 +298,7 @@ class NumberMember(PropertyMember):
         return xmldata
 
     def _snapshot(self):
-        snapmember = snap.NumberMember(self.name, self.label, self.format, self.min, self.max, self.step, self._membervalue)
+        snapmember = ParentNumberMember(self.name, self.label, self.format, self.min, self.max, self.step, self._membervalue)
         return snapmember
 
 

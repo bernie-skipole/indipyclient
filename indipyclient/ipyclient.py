@@ -8,7 +8,7 @@ from datetime import datetime
 
 import xml.etree.ElementTree as ET
 
-from . import events, snap
+from . import events
 
 from .error import ParseException, ConnectionTimeOut, reporterror
 
@@ -95,7 +95,7 @@ class IPyClient(collections.UserDict):
         self.clientdata = clientdata
 
         # create queue where client will put xml data to be transmitted
-        self.writerque = asyncio.Queue(4)
+        self.writerque = collections.deque()
 
         # and create readerque where received xmldata will be put
         self.readerque = asyncio.Queue(4)
@@ -112,8 +112,6 @@ class IPyClient(collections.UserDict):
         self._timeout = 15
         # this is populated with the running loop once it is available
         self.loop = None
-
-        self.snap = snap.Snap(self)
 
 
     def __setitem__(self, device):
@@ -159,26 +157,25 @@ class IPyClient(collections.UserDict):
                 t2.cancel()
                 t3.cancel()
             self.connected = False
-            if len(self):
-                # clear devices etc
-                self.clear()
-            if not self.writerque.empty():
-                # empty the queue
-                while not self.writerque.empty():
-                    xmldata = self.writerque.get_nowait()
-                    self.writerque.task_done()
+            # clear devices etc
+            self.clear()
+            # clear the writerque
+            self.writerque.clear()
             if not self.readerque.empty():
                 # empty the queue
-                while not self.readerque.empty():
-                    xmldata = self.readerque.get_nowait()
-                    self.readerque.task_done()
+                while True:
+                    try:
+                        xmldata = self.readerque.get_nowait()
+                        self.readerque.task_done()
+                    except asyncio.QueueEmpty
+                        break
             await asyncio.sleep(5)
 
 
-    async def send(self, xmldata):
+    def send(self, xmldata):
         "Transmits xmldata, this is an internal method, not normally called by a user."
         if self.connected:
-            await self.writerque.put(xmldata)
+            self.writerque.append(xmldata)
 
 
     async def _check_alive(self, writer):
@@ -195,7 +192,7 @@ class IPyClient(collections.UserDict):
             # so the connection is up, check devices exist
             if not len(self):
                 # no devices, so send a getProperties
-                await self.send_getProperties()
+                self.send_getProperties()
                 # wait for a response
                 await asyncio.sleep(5)
 
@@ -203,7 +200,14 @@ class IPyClient(collections.UserDict):
     async def _run_tx(self, writer):
         "Monitors self.writerque and if it has data, uses writer to send it"
         while True:
-            txdata = await self.writerque.get()
+            if not len(self.writerque):
+                await asyncio.sleep(0)
+                continue
+            try:
+                txdata = self.writerque.popleft()
+            except IndexError:
+                await asyncio.sleep(0)
+                continue
             if txdata.tag == "newBLOBVector" and len(txdata):
                 # txdata is a newBLOBVector containing blobs
                 # the generator blob_xml_bytes yields bytes
@@ -217,7 +221,6 @@ class IPyClient(collections.UserDict):
                 # Send to the port
                 writer.write(binarydata)
                 await writer.drain()
-            self.writerque.task_done()
             if self._timer is None:
                 # set a timer going
                 self._timer = time.time()
@@ -374,21 +377,61 @@ class IPyClient(collections.UserDict):
             await self.rxevent(event)
 
 
+    def snapshot(self):
+        "Take snapshot of the devices"
+        with threading.Lock():
+            # other threads cannot change the client.data dictionary
+            snap = {}
+            if self.data:
+                for devicename, device in self.data.items():
+                    if not device.enable:
+                        continue
+                    snap[devicename] = device._snapshot()
+        # other threads can now access client.data
+        # return the snapshot
+        return snap
 
-    async def send_getProperties(self, devicename=None, vectorname=None):
+
+    def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
+        """Send a new Vector, note members is a membername to value dictionary,
+           It could also be a vector, which is itself a membername to value mapping"""
+        if devicename not in self.data:
+            reporterror(f"Failed to send vector: Device {devicename} not recognised")
+            return
+        device = self.data[devicename]
+        if vectorname not in device:
+            reporterror(f"Failed to send vector: Vector {vectorname} not recognised")
+            return
+        try:
+            propertyvector = device[vectorname]
+            if propertyvector.vectortype == "SwitchVector":
+                propertyvector.send_newSwitchVector(timestamp, members)
+            elif propertyvector.vectortype == "TextVector":
+                propertyvector.send_newTextVector(timestamp, members)
+            elif propertyvector.vectortype == "NumberVector":
+                propertyvector.send_newNumberVector(timestamp, members)
+            elif propertyvector.vectortype == "BLOBVector":
+                propertyvector.send_newBLOBVector(timestamp, members)
+            else:
+                reporterror(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
+        except Exception:
+            reporterror(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
+
+
+    def send_getProperties(self, devicename=None, vectorname=None):
         """Sends a getProperties request."""
         if self.connected:
             xmldata = ET.Element('getProperties')
             xmldata.set("version", "1.7")
             if not devicename:
-                await self.send(xmldata)
+                self.send(xmldata)
                 return
             xmldata.set("device", devicename)
             if vectorname:
                 xmldata.set("name", vectorname)
-            await self.send(xmldata)
+            self.send(xmldata)
 
-    async def send_enableBLOB(self, value, devicename, vectorname=None):
+    def send_enableBLOB(self, value, devicename, vectorname=None):
         """Sends an enableBLOB instruction."""
         if self.connected:
             if value not in ("Never", "Also", "Only"):
@@ -401,7 +444,7 @@ class IPyClient(collections.UserDict):
             if vectorname:
                 xmldata.set("name", vectorname)
             xmldata.text = value
-            await self.send(xmldata)
+            self.send(xmldata)
 
     async def rxevent(self, event):
         """Override this if this client is operating a script to act on received data.
@@ -433,17 +476,25 @@ class IPyClient(collections.UserDict):
 
 
 
+class Device(collections.UserDict):
 
-class _Device(collections.UserDict):
+    def __init__(self, devicename):
+        super().__init__()
+
+        # This device name
+        self.devicename = devicename
+
+        # this is a dictionary of property name to propertyvector this device owns
+        self.data = {}
+
+
+class _Device(Device):
 
     """An instance of this should be created for each device.
     """
 
     def __init__(self, devicename, client):
-        super().__init__()
-
-        # This device name
-        self.devicename = devicename
+        super().__init__(devicename)
 
         # and the device has a reference to its client
         self._client = client
@@ -451,8 +502,6 @@ class _Device(collections.UserDict):
         # if self.enable is False, this device has been 'deleted'
         self.enable = True
 
-        # this is a dictionary of property name to propertyvector this device owns
-        self.data = {}
 
     def __setitem__(self, propertyname, propertyvector):
         "Properties are added by being learnt from the driver, they cannot be manually added"
@@ -490,7 +539,7 @@ class _Device(collections.UserDict):
             raise ParseException
 
     def _snapshot(self):
-        snapdevice = snap.Device(self.devicename)
+        snapdevice = Device(self.devicename)
         for vectorname, vector in self.data:
             if not vector.enable:
                 continue
