@@ -134,7 +134,7 @@ class IPyClient(collections.UserDict):
                 continue
             except Exception as e:
                 # report failure
-                print(f'Connection failed with: {e}, re-trying...')
+                reporterror(f'Connection failed with: {e}, re-trying...')
                 await asyncio.sleep(2)
                 continue
             self.connected = True
@@ -152,7 +152,7 @@ class IPyClient(collections.UserDict):
                 raise
             except Exception as e:
                 # report failure
-                print(f'Connection failed with: {e}, re-trying...')
+                reporterror(f'Connection failed with: {e}, re-trying...')
                 t1.cancel()
                 t2.cancel()
                 t3.cancel()
@@ -167,7 +167,7 @@ class IPyClient(collections.UserDict):
                     try:
                         xmldata = self.readerque.get_nowait()
                         self.readerque.task_done()
-                    except asyncio.QueueEmpty
+                    except asyncio.QueueEmpty:
                         break
             await asyncio.sleep(5)
 
@@ -335,15 +335,15 @@ class IPyClient(collections.UserDict):
 
 
     async def _rxhandler(self):
-        """Populates the  events using data from self.readerque"""
+        """Populates the events using data from self.readerque"""
         while True:
             # get block of data from the self.readerque
             await asyncio.sleep(0)
             root = await self.readerque.get()
             devicename = root.get("device")
             # block any other thread from accessing data until update is done
-            with threading.Lock():
-                try:
+            try:
+                with threading.Lock():
                     if devicename is None:
                         if root.tag == "message":
                             # state wide message
@@ -352,7 +352,6 @@ class IPyClient(collections.UserDict):
                             event = events.message(root)
                         else:
                             # if no devicename and not message, do nothing
-                            self.readerque.task_done()
                             continue
                     elif devicename in self:
                         # device is known about
@@ -366,14 +365,16 @@ class IPyClient(collections.UserDict):
                         self.data[devicename] = newdevice
                     else:
                         # device not known, not a def, so ignore it
-                        self.readerque.task_done()
                         continue
-                except ParseException as pe:
-                    # if an EventException is raised, it is because received data is malformed
-                    # so print to stderr and continue
-                    reporterror(str(pe))
+            except ParseException as pe:
+                # if a ParseException is raised, it is because received data is malformed
+                # so print to stderr and continue
+                reporterror(f"Error parsing received data: {pe}")
+                continue
+            finally:
                 self.readerque.task_done()
-            # and call the user event handling function
+            # and to get here, continue has not been called
+            # and an event has been created, call the user event handling function
             await self.rxevent(event)
 
 
@@ -469,7 +470,8 @@ class IPyClient(collections.UserDict):
             await asyncio.gather(t1, t2, t3)
         except Exception as e:
             # report failure
-            print(f'Client terminated with: {e}')
+            raise
+            reporterror(f'Client terminated with: {e}')
             t1.cancel()
             t2.cancel()
             t3.cancel()

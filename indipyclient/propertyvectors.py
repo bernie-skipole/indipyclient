@@ -23,8 +23,8 @@ class Vector(collections.UserDict):
         self.message = message
         self.vectortype = None
         self.devicename = None
-        self.rule = None
-        self.perm = None
+        self._rule = None
+        self._perm = None
         self.timeout = None
 
         # this is a dictionary of member name to member this vector owns
@@ -38,6 +38,22 @@ class Vector(collections.UserDict):
     def state(self, value):
         self._state = value
 
+    @property
+    def rule(self):
+        return self._rule
+
+    @rule.setter
+    def rule(self, value):
+        self._rule = value
+
+    @property
+    def perm(self):
+        return self._perm
+
+    @perm.setter
+    def perm(self, value):
+        self._perm = value
+
     def __setitem__(self, membername, value):
         self.data[membername].membervalue = value
 
@@ -47,8 +63,6 @@ class Vector(collections.UserDict):
     def members(self):
         "Returns a dictionary of member objects"
         return self.data
-
-
 
 
 
@@ -131,11 +145,10 @@ class SwitchVector(PropertyVector):
        """
 
     def __init__(self, event):
-        super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
-        self.perm = event.perm
-        self.rule = event.rule
-        self.timestamp = event.timestamp
-        self.message = event.message
+        super().__init__(event.vectorname, event.label, event.group, event.state,
+                         event.timestamp, event.message, event.device, event._client)
+        self._perm = event.perm
+        self._rule = event.rule
         self.timeout = event.timeout
         # self.data is a dictionary of switch name : switchmember
         # create  members
@@ -240,9 +253,9 @@ class LightVector(PropertyVector):
        This class has no 'send_newLightVector method, since lights are read-only"""
 
     def __init__(self, event):
-        super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
-        self.timestamp = event.timestamp
-        self.message = event.message
+        super().__init__(event.vectorname, event.label, event.group, event.state,
+                         event.timestamp, event.message, event.device, event._client)
+        self._perm = "ro"
         # self.data is a dictionary of light name : lightmember
         # create  members
         for membername, membervalue in event.items():
@@ -286,10 +299,9 @@ class TextVector(PropertyVector):
 
 
     def __init__(self, event):
-        super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
-        self.perm = event.perm
-        self.timestamp = event.timestamp
-        self.message = event.message
+        super().__init__(event.vectorname, event.label, event.group, event.state,
+                         event.timestamp, event.message, event.device, event._client)
+        self._perm = event.perm
         self.timeout = event.timeout
         # self.data is a dictionary of text name : textmember
         # create  members
@@ -364,10 +376,9 @@ class TextVector(PropertyVector):
 class NumberVector(PropertyVector):
 
     def __init__(self, event):
-        super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
-        self.perm = event.perm
-        self.timestamp = event.timestamp
-        self.message = event.message
+        super().__init__(event.vectorname, event.label, event.group, event.state,
+                         event.timestamp, event.message, event.device, event._client)
+        self._perm = event.perm
         self.timeout = event.timeout
         # self.data is a dictionary of number name : numbermember
         # create  members
@@ -457,10 +468,9 @@ class NumberVector(PropertyVector):
 class BLOBVector(PropertyVector):
 
     def __init__(self, event):
-        super().__init__(event.vectorname, event.label, event.group, event.state, event.device, event._client)
-        self.perm = event.perm
-        self.timestamp = event.timestamp
-        self.message = event.message
+        super().__init__(event.vectorname, event.label, event.group, event.state,
+                         event.timestamp, event.message, event.device, event._client)
+        self._perm = event.perm
         self.timeout = event.timeout
         # self.data is a dictionary of blob name : blobmember
         # create  members
