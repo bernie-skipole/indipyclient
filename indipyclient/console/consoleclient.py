@@ -10,12 +10,18 @@ class ConsoleClient(IPyClient):
 
     """This is a console client"""
 
+    # self.clientdata is a dictionary
+
     async def rxevent(self, event):
         "The remote device is expected to send a value if the led changes state"
         match event:
             case defSwitchVector(devicename="led", vectorname="ledswitchvector") if 'ledswitchmember' in event.vector:
                 ledvalue = event.vector['ledswitchmember']
-                print(f"\nReceived value : {ledvalue}")
+                # display this
+                utxt = self.clientdata['utxt']
+                utxt.set_text(f"Received value : {ledvalue}")
+                umap1 = self.clientdata['umap1']
+                umap1.original_widget = utxt
 
     async def control(self):
         """Override this to operate your own scripts, and transmit updates"""
@@ -29,7 +35,7 @@ class ConsoleClient(IPyClient):
             except KeyError:
                 # The device and vector have not been received yet, send a getProperties
                 # requesting info from the driver and wait a couple of seconds
-                await self.send_getProperties()
+                self.send_getProperties()
                 await asyncio.sleep(2)
                 continue
             await asyncio.sleep(0)
