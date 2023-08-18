@@ -454,26 +454,19 @@ class IPyClient(collections.UserDict):
         pass
 
 
-    async def control(self):
-        """Override this to operate your own scripts, and transmit updates"""
-        while True:
-            await asyncio.sleep(0)
-
 
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self.loop = asyncio.get_running_loop()
         t1 = asyncio.create_task(self._comms())        # Create a connection to an INDI port, and parse data
-        t2 = asyncio.create_task(self.control())       # task to operate client algorithms, and transmit updates
         t3 = asyncio.create_task(self._rxhandler())    # task to handle incoming received data
         try:
-            await asyncio.gather(t1, t2, t3)
+            await asyncio.gather(t1, t3)
         except Exception as e:
             # report failure
             raise
             reporterror(f'Client terminated with: {e}')
             t1.cancel()
-            t2.cancel()
             t3.cancel()
 
 
