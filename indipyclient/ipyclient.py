@@ -112,7 +112,12 @@ class IPyClient(collections.UserDict):
         self._timeout = 15
         # this is populated with the running loop once it is available
         self.loop = None
+        # this is set to True, to shut down the client
+        self._stop = False
 
+
+    def shutdown(self):
+        self._stop = True
 
     def __setitem__(self, device):
         "Devices are added by being learnt from the driver, they cannot be manually added"
@@ -121,38 +126,40 @@ class IPyClient(collections.UserDict):
 
     async def _comms(self):
         "Create a connection to an INDI port"
-        while True:
+        while not self._stop:
             self._timer = None
             try:
                 # start by openning a connection
                 reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
             except KeyboardInterrupt:
-                raise
+                self._stop = True
+                break
             except ConnectionRefusedError:
                 reporterror(f"Connection refused on {self.indihost}:{self.indiport}, re-trying...")
                 await asyncio.sleep(2)
                 continue
-            except Exception as e:
+            #except Exception as e:
                 # report failure
-                reporterror(f'Connection failed with: {e}, re-trying...')
-                await asyncio.sleep(2)
-                continue
+            #    reporterror(f'Connection failed with: {e}, re-trying...')
+            #    await asyncio.sleep(2)
+            #    continue
+            except Exception:
+                self._stop = True
+                break
             self.connected = True
             print(f"Connected to {self.indihost}:{self.indiport}")
             t1 = asyncio.create_task(self._run_tx(writer))
             t2 = asyncio.create_task(self._run_rx(reader))
             t3 = asyncio.create_task(self._check_alive(writer))
-            group = asyncio.gather(t1, t2, t3)
             try:
-                await group
+                await asyncio.gather(t1, t2, t3)
             except KeyboardInterrupt:
+                self._stop = True
                 t1.cancel()
                 t2.cancel()
                 t3.cancel()
-                raise
-            except Exception as e:
-                # report failure
-                reporterror(f'Connection failed with: {e}, re-trying...')
+                break
+            except Exception:
                 t1.cancel()
                 t2.cancel()
                 t3.cancel()
@@ -179,7 +186,7 @@ class IPyClient(collections.UserDict):
 
 
     async def _check_alive(self, writer):
-        while True:
+        while self.connected and (not self._stop):
             await asyncio.sleep(0)
             if not self._timer is None:
                 telapsed = time.time() - self._timer
@@ -188,7 +195,8 @@ class IPyClient(collections.UserDict):
                    writer.close()
                    await writer.wait_closed()
                    reporterror("Connection timed out")
-                   raise ConnectionTimeOut(f"No response from the last transmission after {self._timeout} seconds")
+                   self.connected = False
+                   break
             # so the connection is up, check devices exist
             if not len(self):
                 # no devices, so send a getProperties
@@ -199,7 +207,7 @@ class IPyClient(collections.UserDict):
 
     async def _run_tx(self, writer):
         "Monitors self.writerque and if it has data, uses writer to send it"
-        while True:
+        while self.connected and (not self._stop):
             if not len(self.writerque):
                 await asyncio.sleep(0)
                 continue
@@ -229,11 +237,15 @@ class IPyClient(collections.UserDict):
     async def _run_rx(self, reader):
         "pass xml.etree.ElementTree data to readerque"
         source = self._datasource(reader)
-        while True:
+        while self.connected and (not self._stop):
             await asyncio.sleep(0)
             # get block of xml.etree.ElementTree data
             # from source and append it to  readerque
-            rxdata = await anext(source)
+            try:
+                rxdata = await anext(source)
+            except StopAsyncIteration:
+                self.connected = False
+                break
             if rxdata is not None:
                 # and place rxdata into readerque
                 await self.readerque.put(rxdata)
@@ -243,10 +255,14 @@ class IPyClient(collections.UserDict):
         data_in = self._datainput(reader)
         message = b''
         messagetagnumber = None
-        while True:
+        while self.connected and (not self._stop):
             await asyncio.sleep(0)
             # get blocks of data from _datainput
-            data = await anext(data_in)
+            try:
+                data = await anext(data_in)
+            except StopAsyncIteration:
+                self.connected = False
+                break
             if not data:
                 continue
             if not message:
@@ -274,7 +290,9 @@ class IPyClient(collections.UserDict):
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
                     except KeyboardInterrupt:
-                        raise
+                        self._stop = True
+                        self.connected = False
+                        break
                     except Exception as e:
                         message = b''
                         messagetagnumber = None
@@ -294,7 +312,9 @@ class IPyClient(collections.UserDict):
                 try:
                     root = ET.fromstring(message.decode("us-ascii"))
                 except KeyboardInterrupt:
-                    raise
+                    self._stop = True
+                    self.connected = False
+                    break
                 except Exception as e:
                     message = b''
                     messagetagnumber = None
@@ -309,14 +329,16 @@ class IPyClient(collections.UserDict):
     async def _datainput(self, reader):
         "Generator producing binary string of data from the port"
         binarydata = b""
-        while True:
+        while self.connected and (not self._stop):
             await asyncio.sleep(0)
             try:
                 data = await reader.readuntil(separator=b'>')
             except asyncio.LimitOverrunError:
                 data = await reader.read(n=32000)
             except KeyboardInterrupt:
-                raise
+                self._stop = True
+                self.connected = False
+                break
             except Exception:
                 binarydata = b""
                 continue
@@ -336,7 +358,7 @@ class IPyClient(collections.UserDict):
 
     async def _rxhandler(self):
         """Populates the events using data from self.readerque"""
-        while True:
+        while not self._stop:
             # get block of data from the self.readerque
             await asyncio.sleep(0)
             root = await self.readerque.get()
@@ -415,6 +437,8 @@ class IPyClient(collections.UserDict):
                 propertyvector.send_newBLOBVector(timestamp, members)
             else:
                 reporterror(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
+        except KeyboardInterrupt:
+            self._stop = True
         except Exception:
             reporterror(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
 
@@ -457,17 +481,16 @@ class IPyClient(collections.UserDict):
 
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
+        self._stop = False
         self.loop = asyncio.get_running_loop()
         t1 = asyncio.create_task(self._comms())        # Create a connection to an INDI port, and parse data
-        t3 = asyncio.create_task(self._rxhandler())    # task to handle incoming received data
+        t2 = asyncio.create_task(self._rxhandler())    # task to handle incoming received data
         try:
-            await asyncio.gather(t1, t3)
+            await asyncio.gather(t1, t2)
         except Exception as e:
-            # report failure
-            raise
             reporterror(f'Client terminated with: {e}')
             t1.cancel()
-            t3.cancel()
+            t2.cancel()
 
 
 
