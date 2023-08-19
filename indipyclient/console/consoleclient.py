@@ -19,9 +19,8 @@ class ConsoleClient(IPyClient):
                 ledvalue = event.vector['ledswitchmember']
                 # display this
                 utxt = self.clientdata['utxt']
-                utxt.set_text(f"Received value : {ledvalue}")
-                umap1 = self.clientdata['umap1']
-                umap1.original_widget = utxt
+                utxt.set_text(('banner', f"Received value : {ledvalue}"))
+
 
     async def control(self):
         """Override this to operate your own scripts, and transmit updates"""
