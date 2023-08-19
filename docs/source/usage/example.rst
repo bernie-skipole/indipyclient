@@ -31,35 +31,43 @@ class LEDClient(IPyClient):
                 ledvalue = event.vector['ledswitchmember']
                 print(f"\nReceived value : {ledvalue}")
 
-    async def control(self):
-        "Request a switch value from the console, and send it"
-        while True:
-            if not self.connected:
-                await asyncio.sleep(2)
-                continue
-            try:
-                # the device and vector should be recorded in this mapping
-                vector = self['led']['ledswitchvector']
-            except KeyError:
-                # The device and vector have not been received yet, send a getProperties
-                # requesting info from the driver and wait a couple of seconds
-                self.send_getProperties()
-                await asyncio.sleep(2)
-                continue
-            # a normal input statement would block, so use this to get console input
-            print("Input On, or Off:")
-            value = await asyncio.to_thread(sys.stdin.readline)
-            value = value.strip()
-            if value not in ("On", "Off"):
-                print("Invalid instruction")
-                continue
-            # Send the new switch instruction, this calls the vector send_newSwitchVector method
-            vector.send_newSwitchVector(members={'ledswitchmember':value})
-            print(f"Instruction to turn LED {value} is sent")
-            # and wait a bit for a response, which should be printed by rxevent
-            await asyncio.sleep(1)
-            # then repeat - which should give a new input command on the console
 
 
-client = LEDClient()
-asyncio.run(client.asyncrun())
+async def control(client):
+    "Request a switch value from the console, and send it"
+    while True:
+        if not client.connected:
+            await asyncio.sleep(2)
+            continue
+        try:
+            # the device and vector should be recorded in this mapping
+            vector = client['led']['ledswitchvector']
+        except KeyError:
+            # The device and vector have not been received yet, send a getProperties
+            # requesting info from the driver and wait a couple of seconds
+            client.send_getProperties()
+            await asyncio.sleep(2)
+            continue
+        # a normal input statement would block, so use this to get console input
+        print("Input On, or Off:")
+        value = await asyncio.to_thread(sys.stdin.readline)
+        value = value.strip()
+        if value not in ("On", "Off"):
+            print("Invalid instruction")
+            continue
+        # Send the new switch instruction, this calls the vector send_newSwitchVector method
+        vector.send_newSwitchVector(members={'ledswitchmember':value})
+        print(f"Instruction to turn LED {value} is sent")
+        # and wait a bit for a response, which should be printed by rxevent
+        await asyncio.sleep(1)
+        # then repeat - which should give a new input command on the console
+
+
+async def main():
+
+    client = LEDClient()
+    t1 = client.asyncrun()
+    t2 = control(client)
+    await asyncio.gather(t1, t2)
+
+
