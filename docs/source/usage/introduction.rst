@@ -27,21 +27,28 @@ The package can be installed from:
 
 https://pypi.org/project/indipyclient
 
-Typically you would create a subclass of IPyClient.
+Typically you would create a subclass of IPyClient to handle the received data, and which automatically creates devices, vectors and their members.
 
-The class has methods which should be overwritten.
+The class has a rxevent method which can be overwritten.
 
 async def rxevent(self, event)
 
-This is called whenever data is received, typically describing an instrument parameter. The event object describes the received data, and you provide the code which then typically displays the data.
+This is called whenever data is received, typically describing an instrument parameter. The event object describes the received data, and you provide any code which, if required, responds to the received data.
 
-async def control(self)
+You would also create your own coroutines to read the client attributes and display them if a GUI client is being created, or to act on them appropriately if you are creating a script to control the instrument. Your coroutine would usually take the IPyClient subclass instance as an argument, so you could use its attributes and methods to read the received vector values, and transmit new values.
 
-This should be a contuously running coroutine which you can use to run your own functions, or monitor your user input, and if required send updates to the drivers and instruments.
+Having created an instance of your IPyClient subclass (ie MyClient), and your own co-routines you would typically run them using something like::
 
-Having created an instance of your IPyClient subclass, you would run the client using:
+    async def main():
 
-asyncio.run(client.asyncrun())
+        client = MyClient(indihost="localhost", indiport=7624)
+        t1 = client.asyncrun()          # runs the client which connects to the indi service
+        t2 = control(client)            # assuming your own co-routine is called 'control'
+        await asyncio.gather(t1, t2)
+
+
+    asyncio.run(main())
+
 
 
 Issues

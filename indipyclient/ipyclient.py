@@ -138,31 +138,16 @@ class IPyClient(collections.UserDict):
                 reporterror(f"Connection refused on {self.indihost}:{self.indiport}, re-trying...")
                 await asyncio.sleep(2)
                 continue
-            #except Exception as e:
-                # report failure
-            #    reporterror(f'Connection failed with: {e}, re-trying...')
-            #    await asyncio.sleep(2)
-            #    continue
             except Exception:
                 self._stop = True
                 break
             self.connected = True
             print(f"Connected to {self.indihost}:{self.indiport}")
-            t1 = asyncio.create_task(self._run_tx(writer))
-            t2 = asyncio.create_task(self._run_rx(reader))
-            t3 = asyncio.create_task(self._check_alive(writer))
-            try:
-                await asyncio.gather(t1, t2, t3)
-            except KeyboardInterrupt:
-                self._stop = True
-                t1.cancel()
-                t2.cancel()
-                t3.cancel()
-                break
-            except Exception:
-                t1.cancel()
-                t2.cancel()
-                t3.cancel()
+            await asyncio.gather(self._run_tx(writer),
+                                 self._run_rx(reader),
+                                 self._check_alive(writer),
+                                 return_exceptions=True
+                                 )
             self.connected = False
             # clear devices etc
             self.clear()
@@ -176,7 +161,9 @@ class IPyClient(collections.UserDict):
                         self.readerque.task_done()
                     except asyncio.QueueEmpty:
                         break
-            await asyncio.sleep(5)
+            if not self._stop:
+                # try to connect again
+                await asyncio.sleep(5)
 
 
     def send(self, xmldata):
@@ -186,23 +173,29 @@ class IPyClient(collections.UserDict):
 
 
     async def _check_alive(self, writer):
-        while self.connected and (not self._stop):
-            await asyncio.sleep(0)
-            if not self._timer is None:
-                telapsed = time.time() - self._timer
-                if telapsed > self._timeout:
-                    # no response to transmission self._timer seconds ago
-                   writer.close()
-                   await writer.wait_closed()
-                   reporterror("Connection timed out")
-                   self.connected = False
-                   break
-            # so the connection is up, check devices exist
-            if not len(self):
-                # no devices, so send a getProperties
-                self.send_getProperties()
-                # wait for a response
-                await asyncio.sleep(5)
+        try:
+            while self.connected and (not self._stop):
+                await asyncio.sleep(0)
+                if not self._timer is None:
+                    telapsed = time.time() - self._timer
+                    if telapsed > self._timeout:
+                        # no response to transmission self._timer seconds ago
+                       writer.close()
+                       await writer.wait_closed()
+                       reporterror("Connection timed out")
+                       self.connected = False
+                       break
+                # so the connection is up, check devices exist
+                if not len(self):
+                    # no devices, so send a getProperties
+                    self.send_getProperties()
+                    # wait for a response
+                    await asyncio.sleep(5)
+        except KeyboardInterrupt:
+            self._stop = True
+            self.connected = False
+        except Exception:
+             self.connected = False
 
 
     async def _run_tx(self, writer):
@@ -483,15 +476,10 @@ class IPyClient(collections.UserDict):
         """Gathers tasks to be run simultaneously"""
         self._stop = False
         self.loop = asyncio.get_running_loop()
-        t1 = asyncio.create_task(self._comms())        # Create a connection to an INDI port, and parse data
-        t2 = asyncio.create_task(self._rxhandler())    # task to handle incoming received data
         try:
-            await asyncio.gather(t1, t2)
-        except Exception as e:
-            reporterror(f'Client terminated with: {e}')
-            t1.cancel()
-            t2.cancel()
-
+            await asyncio.gather(self._comms(), self._rxhandler(), return_exceptions=True)
+        except KeyboardInterrupt:
+            pass
 
 
 class Device(collections.UserDict):
