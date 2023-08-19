@@ -127,7 +127,7 @@ class IPyClient(collections.UserDict):
                 # start by openning a connection
                 reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
             except KeyboardInterrupt:
-                raise
+                break
             except ConnectionRefusedError:
                 reporterror(f"Connection refused on {self.indihost}:{self.indiport}, re-trying...")
                 await asyncio.sleep(2)
@@ -149,7 +149,7 @@ class IPyClient(collections.UserDict):
                 t1.cancel()
                 t2.cancel()
                 t3.cancel()
-                raise
+                break
             except Exception as e:
                 # report failure
                 reporterror(f'Connection failed with: {e}, re-trying...')
@@ -170,6 +170,9 @@ class IPyClient(collections.UserDict):
                     except asyncio.QueueEmpty:
                         break
             await asyncio.sleep(5)
+        # give cancelled tasks time
+        await asyncio.sleep(0.5)
+        raise KeyboardInterrupt
 
 
     def send(self, xmldata):
@@ -200,13 +203,12 @@ class IPyClient(collections.UserDict):
     async def _run_tx(self, writer):
         "Monitors self.writerque and if it has data, uses writer to send it"
         while True:
+            await asyncio.sleep(0)
             if not len(self.writerque):
-                await asyncio.sleep(0)
                 continue
             try:
                 txdata = self.writerque.popleft()
             except IndexError:
-                await asyncio.sleep(0)
                 continue
             if txdata.tag == "newBLOBVector" and len(txdata):
                 # txdata is a newBLOBVector containing blobs
@@ -470,11 +472,12 @@ class IPyClient(collections.UserDict):
             await asyncio.gather(t1, t2, t3)
         except Exception as e:
             # report failure
-            raise
             reporterror(f'Client terminated with: {e}')
-            t1.cancel()
-            t2.cancel()
-            t3.cancel()
+        t1.cancel()
+        t2.cancel()
+        t3.cancel()
+        asyncio.sleep(0.5)
+
 
 
 
