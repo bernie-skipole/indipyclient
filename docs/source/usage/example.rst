@@ -64,10 +64,9 @@ async def control(client):
 
 
 async def main():
-
     client = LEDClient()
     t1 = client.asyncrun()
     t2 = control(client)
     await asyncio.gather(t1, t2)
 
-
+asyncio.run(main())

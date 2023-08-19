@@ -139,9 +139,10 @@ class IPyClient(collections.UserDict):
                                      return_exceptions=True
                                      )
             except ConnectionRefusedError:
-                reporterror(f"Connection refused on {self.indihost}:{self.indiport}, re-trying...")
+                reporterror(f"Connection refused on {self.indihost}:{self.indiport}.")
             except Exception:
                 self._stop = True
+            reporterror(f"Connection re-trying...")
             self.connected = False
             # clear devices etc
             self.clear()
@@ -195,6 +196,7 @@ class IPyClient(collections.UserDict):
     async def _run_tx(self, writer):
         "Monitors self.writerque and if it has data, uses writer to send it"
         while self.connected and (not self._stop):
+            await asyncio.sleep(0)
             if not len(self.writerque):
                 continue
             try:
