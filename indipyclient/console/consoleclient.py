@@ -33,7 +33,7 @@ class ConsoleControl:
         curses.start_color()
         curses.noecho()
         curses.cbreak()
-        curses.curs_set(0)
+        self.origcursor = curses.curs_set(0)
         self.stdscr.keypad(True)
         self.cols = curses.COLS
         self.lines = curses.LINES
@@ -41,6 +41,7 @@ class ConsoleControl:
     def shutdown(self):
         curses.nocbreak()
         self.stdscr.keypad(False)
+        curses.curs_set(self.origcursor)
         curses.echo()
         curses.endwin()
 
