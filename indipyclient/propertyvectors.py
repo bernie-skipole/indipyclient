@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 from .propertymembers import SwitchMember, LightMember, TextMember, NumberMember, BLOBMember
 
-from .error import ParseException, reporterror
+from .error import ParseException
 
 
 class Vector(collections.UserDict):
@@ -203,7 +203,7 @@ class SwitchVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            reporterror("Aborting sending newSwitchVector: The newSwitchVector timestamp must be a datetime.datetime object")
+            self._client.reporterror("Aborting sending newSwitchVector: The newSwitchVector timestamp must be a datetime.datetime object")
             return
         self.state = 'Busy'
         xmldata = ET.Element('newSwitchVector')
@@ -346,7 +346,7 @@ class TextVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            reporterror("Aborting sending newTextVector: The send_newTextVector timestamp must be a datetime.datetime object")
+            self._client.reporterror("Aborting sending newTextVector: The send_newTextVector timestamp must be a datetime.datetime object")
             return
         self.state = 'Busy'
         xmldata = ET.Element('newTextVector')
@@ -437,7 +437,7 @@ class NumberVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            reporterror("Aborting sending newNumberVector: The send_newNumberVector timestamp must be a datetime.datetime object")
+            self._client.reporterror("Aborting sending newNumberVector: The send_newNumberVector timestamp must be a datetime.datetime object")
             return
         self.state = 'Busy'
         xmldata = ET.Element('newNumberVector')
@@ -486,7 +486,7 @@ class BLOBVector(PropertyVector):
            therefore if you are sending a compressed file, you should set the blobsize
            prior to compression with this method."""
         if not isinstance(blobsize, int):
-            reporterror("blobsize rejected, must be an integer object")
+            self._client.reporterror("blobsize rejected, must be an integer object")
             return
         member = self.data.get[membername]
         if not member:

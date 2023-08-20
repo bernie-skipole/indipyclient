@@ -10,8 +10,3 @@ class ParseException(Exception):
 class ConnectionTimeOut(Exception):
     "Raised if the connection has failed"
     pass
-
-
-def reporterror(message):
-    "Prints message to stderr"
-    print(message, file=sys.stderr)
