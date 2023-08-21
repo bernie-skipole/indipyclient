@@ -19,6 +19,14 @@ def startscreen(stdscr, title, info, messages=[]):
     stdscr.refresh()
 
 
-def startinputs(stdscr):
+async def startinputs(stdscr, stop):
     "Gets inputs from the screen"
-    pass
+    stdscr.nodelay(True)
+    while not stop:
+        asyncio.sleep(0)
+        try:
+            key = stdscr.getkey()
+        except curses.error:
+            continue
+        if key == "q" or key == "Q":
+            return "Quit"

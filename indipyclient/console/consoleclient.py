@@ -81,7 +81,7 @@ class ConsoleControl:
         while not self._stop:
             await asyncio.sleep(0)
             if self.screen == "startscreen":
-                result = widgets.startinputs(self.stdscr)
+                result = await widgets.startinputs(self.stdscr, self._stop)
                 if result == "quit":
                     self._stop = True
                     break
