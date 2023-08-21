@@ -102,7 +102,7 @@ class IPyClient(collections.UserDict):
         # self.data is a dictionary of devicename to device object
         self.data = {}
         # self.messages is a deque of "Timestamp space message"
-        self.messages = collections.deque(maxlen=5)
+        self.messages = collections.deque(maxlen=8)
 
         # self.connected is True if connection has been made
         self.connected = False
@@ -121,7 +121,7 @@ class IPyClient(collections.UserDict):
         await asyncio.sleep(2)
 
 
-    def reporterror(self, message):
+    def report(self, message):
         self.messages.append( (datetime.utcnow(), message) )
 
 
@@ -138,17 +138,17 @@ class IPyClient(collections.UserDict):
                 # start by openning a connection
                 reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
                 self.connected = True
-                print(f"Connected to {self.indihost}:{self.indiport}")
+                self.report(f"Connected to {self.indihost}:{self.indiport}")
                 await asyncio.gather(self._run_tx(writer),
                                      self._run_rx(reader),
                                      self._check_alive(writer),
                                      return_exceptions=True
                                      )
             except ConnectionRefusedError:
-                self.reporterror(f"Connection refused on {self.indihost}:{self.indiport}.")
+                self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
             except Exception:
                 self._stop = True
-            self.reporterror(f"Connection re-trying...")
+            self.report(f"Connection re-trying...")
             self.connected = False
             # clear devices etc
             self.clear()
@@ -187,13 +187,14 @@ class IPyClient(collections.UserDict):
                         # no response to transmission self._timer seconds ago
                        writer.close()
                        await writer.wait_closed()
-                       self.reporterror("Connection timed out")
+                       self.report("Error: Connection timed out")
                        self.connected = False
                        break
                 # so the connection is up, check devices exist
                 if not len(self):
                     # no devices, so send a getProperties
                     self.send_getProperties()
+                    self.report("getProperties request sent")
                     # wait for a response
                     for i in range(10):
                         # wait 5 seconds
@@ -393,8 +394,7 @@ class IPyClient(collections.UserDict):
                         continue
             except ParseException as pe:
                 # if a ParseException is raised, it is because received data is malformed
-                # so print to stderr and continue
-                self.reporterror(f"Error parsing received data: {pe}")
+                self.report(f"Error: {pe}")
                 continue
             finally:
                 self.readerque.task_done()
@@ -422,11 +422,11 @@ class IPyClient(collections.UserDict):
         """Send a new Vector, note members is a membername to value dictionary,
            It could also be a vector, which is itself a membername to value mapping"""
         if devicename not in self.data:
-            self.reporterror(f"Failed to send vector: Device {devicename} not recognised")
+            self.report(f"Failed to send vector: Device {devicename} not recognised")
             return
         device = self.data[devicename]
         if vectorname not in device:
-            self.reporterror(f"Failed to send vector: Vector {vectorname} not recognised")
+            self.report(f"Failed to send vector: Vector {vectorname} not recognised")
             return
         try:
             propertyvector = device[vectorname]
@@ -439,11 +439,11 @@ class IPyClient(collections.UserDict):
             elif propertyvector.vectortype == "BLOBVector":
                 propertyvector.send_newBLOBVector(timestamp, members)
             else:
-                self.reporterror(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
+                self.report(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
         except KeyboardInterrupt:
             self._stop = True
         except Exception:
-            self.reporterror(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
+            self.report(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
 
 
     def send_getProperties(self, devicename=None, vectorname=None):

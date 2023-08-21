@@ -19,7 +19,7 @@ class ConsoleClient(IPyClient):
     async def rxevent(self, event):
         "Pass the event into eventque so it can be obtained by the console control"
         eventque = self.clientdata['eventque']
-        eventque.put(event)
+        await eventque.put(event)
 
 
 class ConsoleControl:
@@ -38,7 +38,11 @@ class ConsoleControl:
         self.cols = curses.COLS
         self.lines = curses.LINES
 
-    def shutdown(self):
+        # this keeps track of which screen is being displayed
+        self.screen = "startscreen"
+
+    async def shutdown(self):
+        await self.client.shutdown()
         curses.nocbreak()
         self.stdscr.keypad(False)
         curses.curs_set(self.origcursor)
@@ -53,29 +57,20 @@ class ConsoleControl:
                     event = self.eventque.get_nowait()
                 except asyncio.QueueEmpty:
                     event = None
-                try:
-                    messagetuple = self.client.messages.popleft()
-                except IndexError:
-                    message = None
-                else:
-                    message = messagetuple[0].isoformat(sep='T')[:21] + "  " + messagetuple[1]
                 if not self.client.connected:
                     # display the startscreen
-                    if message:
-                        widgets.startscreen(self.stdscr, "indipyclient console", "Not Connected", [message])
-                    else:
-                        widgets.startscreen(self.stdscr, "indipyclient console", "Not Connected")
+                    self.screen = "startscreen"
+                    messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in reversed(self.client.messages) ]
+                    widgets.startscreen(self.stdscr, "indipyclient console", "Not Connected", messages)
                     await asyncio.sleep(2)
                     continue
-                if not len(self.client):
-                    # No devices received yet
-                    if message:
-                        widgets.startscreen(self.stdscr, "indipyclient console", "Sending getProperties", [message])
-                    else:
-                        widgets.startscreen(self.stdscr, "indipyclient console", "Sending getProperties")
-                    self.client.send_getProperties()
+                # to get here a connection must be made
+                if self.screen == "startscreen":
+                    messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in reversed(self.client.messages) ]
+                    widgets.startscreen(self.stdscr, "indipyclient console", "Connected", messages)
                     await asyncio.sleep(2)
-                    continue
+                # some other screen etc....
+
         except Exception:
-            self.shutdown()
+            await self.shutdown()
             raise
