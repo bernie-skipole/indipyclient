@@ -116,8 +116,9 @@ class IPyClient(collections.UserDict):
         self._stop = False
 
 
-    def shutdown(self):
+    async def shutdown(self):
         self._stop = True
+        await asyncio.sleep(2)
 
 
     def reporterror(self, message):
@@ -161,9 +162,13 @@ class IPyClient(collections.UserDict):
                         self.readerque.task_done()
                     except asyncio.QueueEmpty:
                         break
-            if not self._stop:
-                # try to connect again
-                await asyncio.sleep(5)
+            for i in range(10):
+                # wait 5 seconds, before re-trying
+                # but keep checking if stop is True
+                if self._stop:
+                    break
+                else:
+                    await asyncio.sleep(0.5)
 
 
     def send(self, xmldata):
@@ -190,7 +195,13 @@ class IPyClient(collections.UserDict):
                     # no devices, so send a getProperties
                     self.send_getProperties()
                     # wait for a response
-                    await asyncio.sleep(5)
+                    for i in range(10):
+                        # wait 5 seconds
+                        # but keep checking if stop is True
+                        if self._stop:
+                            break
+                        else:
+                            await asyncio.sleep(0.5)
         except KeyboardInterrupt:
             self._stop = True
             self.connected = False
