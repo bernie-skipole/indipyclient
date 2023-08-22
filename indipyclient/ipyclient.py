@@ -2,7 +2,9 @@
 
 import os, sys, collections, threading, asyncio, pathlib, time
 
-import traceback
+# useful for showing exceptions
+# import traceback
+# self.report(traceback.format_exc())
 
 from time import sleep
 
@@ -160,8 +162,6 @@ class IPyClient(collections.UserDict):
                     self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionResetError:
                     self.report(f"Error: Connection Lost")
-                #except Exception as e:
-                #    self.report(f"Error: {e}")
                 self.report(f"Connection re-trying...")
                 self.connected = False
                 # clear devices etc
@@ -184,7 +184,6 @@ class IPyClient(collections.UserDict):
                     else:
                         await asyncio.sleep(0.5)
         except Exception as e:
-            self.report(traceback.format_exc())
             self._shutdown = True
 
 
@@ -239,6 +238,9 @@ class IPyClient(collections.UserDict):
                 if self._timer is None:
                     # set a timer going
                     self._timer = time.time()
+        except KeyboardInterrupt:
+            self._shutdown = True
+            self.connected = False
         except Exception as e:
             self.connected = False
 
@@ -260,6 +262,9 @@ class IPyClient(collections.UserDict):
                         # The queue is full, something may be wrong
                         # discard this data and continue
                         pass
+        except KeyboardInterrupt:
+            self._shutdown = True
+            self.connected = False
         except Exception as e:
             self.connected = False
 
@@ -461,22 +466,26 @@ class IPyClient(collections.UserDict):
 
     async def _autosend_getProperties(self):
         "Sends a getProperties every five seconds"
-        while (not self._stop):
-            await asyncio.sleep(0)
-            if self.connected:
-                # so the connection is up, check devices exist
-                if not len(self):
-                    # no devices, so send a getProperties
-                    self.send_getProperties()
-                    self.report("getProperties request sent")
-                    # wait for a response
-                    for i in range(10):
-                        # wait 5 seconds
-                        # but keep checking if stop is True
-                        if self._stop:
-                            break
-                        else:
-                            await asyncio.sleep(0.5)
+        try:
+            while (not self._stop):
+                await asyncio.sleep(0)
+                if self.connected:
+                    # so the connection is up, check devices exist
+                    if not len(self):
+                        # no devices, so send a getProperties
+                        self.send_getProperties()
+                        self.report("getProperties request sent")
+                        # wait for a response
+                        for i in range(10):
+                            # wait 5 seconds
+                            # but keep checking if stop is True
+                            if self._stop:
+                                break
+                            else:
+                                await asyncio.sleep(0.5)
+        except KeyboardInterrupt:
+            self._shutdown = True
+
 
 
     def send_getProperties(self, devicename=None, vectorname=None):

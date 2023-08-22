@@ -30,7 +30,7 @@ class ConsoleControl:
         self.stdscr.keypad(True)
 
         # this keeps track of which screen is being displayed
-        self.screen = "startscreen"
+        self.screen = widgets.StartScreen(self.stdscr)
 
         # this is set to True, to shut down the client
         self._shutdown = False
@@ -66,15 +66,14 @@ class ConsoleControl:
                 await asyncio.sleep(0)
                 if not self.client.connected:
                     # display the startscreen
-                    self.screen = "startscreen"
                     messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
-                    widgets.startscreen(self.stdscr, "indipyclient console", "Not Connected", messages)
+                    self.screen.startscreen("indipyclient console", "Not Connected", messages)
                     await asyncio.sleep(2)
                     continue
                 # to get here a connection must be in place
-                if self.screen == "startscreen":
+                if isinstance(self.screen, widgets.StartScreen):
                     messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
-                    widgets.startscreen(self.stdscr, "indipyclient console", "Connected", messages)
+                    self.screen.startscreen("indipyclient console", "Connected", messages)
                     await asyncio.sleep(2)
                 # some other screen etc....
         except Exception:
@@ -85,13 +84,13 @@ class ConsoleControl:
         try:
             while not self._stop:
                 await asyncio.sleep(0)
-                if self.screen == "startscreen":
-                    result = await widgets.startinputs(self.stdscr)
+                if isinstance(self.screen, widgets.StartScreen):
+                    result = await self.screen.startinputs()
                     if result == "Quit":
                         self._shutdown = True
                         break
                     # if result == "Devices":
-                    #     self.screen = "Devices"
+                    #     self.screen = widgets.Devices() etc
         except Exception:
             self._shutdown = True
 
