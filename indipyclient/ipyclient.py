@@ -113,13 +113,20 @@ class IPyClient(collections.UserDict):
         # this is populated with the running loop once it is available
         self.loop = None
         # this is set to True, to shut down the client
+        self._shutdown = False
+        # and shutdown routine sets this to True to stop coroutines
         self._stop = False
 
+    def shutdown(self):
+        self._shutdown = True
 
-    async def shutdown(self):
+    async def _checkshutdown(self):
+        "Monitors self._shutdown flag and shuts down the client"
+        while not self._shutdown:
+            await asyncio.sleep(0)
+        # now stop co-routines
         self._stop = True
         await asyncio.sleep(2)
-
 
     def report(self, message):
         self.messages.append( (datetime.utcnow(), message) )
@@ -132,43 +139,44 @@ class IPyClient(collections.UserDict):
 
     async def _comms(self):
         "Create a connection to an INDI port"
-        while not self._stop:
-            self._timer = None
-            try:
-                # start by openning a connection
-                reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
-                self.connected = True
-                self.report(f"Connected to {self.indihost}:{self.indiport}")
-                await asyncio.gather(self._run_tx(writer),
-                                     self._run_rx(reader),
-                                     self._check_alive(writer),
-                                     return_exceptions=True
-                                     )
-            except ConnectionRefusedError:
-                self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
-            except Exception:
-                self._stop = True
-            self.report(f"Connection re-trying...")
-            self.connected = False
-            # clear devices etc
-            self.clear()
-            # clear the writerque
-            self.writerque.clear()
-            if not self.readerque.empty():
-                # empty the queue
-                while True:
-                    try:
-                        xmldata = self.readerque.get_nowait()
-                        self.readerque.task_done()
-                    except asyncio.QueueEmpty:
+        try:
+            while not self._stop:
+                self._timer = None
+                try:
+                    # start by openning a connection
+                    reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
+                    self.connected = True
+                    self.report(f"Connected to {self.indihost}:{self.indiport}")
+                    await asyncio.gather(self._run_tx(writer),
+                                         self._run_rx(reader),
+                                         self._check_alive(writer),
+                                         return_exceptions=True
+                                         )
+                except ConnectionRefusedError:
+                    self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
+                self.report(f"Connection re-trying...")
+                self.connected = False
+                # clear devices etc
+                self.clear()
+                # clear the writerque
+                self.writerque.clear()
+                if not self.readerque.empty():
+                    # empty the queue
+                    while True:
+                        try:
+                            xmldata = self.readerque.get_nowait()
+                            self.readerque.task_done()
+                        except asyncio.QueueEmpty:
+                            break
+                for i in range(10):
+                    # wait 5 seconds, before re-trying
+                    # but keep checking if stop is True
+                    if self._stop:
                         break
-            for i in range(10):
-                # wait 5 seconds, before re-trying
-                # but keep checking if stop is True
-                if self._stop:
-                    break
-                else:
-                    await asyncio.sleep(0.5)
+                    else:
+                        await asyncio.sleep(0.5)
+        except Exception:
+            self._shutdown = True
 
 
     def send(self, xmldata):
@@ -204,7 +212,7 @@ class IPyClient(collections.UserDict):
                         else:
                             await asyncio.sleep(0.5)
         except KeyboardInterrupt:
-            self._stop = True
+            self._shutdown = True
             self.connected = False
         except Exception:
              self.connected = False
@@ -212,47 +220,59 @@ class IPyClient(collections.UserDict):
 
     async def _run_tx(self, writer):
         "Monitors self.writerque and if it has data, uses writer to send it"
-        while self.connected and (not self._stop):
-            await asyncio.sleep(0)
-            if not len(self.writerque):
-                continue
-            try:
-                txdata = self.writerque.popleft()
-            except IndexError:
-                continue
-            if txdata.tag == "newBLOBVector" and len(txdata):
-                # txdata is a newBLOBVector containing blobs
-                # the generator blob_xml_bytes yields bytes
-                for binarydata in blob_xml_bytes(txdata):
+        try:
+            while self.connected and (not self._stop):
+                await asyncio.sleep(0)
+                if not len(self.writerque):
+                    continue
+                try:
+                    txdata = self.writerque.popleft()
+                except IndexError:
+                    continue
+                if txdata.tag == "newBLOBVector" and len(txdata):
+                    # txdata is a newBLOBVector containing blobs
+                    # the generator blob_xml_bytes yields bytes
+                    for binarydata in blob_xml_bytes(txdata):
+                        # Send to the port
+                        writer.write(binarydata)
+                        await writer.drain()
+                else:
+                    # its straight xml, send it out on the port
+                    binarydata = ET.tostring(txdata)
                     # Send to the port
                     writer.write(binarydata)
                     await writer.drain()
-            else:
-                # its straight xml, send it out on the port
-                binarydata = ET.tostring(txdata)
-                # Send to the port
-                writer.write(binarydata)
-                await writer.drain()
-            if self._timer is None:
-                # set a timer going
-                self._timer = time.time()
+                if self._timer is None:
+                    # set a timer going
+                    self._timer = time.time()
+        except Exception:
+            self._shutdown = True
 
 
     async def _run_rx(self, reader):
         "pass xml.etree.ElementTree data to readerque"
-        source = self._datasource(reader)
-        while self.connected and (not self._stop):
-            await asyncio.sleep(0)
-            # get block of xml.etree.ElementTree data
-            # from source and append it to  readerque
-            try:
-                rxdata = await anext(source)
-            except StopAsyncIteration:
-                self.connected = False
-                break
-            if rxdata is not None:
-                # and place rxdata into readerque
-                await self.readerque.put(rxdata)
+        try:
+            source = self._datasource(reader)
+            while self.connected and (not self._stop):
+                await asyncio.sleep(0)
+                # get block of xml.etree.ElementTree data
+                # from source and append it to  readerque
+                try:
+                    rxdata = await anext(source)
+                except StopAsyncIteration:
+                    self.connected = False
+                    break
+                if rxdata is not None:
+                    # and place rxdata into readerque
+                    try:
+                        await self.readerque.put_nowait(rxdata)
+                    except asyncio.QueueFull:
+                        # The queue is full, something may be wrong
+                        # discard this data and continue
+                        pass
+        except Exception:
+            self._shutdown = True
+
 
     async def _datasource(self, reader):
         # get received data, parse it, and yield it as xml.etree.ElementTree object
@@ -294,7 +314,7 @@ class IPyClient(collections.UserDict):
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
                     except KeyboardInterrupt:
-                        self._stop = True
+                        self._shutdown = True
                         self.connected = False
                         break
                     except Exception as e:
@@ -316,7 +336,7 @@ class IPyClient(collections.UserDict):
                 try:
                     root = ET.fromstring(message.decode("us-ascii"))
                 except KeyboardInterrupt:
-                    self._stop = True
+                    self._shutdown = True
                     self.connected = False
                     break
                 except Exception as e:
@@ -340,7 +360,7 @@ class IPyClient(collections.UserDict):
             except asyncio.LimitOverrunError:
                 data = await reader.read(n=32000)
             except KeyboardInterrupt:
-                self._stop = True
+                self._shutdown = True
                 self.connected = False
                 break
             except Exception:
@@ -362,45 +382,52 @@ class IPyClient(collections.UserDict):
 
     async def _rxhandler(self):
         """Populates the events using data from self.readerque"""
-        while not self._stop:
-            # get block of data from the self.readerque
-            await asyncio.sleep(0)
-            root = await self.readerque.get()
-            devicename = root.get("device")
-            # block any other thread from accessing data until update is done
-            try:
-                with threading.Lock():
-                    if devicename is None:
-                        if root.tag == "message":
-                            # state wide message
-                            self.messages.appendleft( root.get("timestamp", datetime.utcnow().isoformat()) )
-                            # create event
-                            event = events.message(root)
+        try:
+            while not self._stop:
+                # get block of data from the self.readerque
+                await asyncio.sleep(0)
+                try:
+                    root = await self.readerque.get_nowait()
+                except asyncio.QueueEmpty:
+                    # nothing to read, continue while loop which re-checks the _stop flag
+                    continue
+                devicename = root.get("device")
+                # block any other thread from accessing data until update is done
+                try:
+                    with threading.Lock():
+                        if devicename is None:
+                            if root.tag == "message":
+                                # state wide message
+                                self.messages.appendleft( root.get("timestamp", datetime.utcnow().isoformat()) )
+                                # create event
+                                event = events.message(root)
+                            else:
+                                # if no devicename and not message, do nothing
+                                continue
+                        elif devicename in self:
+                            # device is known about
+                            device = self[devicename]
+                            event = device.rxvector(root)
+                        elif root.tag in DEFTAGS:
+                            # device not known, but a def is received
+                            newdevice = _Device(devicename, self)
+                            event = newdevice.rxvector(root)
+                            # no error has occurred, so add this device to self.data
+                            self.data[devicename] = newdevice
                         else:
-                            # if no devicename and not message, do nothing
+                            # device not known, not a def, so ignore it
                             continue
-                    elif devicename in self:
-                        # device is known about
-                        device = self[devicename]
-                        event = device.rxvector(root)
-                    elif root.tag in DEFTAGS:
-                        # device not known, but a def is received
-                        newdevice = _Device(devicename, self)
-                        event = newdevice.rxvector(root)
-                        # no error has occurred, so add this device to self.data
-                        self.data[devicename] = newdevice
-                    else:
-                        # device not known, not a def, so ignore it
-                        continue
-            except ParseException as pe:
-                # if a ParseException is raised, it is because received data is malformed
-                self.report(f"Error: {pe}")
-                continue
-            finally:
-                self.readerque.task_done()
-            # and to get here, continue has not been called
-            # and an event has been created, call the user event handling function
-            await self.rxevent(event)
+                except ParseException as pe:
+                    # if a ParseException is raised, it is because received data is malformed
+                    self.report(f"Error: {pe}")
+                    continue
+                finally:
+                    self.readerque.task_done()
+                # and to get here, continue has not been called
+                # and an event has been created, call the user event handling function
+                await self.rxevent(event)
+        except Exception:
+            self._shutdown = True
 
 
     def snapshot(self):
@@ -441,7 +468,7 @@ class IPyClient(collections.UserDict):
             else:
                 self.report(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
         except KeyboardInterrupt:
-            self._stop = True
+            self._shutdown = True
         except Exception:
             self.report(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
 
@@ -481,15 +508,11 @@ class IPyClient(collections.UserDict):
         pass
 
 
-
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self._stop = False
         self.loop = asyncio.get_running_loop()
-        try:
-            await asyncio.gather(self._comms(), self._rxhandler(), return_exceptions=True)
-        except KeyboardInterrupt:
-            pass
+        await asyncio.gather(self._comms(), self._rxhandler(), self._checkshutdown(), return_exceptions=True)
 
 
 

@@ -15,11 +15,14 @@ from .console.consoleclient import ConsoleClient, ConsoleControl
 
 
 async def main(client, control):
-
-    t1 = client.asyncrun()
-    t2 = control.asyncrun()
-    await asyncio.gather(t1, t2)
-    print("Client exited")
+    try:
+        t1 = client.asyncrun()
+        t2 = control.asyncrun()
+        await asyncio.gather(t1, t2)
+    except Exception:
+         t1.cancel()
+         t2.cancel()
+    await asyncio.sleep(3)
 
 
 if __name__ == "__main__":
@@ -33,10 +36,8 @@ if __name__ == "__main__":
     parser.add_argument("--version", action="version", version=version)
     args = parser.parse_args()
 
-    # eventque where received events will be placed and passed to control
-    eventque = asyncio.Queue(4)
 
-    client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
-    control = ConsoleControl(client, eventque)
+    client = ConsoleClient(indihost=args.host, indiport=args.port)
+    control = ConsoleControl(client)
 
     asyncio.run(main(client, control))
