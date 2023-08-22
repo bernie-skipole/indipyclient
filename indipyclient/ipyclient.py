@@ -149,11 +149,12 @@ class IPyClient(collections.UserDict):
                     self.report(f"Connected to {self.indihost}:{self.indiport}")
                     await asyncio.gather(self._run_tx(writer),
                                          self._run_rx(reader),
-                                         self._check_alive(writer),
-                                         return_exceptions=True
+                                         self._check_alive(writer)
                                          )
                 except ConnectionRefusedError:
                     self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
+                #except Exception as e:
+                #    self.report(f"Error: {e}")
                 self.report(f"Connection re-trying...")
                 self.connected = False
                 # clear devices etc
@@ -214,7 +215,8 @@ class IPyClient(collections.UserDict):
         except KeyboardInterrupt:
             self._shutdown = True
             self.connected = False
-        except Exception:
+        except Exception as e:
+             self.report(f"Exception: {e}")
              self.connected = False
 
 
@@ -223,8 +225,6 @@ class IPyClient(collections.UserDict):
         try:
             while self.connected and (not self._stop):
                 await asyncio.sleep(0)
-                if not len(self.writerque):
-                    continue
                 try:
                     txdata = self.writerque.popleft()
                 except IndexError:
@@ -257,15 +257,11 @@ class IPyClient(collections.UserDict):
                 await asyncio.sleep(0)
                 # get block of xml.etree.ElementTree data
                 # from source and append it to  readerque
-                try:
-                    rxdata = await anext(source)
-                except StopAsyncIteration:
-                    self.connected = False
-                    break
+                rxdata = await anext(source)
                 if rxdata is not None:
                     # and place rxdata into readerque
                     try:
-                        await self.readerque.put_nowait(rxdata)
+                        self.readerque.put_nowait(rxdata)
                     except asyncio.QueueFull:
                         # The queue is full, something may be wrong
                         # discard this data and continue
@@ -282,11 +278,7 @@ class IPyClient(collections.UserDict):
         while self.connected and (not self._stop):
             await asyncio.sleep(0)
             # get blocks of data from _datainput
-            try:
-                data = await anext(data_in)
-            except StopAsyncIteration:
-                self.connected = False
-                break
+            data = await anext(data_in)
             if not data:
                 continue
             if not message:
@@ -387,7 +379,7 @@ class IPyClient(collections.UserDict):
                 # get block of data from the self.readerque
                 await asyncio.sleep(0)
                 try:
-                    root = await self.readerque.get_nowait()
+                    root = self.readerque.get_nowait()
                 except asyncio.QueueEmpty:
                     # nothing to read, continue while loop which re-checks the _stop flag
                     continue

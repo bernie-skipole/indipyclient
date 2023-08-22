@@ -51,7 +51,7 @@ class ConsoleControl:
         self.client.shutdown()
         # now stop co-routines
         self._stop = True
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1)
         # clear up the terminal
         curses.nocbreak()
         self.stdscr.keypad(False)
@@ -67,13 +67,13 @@ class ConsoleControl:
                 if not self.client.connected:
                     # display the startscreen
                     self.screen = "startscreen"
-                    messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in reversed(self.client.messages) ]
+                    messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
                     widgets.startscreen(self.stdscr, "indipyclient console", "Not Connected", messages)
                     await asyncio.sleep(2)
                     continue
-                # to get here a connection must be made
+                # to get here a connection must be in place
                 if self.screen == "startscreen":
-                    messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in reversed(self.client.messages) ]
+                    messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
                     widgets.startscreen(self.stdscr, "indipyclient console", "Connected", messages)
                     await asyncio.sleep(2)
                 # some other screen etc....
