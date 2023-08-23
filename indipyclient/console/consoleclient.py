@@ -7,7 +7,7 @@ from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector)
 
-from . import widgets
+from . import windows
 
 
 class ConsoleClient(IPyClient):
@@ -30,7 +30,7 @@ class ConsoleControl:
         self.stdscr.keypad(True)
 
         # this keeps track of which screen is being displayed
-        self.screen = widgets.StartScreen(self.stdscr)
+        self.screen = windows.StartScreen(self.stdscr)
 
         # this is set to True, to shut down the client
         self._shutdown = False
@@ -71,7 +71,7 @@ class ConsoleControl:
                     await asyncio.sleep(2)
                     continue
                 # to get here a connection must be in place
-                if isinstance(self.screen, widgets.StartScreen):
+                if isinstance(self.screen, windows.StartScreen):
                     messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
                     self.screen.startscreen("indipyclient console", "Connected", messages)
                     await asyncio.sleep(2)
@@ -84,13 +84,13 @@ class ConsoleControl:
         try:
             while not self._stop:
                 await asyncio.sleep(0)
-                if isinstance(self.screen, widgets.StartScreen):
+                if isinstance(self.screen, windows.StartScreen):
                     result = await self.screen.startinputs()
                     if result == "Quit":
                         self._shutdown = True
                         break
                     # if result == "Devices":
-                    #     self.screen = widgets.Devices() etc
+                    #     self.screen = windows.Devices() etc
         except Exception:
             self._shutdown = True
 
