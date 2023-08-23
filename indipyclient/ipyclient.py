@@ -120,6 +120,8 @@ class IPyClient(collections.UserDict):
         self._shutdown = False
         # and shutdown routine sets this to True to stop coroutines
         self._stop = False
+        # this is set to True when asyncrun is finished
+        self.stopped = False
 
     def shutdown(self):
         self._shutdown = True
@@ -528,6 +530,7 @@ class IPyClient(collections.UserDict):
         self._stop = False
         self.loop = asyncio.get_running_loop()
         await asyncio.gather(self._comms(), self._rxhandler(), self._autosend_getProperties(), self._checkshutdown(), return_exceptions=True)
+        self.stopped = True
 
 
 

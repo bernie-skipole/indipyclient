@@ -47,8 +47,9 @@ class ConsoleControl:
         while not self._shutdown:
             await asyncio.sleep(0)
         self.client.report("Shutting down client - please wait")
-        await asyncio.sleep(1)
         self.client.shutdown()
+        while not self.client.stopped:
+            await asyncio.sleep(0)
         # now stop co-routines
         self._stop = True
         await asyncio.sleep(1)
