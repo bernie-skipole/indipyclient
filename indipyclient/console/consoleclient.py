@@ -70,6 +70,7 @@ class ConsoleControl:
             while not self._stop:
                 await asyncio.sleep(0)
                 if not self.client.connected:
+                    self.screen = windows.StartScreen(self.stdscr)
                     # display the startscreen
                     messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
                     self.screen.show("indipyclient console", "Not Connected", messages)
@@ -84,7 +85,6 @@ class ConsoleControl:
         except Exception:
             self._shutdown = True
         self.showscreenstopped = True
-
 
 
     async def getinput(self):
