@@ -36,6 +36,9 @@ class ConsoleControl:
         self._shutdown = False
         # and shutdown routine sets this to True to stop coroutines
         self._stop = False
+        # these are set to True when asyncrun is finished
+        self.showscreenstopped = False
+        self.getinputstopped = False
 
 
     def shutdown(self):
@@ -52,8 +55,9 @@ class ConsoleControl:
             await asyncio.sleep(0)
         # now stop co-routines
         self._stop = True
-        await asyncio.sleep(1)
-        # clear up the terminal
+        while (not self.showscreenstopped) and (not self.getinputstopped):
+            await asyncio.sleep(0)
+        # async tasks finished, clear up the terminal
         curses.nocbreak()
         self.stdscr.keypad(False)
         curses.curs_set(1)
@@ -79,6 +83,8 @@ class ConsoleControl:
                 # some other screen etc....
         except Exception:
             self._shutdown = True
+        self.showscreenstopped = True
+
 
 
     async def getinput(self):
@@ -94,8 +100,10 @@ class ConsoleControl:
                     #     self.screen = windows.Devices() etc
         except Exception:
             self._shutdown = True
+        self.getinputstopped = True
 
 
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
+        self._stop = False
         await asyncio.gather(self.showscreen(), self.getinput(), self._checkshutdown())
