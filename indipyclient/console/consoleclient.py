@@ -67,13 +67,13 @@ class ConsoleControl:
                 if not self.client.connected:
                     # display the startscreen
                     messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
-                    self.screen.startscreen("indipyclient console", "Not Connected", messages)
+                    self.screen.show("indipyclient console", "Not Connected", messages)
                     await asyncio.sleep(2)
                     continue
                 # to get here a connection must be in place
                 if isinstance(self.screen, windows.StartScreen):
                     messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
-                    self.screen.startscreen("indipyclient console", "Connected", messages)
+                    self.screen.show("indipyclient console", "Connected", messages)
                     await asyncio.sleep(2)
                 # some other screen etc....
         except Exception:
@@ -85,7 +85,7 @@ class ConsoleControl:
             while not self._stop:
                 await asyncio.sleep(0)
                 if isinstance(self.screen, windows.StartScreen):
-                    result = await self.screen.startinputs()
+                    result = await self.screen.inputs()
                     if result == "Quit":
                         self._shutdown = True
                         break

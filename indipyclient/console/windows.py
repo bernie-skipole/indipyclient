@@ -12,7 +12,7 @@ class StartScreen:
         self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 2)
         self.quit_btn.set_focus(False)
 
-    def startscreen(self, title, info, messages=[]):
+    def show(self, title, info, messages=[]):
         "Displays title, info string and list of messages on a start screen"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, title, curses.A_BOLD)
@@ -30,7 +30,7 @@ class StartScreen:
         self.stdscr.refresh()
 
 
-    async def startinputs(self):
+    async def inputs(self):
         "Gets inputs from the screen"
         try:
             self.stdscr.nodelay(True)
