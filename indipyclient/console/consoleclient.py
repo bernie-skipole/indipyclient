@@ -30,15 +30,24 @@ class ConsoleControl:
         self.stdscr.keypad(True)
 
         # this keeps track of which screen is being displayed
-        self.screen = windows.StartScreen(self.stdscr)
+        self.screen = windows.MessagesScreen(self.stdscr)
 
         # this is set to True, to shut down the client
         self._shutdown = False
         # and shutdown routine sets this to True to stop coroutines
-        self._stop = False
+        self.stop = False
         # these are set to True when asyncrun is finished
         self.showscreenstopped = False
         self.getinputstopped = False
+
+        if curses.LINES < 16 or curses.COLS < 50:
+            curses.nocbreak()
+            self.stdscr.keypad(False)
+            curses.curs_set(1)
+            curses.echo()
+            curses.endwin()
+            print("Terminal too small!")
+            sys.exit(1)
 
 
     def shutdown(self):
@@ -54,7 +63,7 @@ class ConsoleControl:
         while not self.client.stopped:
             await asyncio.sleep(0)
         # now stop co-routines
-        self._stop = True
+        self.stop = True
         while (not self.showscreenstopped) and (not self.getinputstopped):
             await asyncio.sleep(0)
         # async tasks finished, clear up the terminal
@@ -67,20 +76,18 @@ class ConsoleControl:
 
     async def showscreen(self):
         try:
-            while not self._stop:
+            while not self.stop:
                 await asyncio.sleep(0)
                 if not self.client.connected:
-                    if not isinstance(self.screen, windows.StartScreen):
-                        self.screen = windows.StartScreen(self.stdscr)
-                    # display the startscreen
-                    messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
-                    self.screen.show("indipyclient console", "Not Connected", messages)
+                    if not isinstance(self.screen, windows.MessagesScreen):
+                        self.screen = windows.MessagesScreen(self.stdscr)
+                    # display the messages screen
+                    self.screen.show("indipyclient console", "Not Connected", self.client.messages)
                     await asyncio.sleep(2)
                     continue
                 # to get here a connection must be in place
-                if isinstance(self.screen, windows.StartScreen):
-                    messages = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in self.client.messages ]
-                    self.screen.show("indipyclient console", "Connected", messages)
+                if isinstance(self.screen, windows.MessagesScreen):
+                    self.screen.show("indipyclient console", "Connected", self.client.messages)
                     await asyncio.sleep(2)
                 # some other screen etc....
         except Exception:
@@ -90,14 +97,15 @@ class ConsoleControl:
 
     async def getinput(self):
         try:
-            while not self._stop:
+            while not self.stop:
                 await asyncio.sleep(0)
-                if isinstance(self.screen, windows.StartScreen):
-                    result = await self.screen.inputs()
+                if isinstance(self.screen, windows.MessagesScreen):
+                    result = await self.screen.inputs(self)
                     if result == "Quit":
                         self._shutdown = True
                         break
-                    # if result == "Devices":
+                    if result == "Devices":
+                        pass
                     #     self.screen = windows.Devices() etc
         except Exception:
             self._shutdown = True
@@ -106,5 +114,5 @@ class ConsoleControl:
 
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
-        self._stop = False
+        self.stop = False
         await asyncio.gather(self.showscreen(), self.getinput(), self._checkshutdown())
