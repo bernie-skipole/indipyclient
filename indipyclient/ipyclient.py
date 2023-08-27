@@ -150,9 +150,12 @@ class IPyClient(collections.UserDict):
                 self._timer = None
                 try:
                     # start by openning a connection
+                    # clear messages
+                    self.messages.clear()
                     self.report("Attempting to connect")
                     reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
                     self.connected = True
+                    self.messages.clear()
                     self.report(f"Connected to {self.indihost}:{self.indiport}")
                     await asyncio.gather(self._run_tx(writer),
                                          self._run_rx(reader),
@@ -391,7 +394,7 @@ class IPyClient(collections.UserDict):
                         if devicename is None:
                             if root.tag == "message":
                                 # state wide message
-                                self.messages.appendleft( root.get("timestamp", datetime.utcnow().isoformat()) )
+                                self.messages.appendleft( (root.get("timestamp", datetime.utcnow().isoformat()), root.get("message","")) )
                                 # create event
                                 event = events.message(root)
                             else:

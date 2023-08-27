@@ -14,12 +14,18 @@ class ConsoleClient(IPyClient):
 
     """This is a console client"""
 
-    pass
+    async def rxevent(self, event):
+        """Add event to a queue"""
+        self.clientdata['eventque'].appendleft(event)
+
 
 class ConsoleControl:
 
     def __init__(self, client):
         self.client = client
+
+        # this is populated with events as they are received
+        self.eventque = client.clientdata['eventque']
 
         # set up screen
         self.stdscr = curses.initscr()
@@ -29,8 +35,10 @@ class ConsoleControl:
         curses.curs_set(0)
         self.stdscr.keypad(True)
 
-        # this keeps track of which screen is being displayed
-        self.screen = windows.MessagesScreen(self.stdscr)
+        # this keeps track of which screen is being displayed,
+        # initially start with the messages screen
+        self.screen = windows.MessagesScreen(self.stdscr, self)
+        self.screen.show(self.client.messages)
 
         # this is set to True, to shut down the client
         self._shutdown = False
@@ -40,7 +48,7 @@ class ConsoleControl:
         self.showscreenstopped = False
         self.getinputstopped = False
 
-        if curses.LINES < 16 or curses.COLS < 50:
+        if curses.LINES < 9 or curses.COLS < 40:
             curses.nocbreak()
             self.stdscr.keypad(False)
             curses.curs_set(1)
@@ -48,6 +56,11 @@ class ConsoleControl:
             curses.endwin()
             print("Terminal too small!")
             sys.exit(1)
+
+
+    @property
+    def connected(self):
+        return self.client.connected
 
 
     def shutdown(self):
@@ -75,20 +88,35 @@ class ConsoleControl:
 
 
     async def showscreen(self):
+        "Update while input is changing, ie new messages or devices"
         try:
             while not self.stop:
                 await asyncio.sleep(0)
-                if not self.client.connected:
-                    if not isinstance(self.screen, windows.MessagesScreen):
-                        self.screen = windows.MessagesScreen(self.stdscr)
-                    # display the messages screen
-                    self.screen.show("indipyclient console", "Not Connected", self.client.messages)
-                    await asyncio.sleep(2)
-                    continue
-                # to get here a connection must be in place
+                if (not self.connected) and (not isinstance(self.screen, windows.MessagesScreen)):
+                    # when not connected, show messages screen
+                    self.screen = windows.MessagesScreen(self.stdscr, self)
+
+                #if windows.MessagesScreen is being shown, update every two seconds
                 if isinstance(self.screen, windows.MessagesScreen):
-                    self.screen.show("indipyclient console", "Connected", self.client.messages)
-                    await asyncio.sleep(2)
+                    self.screen.show(self.client.messages)
+                    # wait 2 seconds, but keep checking self.stop
+                    for t in range(20):
+                        await asyncio.sleep(0.1)
+                        if self.stop:
+                            break
+                    continue
+
+                # To get here, the client is connected, and a screen other
+                # than the messages screen is being shown, so only update the screen
+                # if an event is received
+                try:
+                    event = self.eventque.pop()
+                except IndexError:
+                    # no event received, so do not update screen
+                    continue
+                if isinstance(self.screen, windows.DevicesScreen):
+                    self.screen.show(self.client)
+                    continue
                 # some other screen etc....
         except Exception:
             self._shutdown = True
@@ -100,13 +128,24 @@ class ConsoleControl:
             while not self.stop:
                 await asyncio.sleep(0)
                 if isinstance(self.screen, windows.MessagesScreen):
-                    result = await self.screen.inputs(self)
+                    result = await self.screen.inputs()
                     if result == "Quit":
                         self._shutdown = True
                         break
                     if result == "Devices":
-                        pass
-                    #     self.screen = windows.Devices() etc
+                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen.show(self.client)
+                        continue
+                if isinstance(self.screen, windows.DevicesScreen):
+                    result = await self.screen.inputs()
+                    if result == "Quit":
+                        self._shutdown = True
+                        break
+                    if result == "Messages":
+                        self.screen = windows.MessagesScreen(self.stdscr, self)
+                        self.screen.show(self.client.messages)
+                        continue
+                    #     self.screen = .... etc
         except Exception:
             self._shutdown = True
         self.getinputstopped = True

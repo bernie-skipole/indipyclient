@@ -6,7 +6,7 @@ python3 -m indipyclient
 """
 
 
-import argparse, asyncio
+import argparse, asyncio, collections
 
 
 from . import version
@@ -16,8 +16,8 @@ from .console.consoleclient import ConsoleClient, ConsoleControl
 
 async def main(client, control):
     try:
-        t1 = client.asyncrun()
-        t2 = control.asyncrun()
+        t1 = asyncio.create_task(client.asyncrun())
+        t2 = asyncio.create_task(control.asyncrun())
         await asyncio.gather(t1, t2)
     except Exception:
          t1.cancel()
@@ -36,8 +36,11 @@ if __name__ == "__main__":
     parser.add_argument("--version", action="version", version=version)
     args = parser.parse_args()
 
+    print("Client running...")
 
-    client = ConsoleClient(indihost=args.host, indiport=args.port)
+    eventque = collections.deque(maxlen=4)
+
+    client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
     control = ConsoleControl(client)
 
     asyncio.run(main(client, control))
