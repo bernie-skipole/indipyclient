@@ -17,8 +17,9 @@ class MessagesScreen:
     def connected(self):
         return self.consoleclient.connected
 
-    def show(self, messages=[]):
+    def show(self, client):
         "Displays title, info string and list of messages on a start screen"
+        messages = client.messages
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "indipyclient console", curses.A_BOLD)
         if self.connected:
@@ -62,7 +63,7 @@ class MessagesScreen:
         "Gets inputs from the screen"
         try:
             self.stdscr.nodelay(True)
-            while not self.consoleclient.stop:
+            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
                 await asyncio.sleep(0)
                 key = self.stdscr.getch()
                 if key == -1:
@@ -107,27 +108,34 @@ class DevicesScreen:
         self.consoleclient = consoleclient
         self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 10)
         self.messages_btn.focus = True
+        self.focus = "Messages"
         self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 2)
-        self.quit_btn.focus = False
         # devicename to button dictionary
         self.devices = {}
+
 
     def show(self, client):
         "Displays list of devices"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Devices", curses.A_BOLD)
+        message = client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + client.messages[-1][1]
+        self.stdscr.addstr(2, 4, message)
         if not len(client):
-            self.stdscr.addstr(2, 0, "No devices have been discovered")
+            self.stdscr.addstr(4, 4, "No devices have been discovered")
         else:
-            self.stdscr.addstr(2, 0, "Choose a device:")
+            self.stdscr.addstr(4, 4, "Choose a device:")
         # Remove current devices
         self.devices.clear()
-        linenumber = 4
+        linenumber = 5
         colnumber = 4
         for devicename in client:
             linenumber += 1
-            self.devices[devicename] = widgets.Button(self.stdscr, devicename, linenumber, colnumber)
-            self.devices[devicename].draw()
+            self.devices[devicename.lower()] = widgets.Button(self.stdscr, devicename, linenumber, colnumber)
+            if self.focus == devicename.lower():
+                self.devices[devicename.lower()].focus = True
+            self.devices[devicename.lower()].draw()
+        self.devices["Messages"] = self.messages_btn
+        self.devices["Quit"] = self.quit_btn
         self.messages_btn.draw()
         self.quit_btn.draw()
         self.stdscr.refresh()
@@ -139,29 +147,52 @@ class DevicesScreen:
         "Gets inputs from the screen"
         try:
             self.stdscr.nodelay(True)
-            while not self.consoleclient.stop:
+            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
                 await asyncio.sleep(0)
                 key = self.stdscr.getch()
                 if key == -1:
                     continue
-                if key in (32, 9, 261, 338, 258, 353, 260, 339, 259):
-                    # go to the other button
-                    if self.messages_btn.focus:
-                        self.messages_btn.focus = False
-                        self.quit_btn.focus = True
-                    else:
-                        self.quit_btn.focus = False
-                        self.messages_btn.focus = True
-                    self.messages_btn.draw()
-                    self.quit_btn.draw()
+                # which button has focus
+                btnlist = list(self.devices.keys())
+                if self.focus not in btnlist:
+                    self.messages_btn.focus = True
+                    self.focus = "Messages"
+                if key == 10:
+                    if self.focus == "Quit":
+                        self.stdscr.addstr(2, 4, "Quit chosen ... Please wait" + " "*(curses.COLS - 31), curses.A_BOLD)
+                        self.stdscr.refresh()
+                    return self.focus
                 if chr(key) == "q" or chr(key) == "Q":
+                    self.stdscr.addstr(2, 4, "Quit chosen ... Please wait" + " "*(curses.COLS - 31), curses.A_BOLD)
+                    self.stdscr.refresh()
                     return "Quit"
                 if chr(key) == "m" or chr(key) == "M":
                     return "Messages"
-                if key == 10:
-                    if self.messages_btn.focus:
-                        return "Messages"
+
+                if key in (32, 9, 261, 338, 258):
+                    # go to the next button
+                    if self.focus == "Quit":
+                        newfocus = btnlist[0]
                     else:
-                        return "Quit"
+                        indx = btnlist.index(self.focus)
+                        newfocus = btnlist[indx+1]
+                elif key in (353, 260, 339, 259):
+                    # go to previous button
+                    if self.focus == btnlist[0]:
+                        newfocus = "Quit"
+                    else:
+                        indx = btnlist.index(self.focus)
+                        newfocus = btnlist[indx-1]
+                else:
+                    # button not recognised
+                    continue
+
+                self.devices[self.focus].focus = False
+                self.devices[newfocus].focus = True
+                self.focus = newfocus
+                for btn in self.devices.values():
+                    btn.draw()
+                self.stdscr.refresh()
+
         except Exception:
             return "Quit"
