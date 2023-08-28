@@ -115,9 +115,14 @@ class ConsoleControl:
                     # no event received, so do not update screen
                     continue
                 if isinstance(self.screen, windows.DevicesScreen):
-                    self.screen.show()
+                    self.screen.update(event)
                     continue
-                # some other screen etc....
+                if isinstance(self.screen, windows.MainScreen):
+                    if hasattr(event, 'devicename'):
+                        if event.devicename == self.screen.devicename:
+                            # An event has occurred affecting this device
+                            # vectors may need updating
+                            self.screen.update(event)
         except Exception:
             self._shutdown = True
         self.showscreenstopped = True
@@ -145,7 +150,25 @@ class ConsoleControl:
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    #     self.screen = .... etc
+                    devices = {devicename.lower():device for devicename, device in self.client.items()}
+                    if result in devices:
+                        devicename = devices[result].devicename
+                        self.screen = windows.MainScreen(self.stdscr, self, devicename)
+                        self.screen.show()
+                        continue
+                if isinstance(self.screen, windows.MainScreen):
+                    result = await self.screen.inputs()
+                    if result == "Quit":
+                        self._shutdown = True
+                        break
+                    if result == "Messages":
+                        self.screen = windows.MessagesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
+                    if result == "Devices":
+                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
         except Exception:
             self._shutdown = True
         self.getinputstopped = True

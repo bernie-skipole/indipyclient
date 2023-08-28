@@ -143,6 +143,16 @@ class DevicesScreen:
         self.stdscr.refresh()
 
 
+    def update(self, event):
+        "Only update if message has changed, or a new device added or deleted"
+        if isinstance(event, events.Message):
+
+
+        # check devices unchanged
+
+
+
+
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
     async def inputs(self):
@@ -207,29 +217,41 @@ class MainScreen:
         self.consoleclient = consoleclient
         self.devicename = devicename
         self.client = consoleclient.client
-        self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 30)
+        self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 15)
         self.devices_btn.focus = True
         self.focus = "Devices"
-        self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 10)
-        self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 2)
-        # field name to widget dictionary
-        self.fields = {}
+        self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 5)
+        self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 6)
+        # vector name to widget dictionary
+        self.vectors = {}
 
 
     def show(self):
-        "Displays list of devices"
+        "Displays device"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, self.devicename, curses.A_BOLD)
         message = self.client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + self.client.messages[-1][1]
         self.stdscr.addstr(2, 4, message)
+        self.vectors.clear()
+        if self.devicename not in self.client:
+            self.stdscr.addstr(4, 4, f"{self.devicename} not found!")
+            self.bottombuttons()
+            return
+
+        # get the vectors of widgets
+        # add bottom buttons to vectors dictionary
+        self.bottombuttons()
 
 
-        # get the fields of widgets
-        # add bottom buttons to fields dictionary
+    def update(self, event):
+        pass
 
-        self.fields["Devices"] = self.devices_btn
-        self.fields["Messages"] = self.messages_btn
-        self.fields["Quit"] = self.quit_btn
+
+    def bottombuttons(self):
+        "Draws the bottom buttons"
+        self.vectors["Devices"] = self.devices_btn
+        self.vectors["Messages"] = self.messages_btn
+        self.vectors["Quit"] = self.quit_btn
         self.devices_btn.draw()
         self.messages_btn.draw()
         self.quit_btn.draw()
@@ -247,9 +269,9 @@ class MainScreen:
                 key = self.stdscr.getch()
                 if key == -1:
                     continue
-                # which field has focus
-                fldlist = list(self.fields.keys())
-                if self.focus not in fldlist:
+                # which vector has focus
+                vectornames = list(self.vectors.keys())
+                if self.focus not in vectornames:
                     self.devices_btn.focus = True
                     self.focus = "Devices"
                 if key == 10:
@@ -268,26 +290,26 @@ class MainScreen:
                 if key in (32, 9, 261, 338, 258):
                     # go to the next button
                     if self.focus == "Quit":
-                        newfocus = fldlist[0]
+                        newfocus = vectornames[0]
                     else:
-                        indx = fldlist.index(self.focus)
-                        newfocus = fldlist[indx+1]
+                        indx = vectornames.index(self.focus)
+                        newfocus = vectornames[indx+1]
                 elif key in (353, 260, 339, 259):
                     # go to previous button
-                    if self.focus == fldlist[0]:
+                    if self.focus == vectornames[0]:
                         newfocus = "Quit"
                     else:
-                        indx = fldlist.index(self.focus)
-                        newfocus = fldlist[indx-1]
+                        indx = vectornames.index(self.focus)
+                        newfocus = vectornames[indx-1]
                 else:
                     # field not recognised
                     continue
 
-                self.fields[self.focus].focus = False
-                self.fields[newfocus].focus = True
+                self.vectors[self.focus].focus = False
+                self.vectors[newfocus].focus = True
                 self.focus = newfocus
-                for fld in self.fields.values():
-                    fld.draw()
+                for vectorwidget in self.vectors.values():
+                    vectorwidget.draw()
                 self.stdscr.refresh()
 
         except Exception:
