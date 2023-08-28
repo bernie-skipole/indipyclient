@@ -14,6 +14,7 @@ The client
 You would normally start by creating a subclass of IPyClient, for example::
 
 
+
     import asyncio, sys
 
     from indipyclient import IPyClient, setSwitchVector
@@ -31,14 +32,16 @@ You would normally start by creating a subclass of IPyClient, for example::
                     ledvalue = event.vector['ledswitchmember']
                     print(f"\nReceived value : {ledvalue}")
 
+
     async def control(client):
         "Request a switch value from the console, and send it"
         while True:
             try:
-                message = client.messages.popleft()
+                message = client.messages.pop()
             except IndexError:
                 pass
             else:
+                # each message is a tuple of (timestamp, message text)
                 print(message[1])
             if not client.connected:
                 await asyncio.sleep(2)
@@ -52,7 +55,7 @@ You would normally start by creating a subclass of IPyClient, for example::
                 client.send_getProperties()
                 await asyncio.sleep(2)
                 continue
-            # a normal input statement would block, so use this to get console input
+            # a normal input statement would block, so read console input in a thread
             print("Input On, or Off, or q to quit:")
             value = await asyncio.to_thread(sys.stdin.readline)
             value = value.strip()

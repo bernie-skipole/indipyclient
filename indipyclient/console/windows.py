@@ -8,6 +8,7 @@ class MessagesScreen:
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
         self.consoleclient = consoleclient
+        self.client = consoleclient.client
         self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 10)
         self.devices_btn.focus = False
         self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 2)
@@ -17,9 +18,9 @@ class MessagesScreen:
     def connected(self):
         return self.consoleclient.connected
 
-    def show(self, client):
+    def show(self):
         "Displays title, info string and list of messages on a start screen"
-        messages = client.messages
+        messages = self.client.messages
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "indipyclient console", curses.A_BOLD)
         if self.connected:
@@ -106,6 +107,7 @@ class DevicesScreen:
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
         self.consoleclient = consoleclient
+        self.client = consoleclient.client
         self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 10)
         self.messages_btn.focus = True
         self.focus = "Messages"
@@ -114,13 +116,13 @@ class DevicesScreen:
         self.devices = {}
 
 
-    def show(self, client):
+    def show(self):
         "Displays list of devices"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Devices", curses.A_BOLD)
-        message = client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + client.messages[-1][1]
+        message = self.client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + self.client.messages[-1][1]
         self.stdscr.addstr(2, 4, message)
-        if not len(client):
+        if not len(self.client):
             self.stdscr.addstr(4, 4, "No devices have been discovered")
         else:
             self.stdscr.addstr(4, 4, "Choose a device:")
@@ -128,7 +130,7 @@ class DevicesScreen:
         self.devices.clear()
         linenumber = 5
         colnumber = 4
-        for devicename in client:
+        for devicename in self.client:
             linenumber += 1
             self.devices[devicename.lower()] = widgets.Button(self.stdscr, devicename, linenumber, colnumber)
             if self.focus == devicename.lower():
@@ -192,6 +194,100 @@ class DevicesScreen:
                 self.focus = newfocus
                 for btn in self.devices.values():
                     btn.draw()
+                self.stdscr.refresh()
+
+        except Exception:
+            return "Quit"
+
+
+class MainScreen:
+
+    def __init__(self, stdscr, consoleclient, devicename):
+        self.stdscr = stdscr
+        self.consoleclient = consoleclient
+        self.devicename = devicename
+        self.client = consoleclient.client
+        self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 30)
+        self.devices_btn.focus = True
+        self.focus = "Devices"
+        self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 10)
+        self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 2)
+        # field name to widget dictionary
+        self.fields = {}
+
+
+    def show(self):
+        "Displays list of devices"
+        self.stdscr.clear()
+        self.stdscr.addstr(0, 0, self.devicename, curses.A_BOLD)
+        message = self.client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + self.client.messages[-1][1]
+        self.stdscr.addstr(2, 4, message)
+
+
+        # get the fields of widgets
+        # add bottom buttons to fields dictionary
+
+        self.fields["Devices"] = self.devices_btn
+        self.fields["Messages"] = self.messages_btn
+        self.fields["Quit"] = self.quit_btn
+        self.devices_btn.draw()
+        self.messages_btn.draw()
+        self.quit_btn.draw()
+        self.stdscr.refresh()
+
+
+# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+
+    async def inputs(self):
+        "Gets inputs from the screen"
+        try:
+            self.stdscr.nodelay(True)
+            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
+                await asyncio.sleep(0)
+                key = self.stdscr.getch()
+                if key == -1:
+                    continue
+                # which field has focus
+                fldlist = list(self.fields.keys())
+                if self.focus not in fldlist:
+                    self.devices_btn.focus = True
+                    self.focus = "Devices"
+                if key == 10:
+                    if self.focus == "Quit":
+                        self.stdscr.addstr(2, 4, "Quit chosen ... Please wait" + " "*(curses.COLS - 31), curses.A_BOLD)
+                        self.stdscr.refresh()
+                    return self.focus
+                if chr(key) == "q" or chr(key) == "Q":
+                    self.stdscr.addstr(2, 4, "Quit chosen ... Please wait" + " "*(curses.COLS - 31), curses.A_BOLD)
+                    self.stdscr.refresh()
+                    return "Quit"
+                if chr(key) == "m" or chr(key) == "M":
+                    return "Messages"
+                if chr(key) == "d" or chr(key) == "D":
+                    return "Devices"
+                if key in (32, 9, 261, 338, 258):
+                    # go to the next button
+                    if self.focus == "Quit":
+                        newfocus = fldlist[0]
+                    else:
+                        indx = fldlist.index(self.focus)
+                        newfocus = fldlist[indx+1]
+                elif key in (353, 260, 339, 259):
+                    # go to previous button
+                    if self.focus == fldlist[0]:
+                        newfocus = "Quit"
+                    else:
+                        indx = fldlist.index(self.focus)
+                        newfocus = fldlist[indx-1]
+                else:
+                    # field not recognised
+                    continue
+
+                self.fields[self.focus].focus = False
+                self.fields[newfocus].focus = True
+                self.focus = newfocus
+                for fld in self.fields.values():
+                    fld.draw()
                 self.stdscr.refresh()
 
         except Exception:

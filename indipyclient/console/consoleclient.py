@@ -38,7 +38,7 @@ class ConsoleControl:
         # this keeps track of which screen is being displayed,
         # initially start with the messages screen
         self.screen = windows.MessagesScreen(self.stdscr, self)
-        self.screen.show(self.client)
+        self.screen.show()
 
         # this is set to True, to shut down the client
         self._shutdown = False
@@ -98,7 +98,7 @@ class ConsoleControl:
 
                 #if windows.MessagesScreen is being shown, update every two seconds
                 if isinstance(self.screen, windows.MessagesScreen):
-                    self.screen.show(self.client)
+                    self.screen.show()
                     # wait 2 seconds, but keep checking self.stop
                     for t in range(20):
                         await asyncio.sleep(0.1)
@@ -115,7 +115,7 @@ class ConsoleControl:
                     # no event received, so do not update screen
                     continue
                 if isinstance(self.screen, windows.DevicesScreen):
-                    self.screen.show(self.client)
+                    self.screen.show()
                     continue
                 # some other screen etc....
         except Exception:
@@ -134,7 +134,7 @@ class ConsoleControl:
                         break
                     if result == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
-                        self.screen.show(self.client)
+                        self.screen.show()
                         continue
                 if isinstance(self.screen, windows.DevicesScreen):
                     result = await self.screen.inputs()
@@ -143,7 +143,7 @@ class ConsoleControl:
                         break
                     if result == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
-                        self.screen.show(self.client)
+                        self.screen.show()
                         continue
                     #     self.screen = .... etc
         except Exception:

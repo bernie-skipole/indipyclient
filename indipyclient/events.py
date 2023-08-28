@@ -72,7 +72,7 @@ class defVector(Event, UserDict):
         if self.vectorname is None:
             raise ParseException
         self.label = root.get("label", self.vectorname)
-        self.group = root.get("group", "")
+        self.group = root.get("group", "DEFAULT GROUP")
         state = root.get("state")
         if not state:
             raise ParseException
@@ -317,7 +317,7 @@ class defBLOBVector(Event):
         if self.vectorname is None:
             raise ParseException
         self.label = root.get("label", self.vectorname)
-        self.group = root.get("group", "")
+        self.group = root.get("group", "DEFAULT GROUP")
         state = root.get("state")
         if not state:
             raise ParseException
