@@ -3,6 +3,8 @@ import asyncio, curses
 
 from . import widgets
 
+from .. import events
+
 class MessagesScreen:
 
     def __init__(self, stdscr, consoleclient):
@@ -56,6 +58,12 @@ class MessagesScreen:
         self.devices_btn.draw()
         self.quit_btn.draw()
         self.stdscr.refresh()
+
+
+    def update(self, event):
+        "Only update if message has changed"
+        if isinstance(event, events.Message):
+            self.show()
 
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -115,13 +123,11 @@ class DevicesScreen:
         # devicename to button dictionary
         self.devices = {}
 
-
     def show(self):
-        "Displays list of devices"
+        "Displays the screen with list of devices"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Devices", curses.A_BOLD)
-        message = self.client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + self.client.messages[-1][1]
-        self.stdscr.addstr(2, 4, message)
+        self.drawmessage()
         if not len(self.client):
             self.stdscr.addstr(4, 4, "No devices have been discovered")
         else:
@@ -133,23 +139,45 @@ class DevicesScreen:
         for devicename in self.client:
             linenumber += 1
             self.devices[devicename.lower()] = widgets.Button(self.stdscr, devicename, linenumber, colnumber)
-            if self.focus == devicename.lower():
-                self.devices[devicename.lower()].focus = True
-            self.devices[devicename.lower()].draw()
         self.devices["Messages"] = self.messages_btn
         self.devices["Quit"] = self.quit_btn
-        self.messages_btn.draw()
-        self.quit_btn.draw()
+        if self.focus in self.devices:
+            self.devices[self.focus].focus = True
+        else:
+            # self.focus points at a device which has been removed, so set focus to messages
+            self.messages_btn.focus = True
+        for devicewidget in self.devices.values():
+            devicewidget.draw()
         self.stdscr.refresh()
 
+    def drawmessage(self):
+        rxmessage = "    " + self.client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + self.client.messages[-1][1]
+        if len(rxmessage) > curses.COLS:
+            message = rxmessage[:curses.COLS]
+        else:
+            message = rxmessage + " "*(curses.COLS - len(rxmessage))
+        self.stdscr.addstr(2, 0, message)
 
     def update(self, event):
-        "Only update if message has changed, or a new device added or deleted"
-        if isinstance(event, events.Message):
-
-
+        "Only update if global message has changed, or a new device added or deleted"
+        if isinstance(event, events.Message) and event.devicename is None:
+            self.drawmessage()
+            self.stdscr.refresh()
+            return
         # check devices unchanged
-
+        if isinstance(event, events.delProperty) and event.vectorname is None:
+            # a device has being deleted
+            self.show()
+            return
+        if event.devicename is not None:
+            if event.devicename.lower() not in self.devices:
+                # unknown device, check this is a definition
+                if isinstance(event, events.defVector):
+                    # could be a new device
+                    self.show()
+                elif isinstance(event, events.defBLOBVector):
+                    # could be a new device
+                    self.show()
 
 
 

@@ -6,7 +6,7 @@ python3 -m indipyclient
 """
 
 
-import argparse, asyncio, collections
+import argparse, asyncio, collections, contextlib
 
 
 from . import version
@@ -43,4 +43,6 @@ if __name__ == "__main__":
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
     control = ConsoleControl(client)
 
-    asyncio.run(main(client, control))
+    with open('err.txt', 'w') as f:
+        with contextlib.redirect_stderr(f):
+            asyncio.run(main(client, control))

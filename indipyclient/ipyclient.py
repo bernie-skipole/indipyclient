@@ -132,10 +132,14 @@ class IPyClient(collections.UserDict):
             await asyncio.sleep(0)
         # now stop co-routines
         self._stop = True
-        await asyncio.sleep(2)
 
-    def report(self, message):
-        self.messages.append( (datetime.utcnow(), message) )
+
+    async def report(self, message):
+        timestamp = datetime.utcnow()
+        self.messages.append( (timestamp, message) )
+        root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat()}\" message=\"{message}\" />")
+        event = events.Message(root, None, self)
+        await self.rxevent(event)
 
 
     def __setitem__(self, device):
@@ -152,22 +156,21 @@ class IPyClient(collections.UserDict):
                     # start by openning a connection
                     # clear messages
                     self.messages.clear()
-                    self.report("Attempting to connect")
+                    await self.report("Attempting to connect")
                     reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
                     self.connected = True
                     self.messages.clear()
-                    self.report(f"Connected to {self.indihost}:{self.indiport}")
+                    await self.report(f"Connected to {self.indihost}:{self.indiport}")
                     await asyncio.gather(self._run_tx(writer),
                                          self._run_rx(reader),
                                          self._check_alive(writer)
                                          )
-                    self.report("connection failed")
-                    await asyncio.sleep(1)
                 except ConnectionRefusedError:
-                    self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
+                    await self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionResetError:
-                    self.report(f"Error: Connection Lost")
-                self.report(f"Connection re-trying...")
+                    await self.report(f"Error: Connection Lost")
+                if not self._stop:
+                    await self.report(f"Connection failed, re-trying...")
                 self.connected = False
                 # clear devices etc
                 self.clear()
@@ -208,7 +211,8 @@ class IPyClient(collections.UserDict):
                         # no response to transmission self._timer seconds ago
                        writer.close()
                        await writer.wait_closed()
-                       self.report("Error: Connection timed out")
+                       if not self._stop:
+                           await self.report("Error: Connection timed out")
                        self.connected = False
                        break
         except KeyboardInterrupt:
@@ -396,7 +400,7 @@ class IPyClient(collections.UserDict):
                                 # state wide message
                                 self.messages.appendleft( (root.get("timestamp", datetime.utcnow().isoformat()), root.get("message","")) )
                                 # create event
-                                event = events.message(root)
+                                event = events.Message(root, None, self)
                             else:
                                 # if no devicename and not message, do nothing
                                 continue
@@ -415,7 +419,7 @@ class IPyClient(collections.UserDict):
                             continue
                 except ParseException as pe:
                     # if a ParseException is raised, it is because received data is malformed
-                    self.report(f"Error: {pe}")
+                    await self.report(f"Error: {pe}")
                     continue
                 finally:
                     self.readerque.task_done()
@@ -445,11 +449,9 @@ class IPyClient(collections.UserDict):
         """Send a new Vector, note members is a membername to value dictionary,
            It could also be a vector, which is itself a membername to value mapping"""
         if devicename not in self.data:
-            self.report(f"Failed to send vector: Device {devicename} not recognised")
             return
         device = self.data[devicename]
         if vectorname not in device:
-            self.report(f"Failed to send vector: Vector {vectorname} not recognised")
             return
         try:
             propertyvector = device[vectorname]
@@ -461,12 +463,10 @@ class IPyClient(collections.UserDict):
                 propertyvector.send_newNumberVector(timestamp, members)
             elif propertyvector.vectortype == "BLOBVector":
                 propertyvector.send_newBLOBVector(timestamp, members)
-            else:
-                self.report(f"Failed to send invalid vector with devicename:{devicename}, vectorname:{vectorname}")
         except KeyboardInterrupt:
             self._shutdown = True
         except Exception:
-            self.report(f"Failed to send vector with devicename:{devicename}, vectorname:{vectorname}")
+            pass
 
 
     async def _autosend_getProperties(self):
@@ -479,7 +479,7 @@ class IPyClient(collections.UserDict):
                     if not len(self):
                         # no devices, so send a getProperties
                         self.send_getProperties()
-                        self.report("getProperties request sent")
+                        await self.report("getProperties request sent")
                         # wait for a response
                         for i in range(10):
                             # wait 5 seconds

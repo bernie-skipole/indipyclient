@@ -22,7 +22,10 @@ class Event:
     def __init__(self, root, device, client):
         self.device = device
         self._client = client
-        self.devicename = self.device.devicename
+        if device is None:
+            self.devicename = None
+        else:
+            self.devicename = self.device.devicename
         self.root = root
         timestamp_string = root.get("timestamp")
         if timestamp_string:

@@ -203,7 +203,6 @@ class SwitchVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._client.report("Error: newSwitchVector timestamp must be a datetime.datetime object")
             return
         self.state = 'Busy'
         xmldata = ET.Element('newSwitchVector')
@@ -346,7 +345,6 @@ class TextVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._client.report("Error: send_newTextVector timestamp must be a datetime.datetime object")
             return
         self.state = 'Busy'
         xmldata = ET.Element('newTextVector')
@@ -437,7 +435,6 @@ class NumberVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.datetime.utcnow()
         if not isinstance(timestamp, datetime.datetime):
-            self._client.report("Error: send_newNumberVector timestamp must be a datetime.datetime object")
             return
         self.state = 'Busy'
         xmldata = ET.Element('newNumberVector')
@@ -486,7 +483,6 @@ class BLOBVector(PropertyVector):
            therefore if you are sending a compressed file, you should set the blobsize
            prior to compression with this method."""
         if not isinstance(blobsize, int):
-            self._client.report("Error: blobsize must be an integer object")
             return
         member = self.data.get[membername]
         if not member:
