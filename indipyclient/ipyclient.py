@@ -191,7 +191,7 @@ class IPyClient(collections.UserDict):
                         break
                     else:
                         await asyncio.sleep(0.5)
-        except Exception as e:
+        finally:
             self._shutdown = True
 
 
@@ -213,12 +213,10 @@ class IPyClient(collections.UserDict):
                        await writer.wait_closed()
                        if not self._stop:
                            await self.report("Error: Connection timed out")
-                       self.connected = False
                        break
         except KeyboardInterrupt:
             self._shutdown = True
-            self.connected = False
-        except Exception as e:
+        finally:
             self.connected = False
 
 
@@ -250,7 +248,7 @@ class IPyClient(collections.UserDict):
         except KeyboardInterrupt:
             self._shutdown = True
             self.connected = False
-        except Exception as e:
+        finally:
             self.connected = False
 
 
@@ -273,8 +271,7 @@ class IPyClient(collections.UserDict):
                         pass
         except KeyboardInterrupt:
             self._shutdown = True
-            self.connected = False
-        except Exception as e:
+        finally:
             self.connected = False
 
 
@@ -283,33 +280,52 @@ class IPyClient(collections.UserDict):
         data_in = self._datainput(reader)
         message = b''
         messagetagnumber = None
-        while self.connected and (not self._stop):
-            await asyncio.sleep(0)
-            # get blocks of data from _datainput
-            data = await anext(data_in)
-            if not data:
-                continue
-            if not message:
-                # data is expected to start with <tag, first strip any newlines
-                data = data.strip()
-                for index, st in enumerate(_STARTTAGS):
-                    if data.startswith(st):
-                        messagetagnumber = index
-                        break
-                    elif st in data:
-                        # remove any data prior to a starttag
-                        positionofst = data.index(st)
-                        data = data[positionofst:]
-                        messagetagnumber = index
-                        break
-                else:
-                    # data does not start with a recognised tag, so ignore it
-                    # and continue waiting for a valid message start
+        try:
+            while self.connected and (not self._stop):
+                await asyncio.sleep(0)
+                # get blocks of data from _datainput
+                data = await anext(data_in)
+                if not data:
                     continue
-                # set this data into the received message
-                message = data
-                # either further children of this tag are coming, or maybe its a single tag ending in "/>"
-                if message.endswith(b'/>'):
+                if not message:
+                    # data is expected to start with <tag, first strip any newlines
+                    data = data.strip()
+                    for index, st in enumerate(_STARTTAGS):
+                        if data.startswith(st):
+                            messagetagnumber = index
+                            break
+                        elif st in data:
+                            # remove any data prior to a starttag
+                            positionofst = data.index(st)
+                            data = data[positionofst:]
+                            messagetagnumber = index
+                            break
+                    else:
+                        # data does not start with a recognised tag, so ignore it
+                        # and continue waiting for a valid message start
+                        continue
+                    # set this data into the received message
+                    message = data
+                    # either further children of this tag are coming, or maybe its a single tag ending in "/>"
+                    if message.endswith(b'/>'):
+                        # the message is complete, handle message here
+                        try:
+                            root = ET.fromstring(message.decode("us-ascii"))
+                        except ET.ParseError as e:
+                            message = b''
+                            messagetagnumber = None
+                            continue
+                        # xml datablock done, yield it up
+                        yield root
+                        # and start again, waiting for a new message
+                        message = b''
+                        messagetagnumber = None
+                    # and read either the next message, or the children of this tag
+                    continue
+                # To reach this point, the message is in progress, with a messagetagnumber set
+                # keep adding the received data to message, until an endtag is reached
+                message += data
+                if message.endswith(_ENDTAGS[messagetagnumber]):
                     # the message is complete, handle message here
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
@@ -317,7 +333,7 @@ class IPyClient(collections.UserDict):
                         self._shutdown = True
                         self.connected = False
                         break
-                    except Exception as e:
+                    except ET.ParseError as e:
                         message = b''
                         messagetagnumber = None
                         continue
@@ -326,58 +342,48 @@ class IPyClient(collections.UserDict):
                     # and start again, waiting for a new message
                     message = b''
                     messagetagnumber = None
-                # and read either the next message, or the children of this tag
-                continue
-            # To reach this point, the message is in progress, with a messagetagnumber set
-            # keep adding the received data to message, until an endtag is reached
-            message += data
-            if message.endswith(_ENDTAGS[messagetagnumber]):
-                # the message is complete, handle message here
-                try:
-                    root = ET.fromstring(message.decode("us-ascii"))
-                except KeyboardInterrupt:
-                    self._shutdown = True
-                    self.connected = False
-                    break
-                except Exception as e:
-                    message = b''
-                    messagetagnumber = None
-                    continue
-                # xml datablock done, yield it up
-                yield root
-                # and start again, waiting for a new message
-                message = b''
-                messagetagnumber = None
+        except KeyboardInterrupt:
+            self._shutdown = True
+            self.connected = False
+        except asyncio.CancelledError:
+            self._shutdown = True
+            self.connected = False
+            raise
 
 
     async def _datainput(self, reader):
         "Generator producing binary string of data from the port"
         binarydata = b""
-        while self.connected and (not self._stop):
-            await asyncio.sleep(0)
-            try:
-                data = await reader.readuntil(separator=b'>')
-            except asyncio.LimitOverrunError:
-                data = await reader.read(n=32000)
-            except KeyboardInterrupt:
-                self._shutdown = True
-                self.connected = False
-                break
-            except Exception:
-                binarydata = b""
-                continue
-            if not data:
-                continue
-            # data received
-            self._timer = None
-            if b">" in data:
-                binarydata = binarydata + data
-                yield binarydata
-                binarydata = b""
-            else:
-                # data has content but no > found
-                binarydata += data
-                # could put a max value here to stop this increasing indefinetly
+        try:
+            while self.connected and (not self._stop):
+                await asyncio.sleep(0)
+                try:
+                    data = await reader.readuntil(separator=b'>')
+                except asyncio.LimitOverrunError:
+                    data = await reader.read(n=32000)
+                except asyncio.IncompleteReadError:
+                    binarydata = b""
+                    continue
+                if not data:
+                    continue
+                # data received
+                self._timer = None
+                if b">" in data:
+                    binarydata = binarydata + data
+                    yield binarydata
+                    binarydata = b""
+                else:
+                    # data has content but no > found
+                    binarydata += data
+                    # could put a max value here to stop this increasing indefinetly
+        except KeyboardInterrupt:
+            self._shutdown = True
+            self.connected = False
+        except asyncio.CancelledError:
+            self._shutdown = True
+            self.connected = False
+            raise
+
 
 
     async def _rxhandler(self):
@@ -426,7 +432,7 @@ class IPyClient(collections.UserDict):
                 # and to get here, continue has not been called
                 # and an event has been created, call the user event handling function
                 await self.rxevent(event)
-        except Exception:
+        finally:
             self._shutdown = True
 
 
@@ -465,8 +471,6 @@ class IPyClient(collections.UserDict):
                 propertyvector.send_newBLOBVector(timestamp, members)
         except KeyboardInterrupt:
             self._shutdown = True
-        except Exception:
-            pass
 
 
     async def _autosend_getProperties(self):
@@ -490,6 +494,9 @@ class IPyClient(collections.UserDict):
                                 await asyncio.sleep(0.5)
         except KeyboardInterrupt:
             self._shutdown = True
+        except asyncio.CancelledError:
+            self._shutdown = True
+            raise
 
 
 

@@ -8,10 +8,6 @@ import math
 from .error import ParseException
 
 
-
-
-
-
 class Member():
 
     def __init__(self, name, label=None, membervalue=None):
