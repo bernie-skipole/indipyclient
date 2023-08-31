@@ -51,6 +51,11 @@ class Message(Event):
     def __init__(self, root, device, client):
         super().__init__(root, device, client)
         self.message = root.get("message", "")
+        if device is None:
+            # state wide message
+            client.messages.appendleft( (self.timestamp, self.message) )
+        else:
+            device.messages.appendleft( (self.timestamp, self.message) )
 
 
 class delProperty(Event):

@@ -22,7 +22,9 @@ async def main(client, control):
     except Exception:
          t1.cancel()
          t2.cancel()
-    await asyncio.sleep(3)
+    # wait for tasks to be done
+    while (not t1.done()) and (not t2.done()):
+        await asyncio.sleep(0)
 
 
 if __name__ == "__main__":

@@ -108,6 +108,10 @@ class IPyClient(collections.UserDict):
         # self.messages is a deque of "Timestamp space message"
         self.messages = collections.deque(maxlen=8)
 
+        # note, messages are added with 'appendleft'
+        # so newest message is messages[0]
+        # oldest message is messages[-1] or can be obtained with .pop()
+
         # self.connected is True if connection has been made
         self.connected = False
 
@@ -136,7 +140,6 @@ class IPyClient(collections.UserDict):
 
     async def report(self, message):
         timestamp = datetime.utcnow()
-        self.messages.append( (timestamp, message) )
         root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat()}\" message=\"{message}\" />")
         event = events.Message(root, None, self)
         await self.rxevent(event)
@@ -403,8 +406,6 @@ class IPyClient(collections.UserDict):
                     with threading.Lock():
                         if devicename is None:
                             if root.tag == "message":
-                                # state wide message
-                                self.messages.appendleft( (root.get("timestamp", datetime.utcnow().isoformat()), root.get("message","")) )
                                 # create event
                                 event = events.Message(root, None, self)
                             else:
@@ -570,6 +571,9 @@ class _Device(Device):
         # if self.enable is False, this device has been 'deleted'
         self.enable = True
 
+        # self.messages is a deque of "Timestamp space message"
+        self.messages = collections.deque(maxlen=8)
+
 
     def __setitem__(self, propertyname, propertyvector):
         "Properties are added by being learnt from the driver, they cannot be manually added"
@@ -583,6 +587,8 @@ class _Device(Device):
             raise ParseException
         if root.tag == "delProperty":
             return events.delProperty(root, self._client)
+        elif root.tag == "message":
+            return events.Message(root, self, self._client)
         elif root.tag == "defSwitchVector":
             return events.defSwitchVector(root, self, self._client)
         elif root.tag == "setSwitchVector":
@@ -612,4 +618,5 @@ class _Device(Device):
             if not vector.enable:
                 continue
             snapdevice[vectorname] = vector._snapshot()
+        snapdevice.messages = list(self.messages)
         return snapdevice

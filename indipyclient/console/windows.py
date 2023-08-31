@@ -1,5 +1,5 @@
 
-import asyncio, curses
+import asyncio, curses, sys
 
 from . import widgets
 
@@ -32,12 +32,8 @@ class MessagesScreen:
             self.devices_btn.focus = False
             self.quit_btn.focus = True
         lastmessagenumber = len(messages) - 1
-        if curses.COLS < 80:
-            margin = 1
-            mlist = [ t.isoformat(sep='T')[11:19] + "  " + m for t,m in messages ]
-        else:
-            margin = 4
-            mlist = [ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ]
+        margin = 4
+        mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
         for count, message in enumerate(mlist):
             if count == lastmessagenumber:
                 # high light the last, current message
@@ -127,7 +123,7 @@ class DevicesScreen:
         "Displays the screen with list of devices"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Devices", curses.A_BOLD)
-        self.drawmessage()
+        widgets.drawmessage(self.stdscr, self.client.messages[0])
         if not len(self.client):
             self.stdscr.addstr(4, 4, "No devices have been discovered")
         else:
@@ -150,18 +146,11 @@ class DevicesScreen:
             devicewidget.draw()
         self.stdscr.refresh()
 
-    def drawmessage(self):
-        rxmessage = "    " + self.client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + self.client.messages[-1][1]
-        if len(rxmessage) > curses.COLS:
-            message = rxmessage[:curses.COLS]
-        else:
-            message = rxmessage + " "*(curses.COLS - len(rxmessage))
-        self.stdscr.addstr(2, 0, message)
 
     def update(self, event):
         "Only update if global message has changed, or a new device added or deleted"
         if isinstance(event, events.Message) and event.devicename is None:
-            self.drawmessage()
+            widgets.drawmessage(self.stdscr, self.client.messages[0])
             self.stdscr.refresh()
             return
         # check devices unchanged
@@ -199,11 +188,11 @@ class DevicesScreen:
                     self.focus = "Messages"
                 if key == 10:
                     if self.focus == "Quit":
-                        self.stdscr.addstr(2, 4, "Quit chosen ... Please wait" + " "*(curses.COLS - 31), curses.A_BOLD)
+                        widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
                         self.stdscr.refresh()
                     return self.focus
                 if chr(key) == "q" or chr(key) == "Q":
-                    self.stdscr.addstr(2, 4, "Quit chosen ... Please wait" + " "*(curses.COLS - 31), curses.A_BOLD)
+                    widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
                     self.stdscr.refresh()
                     return "Quit"
                 if chr(key) == "m" or chr(key) == "M":
@@ -258,14 +247,14 @@ class MainScreen:
         "Displays device"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, self.devicename, curses.A_BOLD)
-        message = self.client.messages[-1][0].isoformat(sep='T')[11:21] + "  " + self.client.messages[-1][1]
-        self.stdscr.addstr(2, 4, message)
         self.vectors.clear()
         if self.devicename not in self.client:
             self.stdscr.addstr(4, 4, f"{self.devicename} not found!")
             self.bottombuttons()
             return
-
+        device = self.client[self.devicename]
+        if device.messages:
+            widgets.drawmessage(self.stdscr, device.messages[0])
         # get the vectors of widgets
         # add bottom buttons to vectors dictionary
         self.bottombuttons()
@@ -304,11 +293,11 @@ class MainScreen:
                     self.focus = "Devices"
                 if key == 10:
                     if self.focus == "Quit":
-                        self.stdscr.addstr(2, 4, "Quit chosen ... Please wait" + " "*(curses.COLS - 31), curses.A_BOLD)
+                        widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
                         self.stdscr.refresh()
                     return self.focus
                 if chr(key) == "q" or chr(key) == "Q":
-                    self.stdscr.addstr(2, 4, "Quit chosen ... Please wait" + " "*(curses.COLS - 31), curses.A_BOLD)
+                    widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
                     self.stdscr.refresh()
                     return "Quit"
                 if chr(key) == "m" or chr(key) == "M":
