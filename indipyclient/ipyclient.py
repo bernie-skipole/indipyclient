@@ -217,6 +217,9 @@ class IPyClient(collections.UserDict):
                        if not self._stop:
                            await self.report("Error: Connection timed out")
                        break
+            if self.connected and self._stop:
+                writer.close()
+                await writer.wait_closed()
         except KeyboardInterrupt:
             self._shutdown = True
         finally:
@@ -250,9 +253,6 @@ class IPyClient(collections.UserDict):
                     self._timer = time.time()
         except KeyboardInterrupt:
             self._shutdown = True
-            self.connected = False
-        finally:
-            self.connected = False
 
 
     async def _run_rx(self, reader):
@@ -274,8 +274,6 @@ class IPyClient(collections.UserDict):
                         pass
         except KeyboardInterrupt:
             self._shutdown = True
-        finally:
-            self.connected = False
 
 
     async def _datasource(self, reader):
@@ -334,7 +332,6 @@ class IPyClient(collections.UserDict):
                         root = ET.fromstring(message.decode("us-ascii"))
                     except KeyboardInterrupt:
                         self._shutdown = True
-                        self.connected = False
                         break
                     except ET.ParseError as e:
                         message = b''
@@ -347,10 +344,8 @@ class IPyClient(collections.UserDict):
                     messagetagnumber = None
         except KeyboardInterrupt:
             self._shutdown = True
-            self.connected = False
         except asyncio.CancelledError:
             self._shutdown = True
-            self.connected = False
             raise
 
 
@@ -381,10 +376,8 @@ class IPyClient(collections.UserDict):
                     # could put a max value here to stop this increasing indefinetly
         except KeyboardInterrupt:
             self._shutdown = True
-            self.connected = False
         except asyncio.CancelledError:
             self._shutdown = True
-            self.connected = False
             raise
 
 

@@ -38,8 +38,6 @@ if __name__ == "__main__":
     parser.add_argument("--version", action="version", version=version)
     args = parser.parse_args()
 
-    print("Client running...")
-
     eventque = collections.deque(maxlen=4)
 
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)

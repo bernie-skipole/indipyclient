@@ -133,7 +133,7 @@ class DevicesScreen:
         # Remove current devices
         self.devices.clear()
         linenumber = 5
-        colnumber = 4
+        colnumber = curses.COLS//2 - 6
         for devicename in self.client:
             linenumber += 1
             self.devices[devicename.lower()] = widgets.Button(self.stdscr, devicename, linenumber, colnumber)
