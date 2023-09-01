@@ -32,3 +32,9 @@ def drawmessage(stdscr, message, bold = False):
         stdscr.addstr(2, 0, messagetoshow, curses.A_BOLD)
     else:
         stdscr.addstr(2, 0, messagetoshow)
+
+
+
+class Groups:
+
+    def __init__(self, stdscr, groups):

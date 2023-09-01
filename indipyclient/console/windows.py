@@ -238,11 +238,14 @@ class MainScreen:
         self.consoleclient = consoleclient
         self.devicename = devicename
         self.client = consoleclient.client
+        self.device = None
         self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 15)
         self.devices_btn.focus = True
         self.focus = "Devices"
         self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 5)
         self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 6)
+        # groups list
+        self.groups = []
         # vector name to widget dictionary
         self.vectors = {}
 
@@ -253,12 +256,20 @@ class MainScreen:
         self.stdscr.addstr(0, 0, "Device: "+self.devicename, curses.A_BOLD)
         self.vectors.clear()
         if self.devicename not in self.client:
-            self.stdscr.addstr(4, 4, f"{self.devicename} not found!")
+            widgets.drawmessage(self.stdscr, f"{self.devicename} not found!")
             self.bottombuttons()
             return
-        device = self.client[self.devicename]
-        if device.messages:
-            widgets.drawmessage(self.stdscr, device.messages[0])
+        self.device = self.client[self.devicename]
+        if self.device.messages:
+            widgets.drawmessage(self.stdscr, self.device.messages[0])
+        # get the groups this device vectors are in
+        self.groups = sorted(vector.group for vector in self.device.values())
+        if len(self.groups) == 1 and self.groups[0] = "DEFAULT GROUP":
+            self.groups = []
+        else:
+            # populate a widget showing horizontal list of groups
+            self.group_btns = widgets.Groups(self.stdscr, self.groups)
+            self.group_btns.draw()
         # get the vectors of widgets
         # add bottom buttons to vectors dictionary
         self.bottombuttons()
