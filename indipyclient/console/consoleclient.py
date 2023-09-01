@@ -118,9 +118,13 @@ class ConsoleControl:
                         # An event has occurred affecting this device
                         # vectors may need updating
                         self.screen.update(event)
+        except asyncio.CancelledError:
+            self._shutdown = True
+            raise
         except Exception:
             self._shutdown = True
-        self.updatescreenstopped = True
+        finally:
+            self.updatescreenstopped = True
 
 
     async def getinput(self):
@@ -164,9 +168,13 @@ class ConsoleControl:
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
+        except asyncio.CancelledError:
+            self._shutdown = True
+            raise
         except Exception:
             self._shutdown = True
-        self.getinputstopped = True
+        finally:
+            self.getinputstopped = True
 
 
     async def asyncrun(self):

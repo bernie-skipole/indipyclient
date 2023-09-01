@@ -102,6 +102,8 @@ class MessagesScreen:
                         return "Devices"
                     else:
                         return "Quit"
+        except asyncio.CancelledError:
+            raise
         except Exception:
             return "Quit"
 
@@ -223,6 +225,8 @@ class DevicesScreen:
                     btn.draw()
                 self.stdscr.refresh()
 
+        except asyncio.CancelledError:
+            raise
         except Exception:
             return "Quit"
 
@@ -246,7 +250,7 @@ class MainScreen:
     def show(self):
         "Displays device"
         self.stdscr.clear()
-        self.stdscr.addstr(0, 0, self.devicename, curses.A_BOLD)
+        self.stdscr.addstr(0, 0, "Device: "+self.devicename, curses.A_BOLD)
         self.vectors.clear()
         if self.devicename not in self.client:
             self.stdscr.addstr(4, 4, f"{self.devicename} not found!")
@@ -328,6 +332,7 @@ class MainScreen:
                 for vectorwidget in self.vectors.values():
                     vectorwidget.draw()
                 self.stdscr.refresh()
-
+        except asyncio.CancelledError:
+            raise
         except Exception:
             return "Quit"
