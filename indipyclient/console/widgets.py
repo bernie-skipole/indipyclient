@@ -55,7 +55,18 @@ class Groups:
                 self.stdscr.addstr(4, col, grouptoshow, curses.A_BOLD)
             else:
                 self.stdscr.addstr(4, col, grouptoshow)
-            col = len(grouptoshow) + 2
+            col += len(grouptoshow) + 2
             if col+11 >= curses.COLS:
                 self.stdscr.addstr(4, col, self.next)
                 break
+
+
+    def input():
+        "Get group button pressed, or next or previous"
+
+        self.stdscr.nodelay(True)
+        while not self.consoleclient.stop:
+            await asyncio.sleep(0)
+            key = self.stdscr.getch()
+            if key == -1:
+                continue

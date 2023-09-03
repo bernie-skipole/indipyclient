@@ -247,14 +247,14 @@ class MainScreen:
         # groups list
         self.groups = []
         # vector name to widget dictionary
-        self.vectors = {}
+        self.widgets = {}
 
 
     def show(self):
         "Displays device"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Device: "+self.devicename, curses.A_BOLD)
-        self.vectors.clear()
+        self.widgets.clear()
         if self.devicename not in self.client:
             widgets.drawmessage(self.stdscr, f"{self.devicename} not found!")
             self.bottombuttons()
@@ -263,16 +263,18 @@ class MainScreen:
         if self.device.messages:
             widgets.drawmessage(self.stdscr, self.device.messages[0])
         # get the groups this device contains, use a set first to avoid duplicates
-        groupset = {vector.group.lower() for vector in self.device.values()}
+        groupset = {vector.group for vector in self.device.values()}
         self.groups = sorted(list(groupset))
-        if len(self.groups) == 1 and self.groups[0] == "default group":
+        if len(self.groups) == 1 and self.groups[0] == "DEFAULT GROUP":
             self.groups = []
+            self.widgets["Groups"] = None
         else:
             # populate a widget showing horizontal list of groups
-            self.group_btns = widgets.Groups(self.stdscr, self.groups)
-            self.group_btns.draw()
-        # get the vectors of widgets
-        # add bottom buttons to vectors dictionary
+            group_btns = widgets.Groups(self.stdscr, self.groups)
+            group_btns.draw()
+            # add group buttons widget to self.widgets
+            self.widgets["Groups"] = group_btns
+        # add bottom buttons to self.widgets dictionary and refresh
         self.bottombuttons()
 
 
@@ -282,9 +284,9 @@ class MainScreen:
 
     def bottombuttons(self):
         "Draws the bottom buttons"
-        self.vectors["Devices"] = self.devices_btn
-        self.vectors["Messages"] = self.messages_btn
-        self.vectors["Quit"] = self.quit_btn
+        self.widgets["Devices"] = self.devices_btn
+        self.widgets["Messages"] = self.messages_btn
+        self.widgets["Quit"] = self.quit_btn
         self.devices_btn.draw()
         self.messages_btn.draw()
         self.quit_btn.draw()
@@ -302,15 +304,22 @@ class MainScreen:
                 key = self.stdscr.getch()
                 if key == -1:
                     continue
-                # which vector has focus
-                vectornames = list(self.vectors.keys())
-                if self.focus not in vectornames:
+                # which widget has focus
+                widgetnames = list(self.widgets.keys())
+                if self.focus not in widgetnames:
+                    # as default, start with focus on the Devices button
                     self.devices_btn.focus = True
                     self.focus = "Devices"
+                if self.focus == widgetnames[0]: # Groups
+                    # focus has been given to the groups widget which monitors its own inputs
+                    self.focus, key = await widgetnames[0].input()
+                    # key will be a group name, or next or previous
                 if key == 10:
+                    # enter key pressed
                     if self.focus == "Quit":
                         widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
                         self.stdscr.refresh()
+                    # return the focus value of whichever key was pressed
                     return self.focus
                 if chr(key) == "q" or chr(key) == "Q":
                     widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
@@ -323,26 +332,26 @@ class MainScreen:
                 if key in (32, 9, 261, 338, 258):
                     # go to the next button
                     if self.focus == "Quit":
-                        newfocus = vectornames[0]
+                        newfocus = widgetnames[0]  # Groups
                     else:
-                        indx = vectornames.index(self.focus)
-                        newfocus = vectornames[indx+1]
+                        indx = widgetnames.index(self.focus)
+                        newfocus = widgetnames[indx+1]
                 elif key in (353, 260, 339, 259):
                     # go to previous button
-                    if self.focus == vectornames[0]:
+                    if self.focus == widgetnames[0]: # Groups
                         newfocus = "Quit"
                     else:
-                        indx = vectornames.index(self.focus)
-                        newfocus = vectornames[indx-1]
+                        indx = widgetnames.index(self.focus)
+                        newfocus = widgetnames[indx-1]
                 else:
                     # field not recognised
                     continue
 
-                self.vectors[self.focus].focus = False
-                self.vectors[newfocus].focus = True
+                self.widgets[self.focus].focus = False
+                self.widgets[newfocus].focus = True
                 self.focus = newfocus
-                for vectorwidget in self.vectors.values():
-                    vectorwidget.draw()
+                for widget in self.widgets.values():
+                    widget.draw()
                 self.stdscr.refresh()
         except asyncio.CancelledError:
             raise
