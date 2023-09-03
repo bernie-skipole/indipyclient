@@ -38,3 +38,24 @@ def drawmessage(stdscr, message, bold = False):
 class Groups:
 
     def __init__(self, stdscr, groups):
+        self.stdscr = stdscr
+        self.groups = groups
+        self.prev = "<<Prev]"
+        self.next = "[Next>>"
+        # active is a tuple of the group currently being shown
+        # and the number in the current displayed list, 0 on the left
+        self.active = (self.groups[0], 0)
+
+    def draw(self):
+        col = 2
+        for number, group in enumerate(self.groups):
+            grouptoshow = "["+group+"]"
+            if number == self.active[1]:
+                # active item
+                self.stdscr.addstr(4, col, grouptoshow, curses.A_BOLD)
+            else:
+                self.stdscr.addstr(4, col, grouptoshow)
+            col = len(grouptoshow) + 2
+            if col+11 >= curses.COLS:
+                self.stdscr.addstr(4, col, self.next)
+                break

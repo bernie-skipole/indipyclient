@@ -262,9 +262,10 @@ class MainScreen:
         self.device = self.client[self.devicename]
         if self.device.messages:
             widgets.drawmessage(self.stdscr, self.device.messages[0])
-        # get the groups this device vectors are in
-        self.groups = sorted(vector.group for vector in self.device.values())
-        if len(self.groups) == 1 and self.groups[0] = "DEFAULT GROUP":
+        # get the groups this device contains, use a set first to avoid duplicates
+        groupset = {vector.group.lower() for vector in self.device.values()}
+        self.groups = sorted(list(groupset))
+        if len(self.groups) == 1 and self.groups[0] == "default group":
             self.groups = []
         else:
             # populate a widget showing horizontal list of groups
