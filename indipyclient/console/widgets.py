@@ -53,9 +53,9 @@ class Groups:
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
         self.consoleclient = consoleclient
-        self.groups = []
+        self.groups = []          # list of group names
+        self.groupcols = {}       # dictionary of groupname to column number
         self.prev = "<<Prev]"
-        self.next = "[Next>>"
         # active is the name of the group currently being shown
         self.active = None
         # this is True, if this widget is in focus
@@ -65,9 +65,10 @@ class Groups:
 
         # the horizontal display of group buttons may not hold all the buttons
         # give the index of self.groups from and to
-        self.from = 0
-        self.to = 0
+        self.fromgroup = 0
+        self.togroup = 0
         self.nextcol = 0
+        self.nextfocus = False
 
 
     @property
@@ -89,8 +90,9 @@ class Groups:
 
     def set_groups(self, groups):
         self.groups = groups.copy()
-        self.from = 0
-        self.to = len(self.groups) - 1
+        self.groupcols.clear()
+        self.fromgroup = 0
+        self.togroup = len(self.groups) - 1
         if self.active is None:
             self.active = self.groups[0]
         elif self.active not in self.groups:
@@ -98,35 +100,53 @@ class Groups:
 
     def draw(self):
         col = 2
-        for indx, group in enumeraste(self.groups):
-            if indx < self.from:
+        self.groupcols.clear()
+        for indx, group in enumerate(self.groups):
+            if indx < self.fromgroup:
                 continue
-            grouptoshow = "["+group+"]"
             if self.active is None:
                 self.active = self.groups[0]
-            if group == self.active:
-                if self.groupfocus == group:
-                    # group in focus
-                    self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
-                else:
-                    # active item
-                    self.stdscr.addstr(4, col, grouptoshow, curses.A_BOLD)
-            else:
-                if self.groupfocus == group:
-                    # group in focus
-                    self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
-                else:
-                    self.stdscr.addstr(4, col, grouptoshow)
-            col += len(grouptoshow) + 2
-            if col+11 >= curses.COLS:
+            self.groupcols[group] = col
+            col = self.drawgroup(group)
+            if col+20 >= curses.COLS:
                 self.nextcol = col
-                self.stdscr.addstr(4, col, self.next)
-                self.to = indx
+                self.drawnext()
+                self.togroup = indx
                 break
 
-    def drawnext(self):
 
-        ############# to do
+    def drawgroup(self, group):
+        # draw the group, return col position of next group to be shown
+        grouptoshow = "["+group+"]"
+        col = self.groupcols[group]
+        if group == self.active:
+            if self.groupfocus == group:
+                # group in focus
+                self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
+            else:
+                # active item
+                self.stdscr.addstr(4, col, grouptoshow, curses.A_BOLD)
+        else:
+            if self.groupfocus == group:
+                # group in focus
+                self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
+            else:
+                self.stdscr.addstr(4, col, grouptoshow)
+        col += (len(grouptoshow) + 2)
+        return col
+
+
+    def drawnext(self, focus=False):
+        if focus:
+            # remove focus from group
+            self.groupfocus = None
+            self.drawgroup(self.groups[self.togroup])
+            # set focus on next button
+            self.nextfocus = True
+            self.stdscr.addstr(4, self.nextcol, "[Next>>", curses.A_REVERSE)
+        else:
+            self.stdscr.addstr(4, self.nextcol, "[Next>>")
+            self.nextfocus = False
 
 
     async def input(self):
@@ -149,19 +169,33 @@ class Groups:
             if chr(key) in ("q", "Q", "m", "M", "d", "D"):
                 return None, key
             if key in (32, 9, 261):   # space, tab, right arrow
+                if self.nextfocus:
+                    return None, 258   # treat as 258 down arrow key
                 # go to the next group
-                indx = self.groups.index(self.groupfocus)
-                if indx+1 >= len(self.groups):
+                if self.groupfocus == self.groups[-1]:
+                    # At the last group, cannot go further
                     return None, key
-                if self.to and (indx+1 >= self.to):
-                    # highlight next key
-                    self.drawnext()
+                indx = self.groups.index(self.groupfocus)
+                if self.togroup and (indx+1 > self.togroup):
+                    # next choice is beyond togroup
+                    # so highlight 'next' key
+                    self.drawnext(focus=True)
+                    self.stdscr.refresh()
                     continue
+                # get the new group in focus
                 self.groupfocus = self.groups[indx+1]
                 self.draw()
                 self.stdscr.refresh()
                 continue
             if key in (353, 260):   # 353 shift tab, 260 left arrow
+                if self.nextfocus:
+                    # group previous to 'next' button, now has focus
+                    self.groupfocus = self.groups[self.togroup]
+                    self.drawgroup(self.groups[self.togroup])
+                    # remove focus from next button
+                    self.drawnext(focus=False)
+                    self.stdscr.refresh()
+                    continue
                 # go to the previous group
                 indx = self.groups.index(self.groupfocus)
                 if indx-1 < 0:
