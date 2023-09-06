@@ -56,8 +56,7 @@ class Groups:
         self.groups = []
         self.prev = "<<Prev]"
         self.next = "[Next>>"
-        # active is a tuple of the group currently being shown
-        # and the number in the current displayed list, 0 on the left
+        # active is the name of the group currently being shown
         self.active = None
         # this is True, if this widget is in focus
         self._focus = False
@@ -85,17 +84,17 @@ class Groups:
     def set_groups(self, groups):
         self.groups = groups.copy()
         if self.active is None:
-            self.active = (self.groups[0], 0)
-        elif self.active[0] not in self.groups:
-            self.active = (self.groups[0], 0)
+            self.active = self.groups[0]
+        elif self.active not in self.groups:
+            self.active = self.groups[0]
 
     def draw(self):
         col = 2
         for group in self.groups:
             grouptoshow = "["+group+"]"
             if self.active is None:
-                self.active = (self.groups[0], 0)
-            if group == self.active[0]:
+                self.active = self.groups[0]
+            if group == self.active:
                 if self.groupfocus == group:
                     # group in focus
                     self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
@@ -123,6 +122,13 @@ class Groups:
             if key == -1:
                 continue
             if key == 10:
+                # set this groupfocus button as the active button,
+                # and return its value
+                if self.active == self.groupfocus:
+                    # no change
+                    continue
+                # set a change of the active group
+                self.active = self.groupfocus
                 return self.groupfocus, 10
             if chr(key) in ("q", "Q", "m", "M", "d", "D"):
                 return None, key
@@ -144,5 +150,6 @@ class Groups:
                 self.draw()
                 self.stdscr.refresh()
                 continue
-
-        return None, key
+            if key in (338, 258):          # 338 page down, 258 down arrow
+                return None, key
+        return None, -1

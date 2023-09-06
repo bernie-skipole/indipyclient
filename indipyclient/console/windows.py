@@ -242,7 +242,6 @@ class MainScreen:
         # self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")  # still to do
         self.screenparts = ("Groups", "Devices", "Messages", "Quit")
 
-
         # groups list
         self.groups = []
         self.group_btns = widgets.Groups(self.stdscr, self.consoleclient)
@@ -262,9 +261,7 @@ class MainScreen:
 
     @property
     def activegroup(self):
-        if self.group_btns.active is None:
-            return None
-        return self.group_btns.active[0]
+        return self.group_btns.active
 
 
     def show(self):
@@ -319,9 +316,8 @@ class MainScreen:
                     # focus has been given to the groups widget which monitors its own inputs
                     newgroup, key = await self.group_btns.input()
                     if key == 10:
-                        if (self.activegroup != newgroup):
-                            # must update the screen with a new group
-                            self.show()
+                        # must update the screen with a new group
+                        self.show()
                         continue
                     # if key != 10 just continue below with key checking for q, m etc.,
                 else:
