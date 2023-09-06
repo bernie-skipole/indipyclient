@@ -63,6 +63,12 @@ class Groups:
         # this is set to the group in focus, if any
         self.groupfocus = None
 
+        # the horizontal display of group buttons may not hold all the buttons
+        # give the index of self.groups from and to
+        self.from = 0
+        self.to = 0
+        self.nextcol = 0
+
 
     @property
     def focus(self):
@@ -83,6 +89,8 @@ class Groups:
 
     def set_groups(self, groups):
         self.groups = groups.copy()
+        self.from = 0
+        self.to = len(self.groups) - 1
         if self.active is None:
             self.active = self.groups[0]
         elif self.active not in self.groups:
@@ -90,7 +98,9 @@ class Groups:
 
     def draw(self):
         col = 2
-        for group in self.groups:
+        for indx, group in enumeraste(self.groups):
+            if indx < self.from:
+                continue
             grouptoshow = "["+group+"]"
             if self.active is None:
                 self.active = self.groups[0]
@@ -109,8 +119,14 @@ class Groups:
                     self.stdscr.addstr(4, col, grouptoshow)
             col += len(grouptoshow) + 2
             if col+11 >= curses.COLS:
+                self.nextcol = col
                 self.stdscr.addstr(4, col, self.next)
+                self.to = indx
                 break
+
+    def drawnext(self):
+
+        ############# to do
 
 
     async def input(self):
@@ -137,6 +153,10 @@ class Groups:
                 indx = self.groups.index(self.groupfocus)
                 if indx+1 >= len(self.groups):
                     return None, key
+                if self.to and (indx+1 >= self.to):
+                    # highlight next key
+                    self.drawnext()
+                    continue
                 self.groupfocus = self.groups[indx+1]
                 self.draw()
                 self.stdscr.refresh()
