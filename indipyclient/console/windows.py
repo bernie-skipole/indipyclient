@@ -238,88 +238,92 @@ class MainScreen:
         self.consoleclient = consoleclient
         self.devicename = devicename
         self.client = consoleclient.client
+
+        # groups list
+        self.groups = []
+        self.group_btns = widgets.Groups(self.stdscr, self.consoleclient)
+
+        # bottom buttons, [Devices] [Messages] [Quit]
         self.device = None
         self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 15)
         self.devices_btn.focus = True
         self.focus = "Devices"
         self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 5)
         self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 6)
-        # groups list
-        self.groups = []
-        # vector name to widget dictionary
-        self.widgets = {}
+
+        # widgets showing vectors
+        self.vectorwidgets = {}
 
 
     def show(self):
         "Displays device"
         self.stdscr.clear()
         self.stdscr.addstr(0, 0, "Device: "+self.devicename, curses.A_BOLD)
-        self.widgets.clear()
+        self.vectorwidgets.clear()
         if self.devicename not in self.client:
             widgets.drawmessage(self.stdscr, f"{self.devicename} not found!")
-            self.bottombuttons()
+            self.devices_btn.draw()
+            self.messages_btn.draw()
+            self.quit_btn.draw()
+            self.stdscr.refresh()
             return
         self.device = self.client[self.devicename]
         if self.device.messages:
             widgets.drawmessage(self.stdscr, self.device.messages[0])
-        # get the groups this device contains, use a set first to avoid duplicates
+        # get the groups this device contains, use a set to avoid duplicates
         groupset = {vector.group for vector in self.device.values()}
         self.groups = sorted(list(groupset))
-        if len(self.groups) == 1 and self.groups[0] == "DEFAULT GROUP":
-            self.groups = []
-            self.widgets["Groups"] = None
-        else:
-            # populate a widget showing horizontal list of groups
-            group_btns = widgets.Groups(self.stdscr, self.groups)
-            group_btns.draw()
-            # add group buttons widget to self.widgets
-            self.widgets["Groups"] = group_btns
-        # add bottom buttons to self.widgets dictionary and refresh
-        self.bottombuttons()
+        # populate a widget showing horizontal list of groups
+        self.group_btns.set_groups(self.groups)
+        self.group_btns.draw()
 
+        # to do - draw the device vectorwidgets
 
-    def update(self, event):
-        pass
-
-
-    def bottombuttons(self):
-        "Draws the bottom buttons"
-        self.widgets["Devices"] = self.devices_btn
-        self.widgets["Messages"] = self.messages_btn
-        self.widgets["Quit"] = self.quit_btn
+        # draw the bottom buttons and refresh
         self.devices_btn.draw()
         self.messages_btn.draw()
         self.quit_btn.draw()
         self.stdscr.refresh()
 
 
+    def update(self, event):
+        pass
+
+
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
     async def inputs(self):
         "Gets inputs from the screen"
+
         try:
             self.stdscr.nodelay(True)
             while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
                 await asyncio.sleep(0)
-                key = self.stdscr.getch()
-                if key == -1:
-                    continue
-                # which widget has focus
-                widgetnames = list(self.widgets.keys())
+                # get widget names in display order
+                widgetnames = ["Groups"]
+                if self.vectorwidgets:
+                    widgetnames.extend(self.vectorwidgets.keys())
+                widgetnames.extend(["Devices", "Messages", "Quit"])
                 if self.focus not in widgetnames:
                     # as default, start with focus on the Devices button
                     self.devices_btn.focus = True
                     self.focus = "Devices"
-                if self.focus == widgetnames[0]: # Groups
+
+                if self.focus == "Groups":
                     # focus has been given to the groups widget which monitors its own inputs
-                    self.focus, key = await widgetnames[0].input()
-                    # key will be a group name, or next or previous
+                    self.focus, key = await self.group_btns.input()
+                else:
+                    key = self.stdscr.getch()
+
+                if key == -1:
+                    continue
+
                 if key == 10:
                     # enter key pressed
                     if self.focus == "Quit":
                         widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
                         self.stdscr.refresh()
-                    # return the focus value of whichever key was pressed
+                    # return the focus value of whichever item was in focus when enter was pressed
                     return self.focus
                 if chr(key) == "q" or chr(key) == "Q":
                     widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
@@ -330,15 +334,15 @@ class MainScreen:
                 if chr(key) == "d" or chr(key) == "D":
                     return "Devices"
                 if key in (32, 9, 261, 338, 258):
-                    # go to the next button
+                    # go to the next widget
                     if self.focus == "Quit":
-                        newfocus = widgetnames[0]  # Groups
+                        newfocus = "Groups"
                     else:
                         indx = widgetnames.index(self.focus)
                         newfocus = widgetnames[indx+1]
                 elif key in (353, 260, 339, 259):
                     # go to previous button
-                    if self.focus == widgetnames[0]: # Groups
+                    if self.focus == "Groups":
                         newfocus = "Quit"
                     else:
                         indx = widgetnames.index(self.focus)
@@ -346,12 +350,27 @@ class MainScreen:
                 else:
                     # field not recognised
                     continue
-
-                self.widgets[self.focus].focus = False
-                self.widgets[newfocus].focus = True
+                if self.focus in self.vectorwidgets:
+                    self.vectorwidgets[self.focus].focus = False
+                elif self.focus == "Groups":
+                    self.group_btns.focus = False
+                elif self.focus == "Devices":
+                    self.devices_btn.focus = False
+                elif self.focus == "Messages":
+                    self.messages_btn.focus = False
+                elif self.focus == "Quit":
+                    self.quit_btn.focus = False
+                if newfocus in self.vectorwidgets:
+                    self.vectorwidgets[newfocus].focus = True
+                elif newfocus == "Groups":
+                    self.group_btns.focus = True
+                elif newfocus == "Devices":
+                    self.devices_btn.focus = True
+                elif newfocus == "Messages":
+                    self.messages_btn.focus = True
+                elif newfocus == "Quit":
+                    self.quit_btn.focus = True
                 self.focus = newfocus
-                for widget in self.widgets.values():
-                    widget.draw()
                 self.stdscr.refresh()
         except asyncio.CancelledError:
             raise
