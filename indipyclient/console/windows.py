@@ -255,6 +255,13 @@ class MainScreen:
         self.vectorwidgets = {}
 
 
+    @property
+    def activegroup(self):
+        if self.group_btns.active is None:
+            return None
+        return self.group_btns.active[0]
+
+
     def show(self):
         "Displays device"
         self.stdscr.clear()
@@ -311,7 +318,13 @@ class MainScreen:
 
                 if self.focus == "Groups":
                     # focus has been given to the groups widget which monitors its own inputs
-                    self.focus, key = await self.group_btns.input()
+                    newgroup, key = await self.group_btns.input()
+                    if key == 10:
+                        if (self.activegroup != newgroup):
+                            # must update the screen with a new group
+                            self.show()
+                        continue
+                    # if key != 10 just continue below with key checking for q, m etc.,
                 else:
                     key = self.stdscr.getch()
 

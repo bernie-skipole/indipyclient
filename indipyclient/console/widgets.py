@@ -59,7 +59,11 @@ class Groups:
         # active is a tuple of the group currently being shown
         # and the number in the current displayed list, 0 on the left
         self.active = None
+        # this is True, if this widget is in focus
         self._focus = False
+        # this is set to the group in focus, if any
+        self.groupfocus = None
+
 
     @property
     def focus(self):
@@ -70,6 +74,10 @@ class Groups:
         if self._focus == value:
             return
         self._focus = value
+        if value:
+            self.groupfocus = self.groups[0]
+        else:
+            self.groupfocus = None
         self.draw()
         self.stdscr.refresh()
 
@@ -83,15 +91,23 @@ class Groups:
 
     def draw(self):
         col = 2
-        for number, group in enumerate(self.groups):
+        for group in self.groups:
             grouptoshow = "["+group+"]"
             if self.active is None:
                 self.active = (self.groups[0], 0)
-            if number == self.active[1]:
-                # active item
-                self.stdscr.addstr(4, col, grouptoshow, curses.A_BOLD)
+            if group == self.active[0]:
+                if self.groupfocus == group:
+                    # group in focus
+                    self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
+                else:
+                    # active item
+                    self.stdscr.addstr(4, col, grouptoshow, curses.A_BOLD)
             else:
-                self.stdscr.addstr(4, col, grouptoshow)
+                if self.groupfocus == group:
+                    # group in focus
+                    self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
+                else:
+                    self.stdscr.addstr(4, col, grouptoshow)
             col += len(grouptoshow) + 2
             if col+11 >= curses.COLS:
                 self.stdscr.addstr(4, col, self.next)
@@ -106,5 +122,27 @@ class Groups:
             key = self.stdscr.getch()
             if key == -1:
                 continue
-            break
-        return "Groups", key
+            if key == 10:
+                return self.groupfocus, 10
+            if chr(key) in ("q", "Q", "m", "M", "d", "D"):
+                return None, key
+            if key in (32, 9, 261):   # space, tab, right arrow
+                # go to the next group
+                indx = self.groups.index(self.groupfocus)
+                if indx+1 > len(self.groups):
+                    return None, key
+                self.groupfocus = self.groups[indx+1]
+                self.draw()
+                self.stdscr.refresh()
+                continue
+            if key in (353, 260):   # 353 shift tab, 260 left arrow
+                # go to the previous group
+                indx = self.groups.index(self.groupfocus)
+                if indx-1 < 0:
+                    return None, key
+                self.groupfocus = self.groups[indx-1]
+                self.draw()
+                self.stdscr.refresh()
+                continue
+
+        return None, key
