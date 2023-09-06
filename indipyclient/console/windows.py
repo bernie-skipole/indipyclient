@@ -239,6 +239,10 @@ class MainScreen:
         self.devicename = devicename
         self.client = consoleclient.client
 
+        # self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")  # still to do
+        self.screenparts = ("Groups", "Devices", "Messages", "Quit")
+
+
         # groups list
         self.groups = []
         self.group_btns = widgets.Groups(self.stdscr, self.consoleclient)
@@ -248,6 +252,7 @@ class MainScreen:
         self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 15)
         self.devices_btn.focus = True
         self.focus = "Devices"
+
         self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 5)
         self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 6)
 
@@ -306,16 +311,10 @@ class MainScreen:
             self.stdscr.nodelay(True)
             while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
                 await asyncio.sleep(0)
-                # get widget names in display order
-                widgetnames = ["Groups"]
-                if self.vectorwidgets:
-                    widgetnames.extend(self.vectorwidgets.keys())
-                widgetnames.extend(["Devices", "Messages", "Quit"])
-                if self.focus not in widgetnames:
+                if self.focus not in self.screenparts:
                     # as default, start with focus on the Devices button
                     self.devices_btn.focus = True
                     self.focus = "Devices"
-
                 if self.focus == "Groups":
                     # focus has been given to the groups widget which monitors its own inputs
                     newgroup, key = await self.group_btns.input()
@@ -351,20 +350,21 @@ class MainScreen:
                     if self.focus == "Quit":
                         newfocus = "Groups"
                     else:
-                        indx = widgetnames.index(self.focus)
-                        newfocus = widgetnames[indx+1]
+                        indx = self.screenparts.index(self.focus)
+                        newfocus = self.screenparts[indx+1]
                 elif key in (353, 260, 339, 259):
                     # go to previous button
                     if self.focus == "Groups":
                         newfocus = "Quit"
                     else:
-                        indx = widgetnames.index(self.focus)
-                        newfocus = widgetnames[indx-1]
+                        indx = self.screenparts.index(self.focus)
+                        newfocus = self.screenparts[indx-1]
                 else:
                     # field not recognised
                     continue
-                if self.focus in self.vectorwidgets:
-                    self.vectorwidgets[self.focus].focus = False
+                if self.focus == "Vectors":
+                    # still to do
+                    pass
                 elif self.focus == "Groups":
                     self.group_btns.focus = False
                 elif self.focus == "Devices":
@@ -373,8 +373,9 @@ class MainScreen:
                     self.messages_btn.focus = False
                 elif self.focus == "Quit":
                     self.quit_btn.focus = False
-                if newfocus in self.vectorwidgets:
-                    self.vectorwidgets[newfocus].focus = True
+                if newfocus == "Vectors":
+                    # still to do
+                    pass
                 elif newfocus == "Groups":
                     self.group_btns.focus = True
                 elif newfocus == "Devices":

@@ -129,7 +129,7 @@ class Groups:
             if key in (32, 9, 261):   # space, tab, right arrow
                 # go to the next group
                 indx = self.groups.index(self.groupfocus)
-                if indx+1 > len(self.groups):
+                if indx+1 >= len(self.groups):
                     return None, key
                 self.groupfocus = self.groups[indx+1]
                 self.draw()
