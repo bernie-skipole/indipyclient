@@ -159,12 +159,11 @@ class Groups:
 
     def drawprev(self, focus=False):
         if focus:
-            # remove focus from group
-            self.groupfocus = None
-            self.drawgroup(self.groups[self.fromgroup])
+            self.stdscr.addstr(4, 2, "<<Prev]", curses.A_REVERSE)
             # set focus on prev button
             self.prevfocus = True
-            self.stdscr.addstr(4, 2, "<<Prev]", curses.A_REVERSE)
+            # remove focus from group
+            self.groupfocus = None
         else:
             self.stdscr.addstr(4, 2, "<<Prev]")
             self.prevfocus = False
@@ -194,10 +193,10 @@ class Groups:
             if key == 10:
 
                 if self.prevfocus:
-                    # Enter has been pressed when the 'Prev' button has
-                    # focus
+                    # Enter has been pressed when the 'Prev' button has focus
                     self.fromgroup = self.fromgroup - 1
                     if not self.fromgroup:
+                        # self.fromgroup is zero, so no prev button
                         self.prevfocus = False
                         self.groupfocus = self.groups[0]
                     self.draw()
@@ -253,8 +252,13 @@ class Groups:
                 self.stdscr.refresh()
                 continue
             if key in (353, 260):   # 353 shift tab, 260 left arrow
+                if self.prevfocus:
+                    # remove focus from the button
+                    self.drawprev(focus=False)
+                    self.stdscr.refresh()
+                    return None, 258   # treat as 258 down arrow key
                 if self.nextfocus:
-                    # group previous to 'next' button, now has focus
+                    # group to the left of the 'Next' button, now has focus
                     self.groupfocus = self.groups[self.togroup]
                     self.drawgroup(self.groups[self.togroup])
                     # remove focus from next button
@@ -264,6 +268,11 @@ class Groups:
                 # go to the previous group
                 indx = self.groups.index(self.groupfocus)
                 if indx and (indx == self.fromgroup):
+                    # the button to the left must be the 'Prev' button
+                    # remove focus from current button
+                    currentgroup = self.groupfocus
+                    self.groupfocus = None
+                    self.drawgroup(currentgroup)
                     # set Prev button as the focus
                     self.drawprev(focus=True)
                     self.stdscr.refresh()
