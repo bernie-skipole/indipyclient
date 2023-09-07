@@ -55,7 +55,6 @@ class Groups:
         self.consoleclient = consoleclient
         self.groups = []          # list of group names
         self.groupcols = {}       # dictionary of groupname to column number
-        self.prev = "<<Prev]"
         # active is the name of the group currently being shown
         self.active = None
         # this is True, if this widget is in focus
@@ -69,6 +68,7 @@ class Groups:
         self.togroup = 0
         self.nextcol = 0
         self.nextfocus = False
+        self.prevfocus = False
 
 
     @property
@@ -81,9 +81,11 @@ class Groups:
             return
         self._focus = value
         if value:
-            self.groupfocus = self.groups[0]
+            self.groupfocus = self.groups[self.fromgroup]
         else:
             self.groupfocus = None
+            self.nextfocus = False
+            self.prevfocus = False
         self.draw()
         self.stdscr.refresh()
 
@@ -91,26 +93,45 @@ class Groups:
     def set_groups(self, groups):
         self.groups = groups.copy()
         self.groupcols.clear()
-        self.fromgroup = 0
-        self.togroup = len(self.groups) - 1
         if self.active is None:
             self.active = self.groups[0]
         elif self.active not in self.groups:
             self.active = self.groups[0]
 
     def draw(self):
-        col = 2
+        "Draw the line of groups"
         self.groupcols.clear()
+        if self.active is None:
+            self.active = self.groups[0]
+        # clear the line
+        self.stdscr.addstr(4, 0, " "*curses.COLS)
+
+        # draw 'Prev' button if necessary
+        if self.fromgroup:
+            self.drawprev(self.prevfocus)
+            col = 11
+        else:
+            col = 2
+
         for indx, group in enumerate(self.groups):
             if indx < self.fromgroup:
                 continue
-            if self.active is None:
-                self.active = self.groups[0]
             self.groupcols[group] = col
+
+            # is this the last?
+            if group == self.groups[-1]:
+                self.togroup = indx
+                if self.nextfocus:
+                    self.nextfocus = False
+                    self.groupfocus = group
+
             col = self.drawgroup(group)
-            if col+20 >= curses.COLS:
+
+            # If not the last, check if another can be drawn
+            # otherwise print the 'Next' button
+            if (group != self.groups[-1]) and (col+20 >= curses.COLS):
                 self.nextcol = col
-                self.drawnext()
+                self.drawnext(self.nextfocus)
                 self.togroup = indx
                 break
 
@@ -136,6 +157,19 @@ class Groups:
         return col
 
 
+    def drawprev(self, focus=False):
+        if focus:
+            # remove focus from group
+            self.groupfocus = None
+            self.drawgroup(self.groups[self.fromgroup])
+            # set focus on prev button
+            self.prevfocus = True
+            self.stdscr.addstr(4, 2, "<<Prev]", curses.A_REVERSE)
+        else:
+            self.stdscr.addstr(4, 2, "<<Prev]")
+            self.prevfocus = False
+
+
     def drawnext(self, focus=False):
         if focus:
             # remove focus from group
@@ -158,6 +192,29 @@ class Groups:
             if key == -1:
                 continue
             if key == 10:
+
+                if self.prevfocus:
+                    # Enter has been pressed when the 'Prev' button has
+                    # focus
+                    self.fromgroup = self.fromgroup - 1
+                    if not self.fromgroup:
+                        self.prevfocus = False
+                        self.groupfocus = self.groups[0]
+                    self.draw()
+                    self.stdscr.refresh()
+                    continue
+
+                if self.nextfocus:
+                    # Enter has been pressed when the 'Next' button has
+                    # focus
+                    if self.fromgroup:
+                        self.fromgroup = self.fromgroup + 1
+                    else:
+                        self.fromgroup = 2
+                    self.draw()
+                    self.stdscr.refresh()
+                    continue
+
                 # set this groupfocus button as the active button,
                 # and return its value
                 if self.active == self.groupfocus:
@@ -169,6 +226,14 @@ class Groups:
             if chr(key) in ("q", "Q", "m", "M", "d", "D"):
                 return None, key
             if key in (32, 9, 261):   # space, tab, right arrow
+                if self.prevfocus:
+                    # remove focus from prev button
+                    self.drawprev()
+                    # set focus on from button
+                    self.groupfocus = self.groups[self.fromgroup]
+                    self.drawgroup(self.groupfocus)
+                    self.stdscr.refresh()
+                    continue
                 if self.nextfocus:
                     return None, 258   # treat as 258 down arrow key
                 # go to the next group
@@ -198,6 +263,11 @@ class Groups:
                     continue
                 # go to the previous group
                 indx = self.groups.index(self.groupfocus)
+                if indx and (indx == self.fromgroup):
+                    # set Prev button as the focus
+                    self.drawprev(focus=True)
+                    self.stdscr.refresh()
+                    continue
                 if indx-1 < 0:
                     return None, key
                 self.groupfocus = self.groups[indx-1]
