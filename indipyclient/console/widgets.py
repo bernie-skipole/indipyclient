@@ -93,10 +93,16 @@ class Groups:
     def set_groups(self, groups):
         self.groups = groups.copy()
         self.groupcols.clear()
+        if self.groupfocus:
+            if self.groupfocus not in self.groups:
+                self.groupfocus = None
+                self.nextfocus = False
+                self.prevfocus = False
         if self.active is None:
             self.active = self.groups[0]
         elif self.active not in self.groups:
             self.active = self.groups[0]
+
 
     def draw(self):
         "Draw the line of groups"

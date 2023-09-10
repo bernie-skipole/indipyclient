@@ -286,7 +286,7 @@ class MainScreen:
         self.group_btns.set_groups(self.groups)
         self.group_btns.draw()
 
-        # to do - draw the device vectorwidgets
+        # to do - draw the device vectorwidgets, as given by self.activegroup
 
         # draw the bottom buttons and refresh
         self.devices_btn.draw()
