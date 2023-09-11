@@ -4,54 +4,44 @@ import asyncio, curses, sys
 
 class Button:
 
-    def __init__(self, stdscr, btntext, row, col):
-        self.stdscr = stdscr
+    def __init__(self, window, btntext, row, col):
+        self.window = window
         self.btntext = btntext
         self.row = row
         self.col = col
-        self._focus = False
+        self.focus = False
 
     def draw(self):
-        if self._focus:
-            self.stdscr.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_REVERSE)
+        if self.focus:
+            self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_REVERSE)
         else:
-            self.stdscr.addstr( self.row, self.col, "[" + self.btntext + "]")
-
-    @property
-    def focus(self):
-        return self._focus
-
-    @focus.setter
-    def focus(self, value):
-        if self._focus == value:
-            return
-        self._focus = value
-        self.draw()
-        self.stdscr.refresh()
+            self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
 
 
 
-def drawmessage(stdscr, message, bold = False):
-    """Shows message on line 2, message is either a text string, or a tuple of (timestamp, message text)"""
+def drawmessage(window, message, bold = False):
+    """Shows message, message is either a text string, or a tuple of (timestamp, message text)"""
     if isinstance(message, str):
         rxmessage = "    " + message
     else:
         rxmessage = "    " + message[0].isoformat(sep='T')[11:21] + "  " + message[1]
-    if len(rxmessage) > curses.COLS:
-        messagetoshow = rxmessage[:curses.COLS]
-    else:
-        messagetoshow = rxmessage + " "*(curses.COLS - len(rxmessage))
-    if bold:
-        stdscr.addstr(2, 0, messagetoshow, curses.A_BOLD)
-    else:
-        stdscr.addstr(2, 0, messagetoshow)
 
+    if len(rxmessage) > curses.COLS:
+        messagetoshow = rxmessage[:curses.COLS-1]
+    else:
+        messagetoshow = rxmessage + " "*(curses.COLS - len(rxmessage) - 1)
+
+    if bold:
+        window.addstr(0, 0, messagetoshow, curses.A_BOLD)
+    else:
+        window.addstr(0, 0, messagetoshow)
 
 
 class Groups:
 
-    def __init__(self, stdscr, consoleclient):
+    def __init__(self, stdscr, window, consoleclient):
         self.stdscr = stdscr
+        self.window = window
         self.consoleclient = consoleclient
         self.groups = []          # list of group names
         self.groupcols = {}       # dictionary of groupname to column number
@@ -86,8 +76,6 @@ class Groups:
             self.groupfocus = None
             self.nextfocus = False
             self.prevfocus = False
-        self.draw()
-        self.stdscr.refresh()
 
 
     def set_groups(self, groups):
@@ -110,7 +98,7 @@ class Groups:
         if self.active is None:
             self.active = self.groups[0]
         # clear the line
-        self.stdscr.addstr(4, 0, " "*curses.COLS)
+        self.window.clear()
 
         # draw 'Prev' button if necessary
         if self.fromgroup:
@@ -149,29 +137,29 @@ class Groups:
         if group == self.active:
             if self.groupfocus == group:
                 # group in focus
-                self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
+                self.window.addstr(0, col, grouptoshow, curses.A_REVERSE)
             else:
                 # active item
-                self.stdscr.addstr(4, col, grouptoshow, curses.A_BOLD)
+                self.window.addstr(0, col, grouptoshow, curses.A_BOLD)
         else:
             if self.groupfocus == group:
                 # group in focus
-                self.stdscr.addstr(4, col, grouptoshow, curses.A_REVERSE)
+                self.window.addstr(0, col, grouptoshow, curses.A_REVERSE)
             else:
-                self.stdscr.addstr(4, col, grouptoshow)
+                self.window.addstr(0, col, grouptoshow)
         col += (len(grouptoshow) + 2)
         return col
 
 
     def drawprev(self, focus=False):
         if focus:
-            self.stdscr.addstr(4, 2, "<<Prev]", curses.A_REVERSE)
+            self.window.addstr(0, 2, "<<Prev]", curses.A_REVERSE)
             # set focus on prev button
             self.prevfocus = True
             # remove focus from group
             self.groupfocus = None
         else:
-            self.stdscr.addstr(4, 2, "<<Prev]")
+            self.window.addstr(0, 2, "<<Prev]")
             self.prevfocus = False
 
 
@@ -182,9 +170,9 @@ class Groups:
             self.drawgroup(self.groups[self.togroup])
             # set focus on next button
             self.nextfocus = True
-            self.stdscr.addstr(4, self.nextcol, "[Next>>", curses.A_REVERSE)
+            self.window.addstr(0, self.nextcol, "[Next>>", curses.A_REVERSE)
         else:
-            self.stdscr.addstr(4, self.nextcol, "[Next>>")
+            self.window.addstr(0, self.nextcol, "[Next>>")
             self.nextfocus = False
 
 
@@ -206,7 +194,8 @@ class Groups:
                         self.prevfocus = False
                         self.groupfocus = self.groups[0]
                     self.draw()
-                    self.stdscr.refresh()
+                    self.window.noutrefresh()
+                    curses.doupdate()
                     continue
 
                 if self.nextfocus:
@@ -217,7 +206,8 @@ class Groups:
                     else:
                         self.fromgroup = 2
                     self.draw()
-                    self.stdscr.refresh()
+                    self.window.noutrefresh()
+                    curses.doupdate()
                     continue
 
                 # set this groupfocus button as the active button,
@@ -237,7 +227,8 @@ class Groups:
                     # set focus on from button
                     self.groupfocus = self.groups[self.fromgroup]
                     self.drawgroup(self.groupfocus)
-                    self.stdscr.refresh()
+                    self.window.noutrefresh()
+                    curses.doupdate()
                     continue
                 if self.nextfocus:
                     return None, 258   # treat as 258 down arrow key
@@ -250,18 +241,19 @@ class Groups:
                     # next choice is beyond togroup
                     # so highlight 'next' key
                     self.drawnext(focus=True)
-                    self.stdscr.refresh()
+                    self.window.noutrefresh()
+                    curses.doupdate()
                     continue
                 # get the new group in focus
                 self.groupfocus = self.groups[indx+1]
                 self.draw()
-                self.stdscr.refresh()
+                self.window.noutrefresh()
+                curses.doupdate()
                 continue
             if key in (353, 260):   # 353 shift tab, 260 left arrow
                 if self.prevfocus:
                     # remove focus from the button
                     self.drawprev(focus=False)
-                    self.stdscr.refresh()
                     return None, 258   # treat as 258 down arrow key
                 if self.nextfocus:
                     # group to the left of the 'Next' button, now has focus
@@ -269,7 +261,8 @@ class Groups:
                     self.drawgroup(self.groups[self.togroup])
                     # remove focus from next button
                     self.drawnext(focus=False)
-                    self.stdscr.refresh()
+                    self.window.noutrefresh()
+                    curses.doupdate()
                     continue
                 # go to the previous group
                 indx = self.groups.index(self.groupfocus)
@@ -281,13 +274,15 @@ class Groups:
                     self.drawgroup(currentgroup)
                     # set Prev button as the focus
                     self.drawprev(focus=True)
-                    self.stdscr.refresh()
+                    self.window.noutrefresh()
+                    curses.doupdate()
                     continue
                 if indx-1 < 0:
                     return None, key
                 self.groupfocus = self.groups[indx-1]
                 self.draw()
-                self.stdscr.refresh()
+                self.window.noutrefresh()
+                curses.doupdate()
                 continue
             if key in (338, 258):          # 338 page down, 258 down arrow
                 return None, key

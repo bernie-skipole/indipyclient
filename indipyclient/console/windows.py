@@ -9,11 +9,23 @@ class MessagesScreen:
 
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
+        self.stdscr.clear()
         self.consoleclient = consoleclient
         self.client = consoleclient.client
-        self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 10)
+
+        # title window  (3 lines, full row, starting at 0,0)
+        self.titlewin = self.stdscr.subwin(3, curses.COLS, 0, 0)
+        self.titlewin.addstr(0, 0, "indipyclient console", curses.A_BOLD)
+
+        # messages window (8 lines, full row - 4, starting at 4,3)
+        self.messwin = self.stdscr.subwin(8, curses.COLS-4, 4, 3)
+
+        # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
+        self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
+
+        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, curses.COLS//2 - 10)
         self.devices_btn.focus = False
-        self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 2)
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, curses.COLS//2 + 2)
         self.quit_btn.focus = True
 
     @property
@@ -22,44 +34,64 @@ class MessagesScreen:
 
     def show(self):
         "Displays title, info string and list of messages on a start screen"
-        messages = self.client.messages
-        self.stdscr.clear()
-        self.stdscr.addstr(0, 0, "indipyclient console", curses.A_BOLD)
         if self.connected:
-            self.stdscr.addstr(2, 0, "Connected")
+            self.titlewin.addstr(2, 0, "Connected    ")
+            self.devices_btn.focus = True
+            self.quit_btn.focus = False
         else:
-            self.stdscr.addstr(2, 0, "Not Connected")
+            self.titlewin.addstr(2, 0, "Not Connected")
             self.devices_btn.focus = False
             self.quit_btn.focus = True
+
+        # draw messages
+        self.messwin.clear()
+        messages = self.client.messages
         lastmessagenumber = len(messages) - 1
-        margin = 4
         mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
         for count, message in enumerate(mlist):
             if count == lastmessagenumber:
-                # high light the last, current message
-                self.stdscr.addstr(4+count, margin, message, curses.A_BOLD)
+                # highlight the last, current message
+                self.messwin.addstr(count, 0, message, curses.A_BOLD)
             else:
-                self.stdscr.addstr(4+count, margin, message)
-        # put [Devices] [Quit] buttons on screen
-        info1txt = "Use Tab, Space or arrows to "
-        info2txt = "highlight a button and press Enter"
-        if len(info1txt)+len(info2txt)+6 > curses.COLS:
-            # text too long, split into two lines
-            self.stdscr.addstr(curses.LINES - 4, (curses.COLS - len(info1txt))//2, info1txt)
-            self.stdscr.addstr(curses.LINES - 3, (curses.COLS - len(info2txt))//2, info2txt)
-        else:
-            infotext = info1txt + info2txt
-            col = (curses.COLS - len(infotext))//2
-            self.stdscr.addstr(curses.LINES - 3, col, infotext)
+                self.messwin.addstr(count, 0, message)
+
+        # draw buttons
+        self.buttwin.clear()
         self.devices_btn.draw()
         self.quit_btn.draw()
-        self.stdscr.refresh()
+
+        # refresh these sub-windows and update physical screen
+
+        self.titlewin.noutrefresh()
+        self.messwin.noutrefresh()
+        self.buttwin.noutrefresh()
+        curses.doupdate()
 
 
     def update(self, event):
         "Only update if message has changed"
-        if isinstance(event, events.Message):
-            self.show()
+        if not isinstance(event, events.Message):
+            return
+        self.messwin.clear()
+        messages = self.client.messages
+        lastmessagenumber = len(messages) - 1
+        mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
+        for count, message in enumerate(mlist):
+            if count == lastmessagenumber:
+                # highlight the last, current message
+                self.messwin.addstr(count, 0, message, curses.A_BOLD)
+            else:
+                self.messwin.addstr(count, 0, message)
+
+        # check if connected or not
+        if self.connected:
+            self.titlewin.addstr(2, 0, "Connected    ")
+        else:
+            self.titlewin.addstr(2, 0, "Not Connected")
+
+        self.titlewin.noutrefresh()
+        self.messwin.noutrefresh()
+        curses.doupdate()
 
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -77,8 +109,11 @@ class MessagesScreen:
                     # only accept quit
                     self.devices_btn.focus = False
                     self.quit_btn.focus = True
+                    self.buttwin.clear()
                     self.devices_btn.draw()
                     self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
                     if key == 10 or chr(key) == "q" or chr(key) == "Q":
                         return "Quit"
                     continue
@@ -91,8 +126,11 @@ class MessagesScreen:
                     else:
                         self.quit_btn.focus = False
                         self.devices_btn.focus = True
+                    self.buttwin.clear()
                     self.devices_btn.draw()
                     self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
                 if chr(key) == "q" or chr(key) == "Q":
                     return "Quit"
                 if chr(key) == "d" or chr(key) == "D":
@@ -112,31 +150,71 @@ class DevicesScreen:
 
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
+        self.stdscr.clear()
         self.consoleclient = consoleclient
         self.client = consoleclient.client
-        self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 10)
+
+        # title window  (1 line, full row, starting at 0,0)
+        self.titlewin = self.stdscr.subwin(1, curses.COLS, 0, 0)
+        self.titlewin.addstr(0, 0, "Devices", curses.A_BOLD)
+
+        # messages window (1 line, full row, starting at 2,0)
+        self.messwin = self.stdscr.subwin(1, curses.COLS, 2, 0)
+
+        # status window (1 line, full row-4, starting at 4,4)
+        self.statwin = self.stdscr.subwin(1, curses.COLS-4, 4, 4)
+
+        # devices window (8 lines, full row-4, starting at 6,4)
+        self.devwin = self.stdscr.subwin(8, curses.COLS-4, 6, 4)
+
+        # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
+        self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
+
+        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, curses.COLS//2 - 10)
         self.messages_btn.focus = True
         self.focus = "Messages"
-        self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 2)
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, curses.COLS//2 + 2)
         # devicename to button dictionary
         self.devices = {}
 
+
     def show(self):
         "Displays the screen with list of devices"
-        self.stdscr.clear()
-        self.stdscr.addstr(0, 0, "Devices", curses.A_BOLD)
-        widgets.drawmessage(self.stdscr, self.client.messages[0])
+
+        # draw the message
+        if self.client.messages:
+            self.messwin.clear()
+            widgets.drawmessage(self.messwin, self.client.messages[0])
+
+        # draw status
         if not len(self.client):
-            self.stdscr.addstr(4, 4, "No devices have been discovered")
+            self.statwin.addstr(0, 0, "No devices have been discovered")
         else:
-            self.stdscr.addstr(4, 4, "Choose a device:")
+            self.statwin.addstr(0, 0, "Choose a device:               ")
+
+        # draw buttons and devices
+        self.drawdevices()
+
+        # refresh these sub-windows and update physical screen
+
+        self.titlewin.noutrefresh()
+        self.messwin.noutrefresh()
+        self.statwin.noutrefresh()
+        self.devwin.noutrefresh()
+        self.buttwin.noutrefresh()
+        curses.doupdate()
+
+
+
+    def drawdevices(self):
+        self.devwin.clear()
+        self.buttwin.clear()
+
         # Remove current devices
         self.devices.clear()
-        linenumber = 5
         colnumber = curses.COLS//2 - 6
-        for devicename in self.client:
-            linenumber += 1
-            self.devices[devicename.lower()] = widgets.Button(self.stdscr, devicename, linenumber, colnumber)
+        for linenumber, devicename in enumerate(self.client):
+            self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber, colnumber)
         self.devices["Messages"] = self.messages_btn
         self.devices["Quit"] = self.quit_btn
         if self.focus in self.devices:
@@ -144,31 +222,43 @@ class DevicesScreen:
         else:
             # self.focus points at a device which has been removed, so set focus to messages
             self.messages_btn.focus = True
+
+        # draw buttons and devices
         for devicewidget in self.devices.values():
             devicewidget.draw()
-        self.stdscr.refresh()
+
 
 
     def update(self, event):
         "Only update if global message has changed, or a new device added or deleted"
         if isinstance(event, events.Message) and event.devicename is None:
-            widgets.drawmessage(self.stdscr, self.client.messages[0])
-            self.stdscr.refresh()
+            widgets.drawmessage(self.messwin, self.client.messages[0])
+            self.messwin.noutrefresh()
+            curses.doupdate()
             return
         # check devices unchanged
         if isinstance(event, events.delProperty) and event.vectorname is None:
             # a device has being deleted
-            self.show()
+            self.drawdevices()
+            self.devwin.noutrefresh()
+            self.buttwin.noutrefresh()
+            curses.doupdate()
             return
         if event.devicename is not None:
             if event.devicename.lower() not in self.devices:
                 # unknown device, check this is a definition
                 if isinstance(event, events.defVector):
                     # could be a new device
-                    self.show()
+                    self.drawdevices()
+                    self.devwin.noutrefresh()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
                 elif isinstance(event, events.defBLOBVector):
                     # could be a new device
-                    self.show()
+                    self.drawdevices()
+                    self.devwin.noutrefresh()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
 
 
 
@@ -190,12 +280,14 @@ class DevicesScreen:
                     self.focus = "Messages"
                 if key == 10:
                     if self.focus == "Quit":
-                        widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
-                        self.stdscr.refresh()
+                        widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
+                        self.messwin.noutrefresh()
+                        curses.doupdate()
                     return self.focus
                 if chr(key) == "q" or chr(key) == "Q":
-                    widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
-                    self.stdscr.refresh()
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
+                    self.messwin.noutrefresh()
+                    curses.doupdate()
                     return "Quit"
                 if chr(key) == "m" or chr(key) == "M":
                     return "Messages"
@@ -221,9 +313,12 @@ class DevicesScreen:
                 self.devices[self.focus].focus = False
                 self.devices[newfocus].focus = True
                 self.focus = newfocus
-                for btn in self.devices.values():
-                    btn.draw()
-                self.stdscr.refresh()
+
+                # draw devices and buttons
+                self.drawdevices()
+                self.devwin.noutrefresh()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
 
         except asyncio.CancelledError:
             raise
@@ -235,28 +330,40 @@ class MainScreen:
 
     def __init__(self, stdscr, consoleclient, devicename):
         self.stdscr = stdscr
+        self.stdscr.clear()
         self.consoleclient = consoleclient
         self.devicename = devicename
         self.client = consoleclient.client
 
+        # title window  (1 line, full row, starting at 0,0)
+        self.titlewin = self.stdscr.subwin(1, curses.COLS, 0, 0)
+        self.titlewin.addstr(0, 0, "Device: " + self.devicename, curses.A_BOLD)
+
+        # messages window (1 line, full row, starting at 2,0)
+        self.messwin = self.stdscr.subwin(1, curses.COLS, 2, 0)
+
         # self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")  # still to do
         self.screenparts = ("Groups", "Devices", "Messages", "Quit")
 
+        # groups window (1 line, full row, starting at 4,0)
+        self.groupswin = self.stdscr.subwin(1, curses.COLS, 4, 0)
+
         # groups list
         self.groups = []
-        self.group_btns = widgets.Groups(self.stdscr, self.consoleclient)
+        self.group_btns = widgets.Groups(self.stdscr, self.groupswin, self.consoleclient)
 
         # bottom buttons, [Devices] [Messages] [Quit]
+
+        # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
+        self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
+
         self.device = None
-        self.devices_btn = widgets.Button(stdscr, "Devices", curses.LINES - 1, curses.COLS//2 - 15)
+        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, curses.COLS//2 - 15)
         self.devices_btn.focus = True
         self.focus = "Devices"
 
-        self.messages_btn = widgets.Button(stdscr, "Messages", curses.LINES - 1, curses.COLS//2 - 5)
-        self.quit_btn = widgets.Button(stdscr, "Quit", curses.LINES - 1, curses.COLS//2 + 6)
-
-        # widgets showing vectors
-        self.vectorwidgets = {}
+        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, curses.COLS//2 - 5)
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, curses.COLS//2 + 6)
 
 
     @property
@@ -266,19 +373,25 @@ class MainScreen:
 
     def show(self):
         "Displays device"
-        self.stdscr.clear()
-        self.stdscr.addstr(0, 0, "Device: "+self.devicename, curses.A_BOLD)
-        self.vectorwidgets.clear()
+
         if self.devicename not in self.client:
-            widgets.drawmessage(self.stdscr, f"{self.devicename} not found!")
+            widgets.drawmessage(self.messwin, f"{self.devicename} not found!")
             self.devices_btn.draw()
             self.messages_btn.draw()
             self.quit_btn.draw()
-            self.stdscr.refresh()
+
+            self.titlewin.noutrefresh()
+            self.messwin.noutrefresh()
+            self.buttwin.noutrefresh()
+
+            curses.doupdate()
             return
+
         self.device = self.client[self.devicename]
         if self.device.messages:
-            widgets.drawmessage(self.stdscr, self.device.messages[0])
+            widgets.drawmessage(self.messwin, self.device.messages[0])
+
+
         # get the groups this device contains, use a set to avoid duplicates
         groupset = {vector.group for vector in self.device.values()}
         self.groups = sorted(list(groupset))
@@ -286,13 +399,21 @@ class MainScreen:
         self.group_btns.set_groups(self.groups)
         self.group_btns.draw()
 
-        # to do - draw the device vectorwidgets, as given by self.activegroup
+        # to do - draw the device vector widgets, as given by self.activegroup
 
-        # draw the bottom buttons and refresh
+        # draw the bottom buttons
         self.devices_btn.draw()
         self.messages_btn.draw()
         self.quit_btn.draw()
-        self.stdscr.refresh()
+
+        #  and refresh
+        self.titlewin.noutrefresh()
+        self.messwin.noutrefresh()
+        self.groupswin.noutrefresh()
+        self.buttwin.noutrefresh()
+
+        curses.doupdate()
+
 
 
     def update(self, event):
@@ -329,13 +450,15 @@ class MainScreen:
                 if key == 10:
                     # enter key pressed
                     if self.focus == "Quit":
-                        widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
-                        self.stdscr.refresh()
+                        widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
+                        self.messwin.noutrefresh()
+                        curses.doupdate()
                     # return the focus value of whichever item was in focus when enter was pressed
                     return self.focus
                 if chr(key) == "q" or chr(key) == "Q":
-                    widgets.drawmessage(self.stdscr, "Quit chosen ... Please wait", bold = True)
-                    self.stdscr.refresh()
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
+                    self.messwin.noutrefresh()
+                    curses.doupdate()
                     return "Quit"
                 if chr(key) == "m" or chr(key) == "M":
                     return "Messages"
@@ -356,7 +479,7 @@ class MainScreen:
                         indx = self.screenparts.index(self.focus)
                         newfocus = self.screenparts[indx-1]
                 else:
-                    # field not recognised
+                    # key not recognised
                     continue
                 if self.focus == "Vectors":
                     # still to do
@@ -381,7 +504,17 @@ class MainScreen:
                 elif newfocus == "Quit":
                     self.quit_btn.focus = True
                 self.focus = newfocus
-                self.stdscr.refresh()
+
+                # so buttons have been set with the appropriate focus
+                # now draw them
+                self.group_btns.draw()
+                self.devices_btn.draw()
+                self.messages_btn.draw()
+                self.quit_btn.draw()
+
+                self.groupswin.noutrefresh()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
         except asyncio.CancelledError:
             raise
         except Exception:
