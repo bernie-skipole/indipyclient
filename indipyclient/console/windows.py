@@ -13,6 +13,8 @@ class MessagesScreen:
         self.consoleclient = consoleclient
         self.client = consoleclient.client
 
+        self.disconnectionflag = False
+
         # title window  (3 lines, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(3, curses.COLS, 0, 0)
         self.titlewin.addstr(0, 0, "indipyclient console", curses.A_BOLD)
@@ -32,13 +34,38 @@ class MessagesScreen:
     def connected(self):
         return self.consoleclient.connected
 
+    def showunconnected(self):
+        "Called by consoleclient on disconnection"
+        if self.consoleclient.connected:
+            self.disconnectionflag = False
+            return
+        if self.disconnectionflag:
+            # already showing a disconnected status
+            return
+        # disconnectionflag is false, but the client is disconnected
+        # so update buttons and titlewin, and set flag True, so the update
+        # does not keep repeating
+        self.disconnectionflag = True
+        self.titlewin.addstr(2, 0, "Not Connected")
+        self.devices_btn.focus = False
+        self.quit_btn.focus = True
+        self.buttwin.clear()
+        self.devices_btn.draw()
+        self.quit_btn.draw()
+        self.titlewin.noutrefresh()
+        self.buttwin.noutrefresh()
+        curses.doupdate()
+
+
     def show(self):
         "Displays title, info string and list of messages on a start screen"
         if self.connected:
+            self.disconnectionflag = False
             self.titlewin.addstr(2, 0, "Connected    ")
             self.devices_btn.focus = True
             self.quit_btn.focus = False
         else:
+            self.disconnectionflag = True
             self.titlewin.addstr(2, 0, "Not Connected")
             self.devices_btn.focus = False
             self.quit_btn.focus = True

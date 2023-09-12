@@ -16,9 +16,6 @@ class ConsoleClient(IPyClient):
 
     async def rxevent(self, event):
         """Add event to a queue"""
-        #if hasattr(event, 'message'):
-        #    print(event.message, file=sys.stderr)
-        #print("event received", file=sys.stderr)
         self.clientdata['eventque'].appendleft(event)
 
 
@@ -95,12 +92,16 @@ class ConsoleControl:
         try:
             while not self.stop:
                 await asyncio.sleep(0)
-                if (not self.connected) and (not isinstance(self.screen, windows.MessagesScreen)):
-                    # when not connected, show messages screen
-                    self.screen = windows.MessagesScreen(self.stdscr, self)
-                    self.screen.show()
-                    if self.stop:
-                        break
+                if not self.connected:
+                    if isinstance(self.screen, windows.MessagesScreen):
+                        # set disconnected status and focus on the quit button
+                        self.screen.showunconnected()
+                    else:
+                        # when not connected, show messages screen
+                        self.screen = windows.MessagesScreen(self.stdscr, self)
+                        self.screen.show()
+                if self.stop:
+                    break
                 # update the screen if an event is received
                 try:
                     event = self.eventque.pop()
