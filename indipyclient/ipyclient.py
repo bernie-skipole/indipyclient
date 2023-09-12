@@ -282,7 +282,7 @@ class IPyClient(collections.UserDict):
                         # The queue is full, something may be wrong
                         # discard this data and continue
                         pass
-        except RuntimeError as e:
+        except RuntimeError:
             # catches StopAsyncIteration and stops this coroutine
             pass
         except KeyboardInterrupt:
