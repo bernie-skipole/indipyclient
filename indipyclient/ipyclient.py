@@ -171,31 +171,40 @@ class IPyClient(collections.UserDict):
                 except ConnectionRefusedError:
                     await self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionResetError:
-                    await self.report(f"Error: Connection Lost")
-                if not self._stop:
+                    await self.report("Error: Connection Lost")
+                self._clear_connection()
+                if self._stop:
+                    break
+                else:
                     await self.report(f"Connection failed, re-trying...")
-                self.connected = False
-                # clear devices etc
-                self.clear()
-                # clear the writerque
-                self.writerque.clear()
-                if not self.readerque.empty():
-                    # empty the queue
-                    while True:
-                        try:
-                            xmldata = self.readerque.get_nowait()
-                            self.readerque.task_done()
-                        except asyncio.QueueEmpty:
-                            break
-                for i in range(10):
-                    # wait 5 seconds, before re-trying
-                    # but keep checking if stop is True
-                    if self._stop:
+
+                # wait five seconds before re-trying
+                count = 0
+                while not self._stop:
+                    await asyncio.sleep(0.5)
+                    count += 1
+                    if count >= 10:
                         break
-                    else:
-                        await asyncio.sleep(0.5)
         finally:
             self._shutdown = True
+
+
+    def _clear_connection(self):
+        "On a connection closing down, clears queues"
+        self.connected = False
+        # clear devices etc
+        self.clear()
+        # clear the writerque
+        self.writerque.clear()
+        if not self.readerque.empty():
+            # empty the queue
+            while True:
+                try:
+                    xmldata = self.readerque.get_nowait()
+                    self.readerque.task_done()
+                except asyncio.QueueEmpty:
+                    break
+
 
 
     def send(self, xmldata):
@@ -214,12 +223,13 @@ class IPyClient(collections.UserDict):
                         # no response to transmission self._timer seconds ago
                        writer.close()
                        await writer.wait_closed()
+                       self._clear_connection()
                        if not self._stop:
                            await self.report("Error: Connection timed out")
-                       break
             if self.connected and self._stop:
                 writer.close()
                 await writer.wait_closed()
+                self._clear_connection()
         except KeyboardInterrupt:
             self._shutdown = True
         finally:
@@ -272,6 +282,9 @@ class IPyClient(collections.UserDict):
                         # The queue is full, something may be wrong
                         # discard this data and continue
                         pass
+        except RuntimeError as e:
+            # catches StopAsyncIteration and stops this coroutine
+            pass
         except KeyboardInterrupt:
             self._shutdown = True
 
@@ -468,24 +481,36 @@ class IPyClient(collections.UserDict):
 
 
     async def _autosend_getProperties(self):
-        "Sends a getProperties every five seconds"
+        """Sends a getProperties every five seconds if no devices have been learnt
+           or every ten seconds if nothing else has been transmitted"""
         try:
             while (not self._stop):
                 await asyncio.sleep(0)
                 if self.connected:
                     # so the connection is up, check devices exist
-                    if not len(self):
+                    if len(self):
+                        # connection is up and devices exist, if nothing has been
+                        # sent for ten seconds, send a getProperties
+                        count = 0
+                        while (self._timer is None) and (not self._stop) and self.connected:
+                            # nothing is currently being transmitted
+                            await asyncio.sleep(0.5)
+                            count += 1
+                            if count >= 20:
+                                # ten seconds has passed without anything being transmitted
+                                # so send a getProperties
+                                self.send_getProperties()
+                                break
+                    else:
                         # no devices, so send a getProperties
                         self.send_getProperties()
-                        await self.report("getProperties request sent")
-                        # wait for a response
-                        for i in range(10):
-                            # wait 5 seconds
-                            # but keep checking if stop is True
-                            if self._stop:
+                        # wait five seconds for a response
+                        count = 0
+                        while (not self._stop) and self.connected:
+                            await asyncio.sleep(0.5)
+                            count +=1
+                            if count >= 10:
                                 break
-                            else:
-                                await asyncio.sleep(0.5)
         except KeyboardInterrupt:
             self._shutdown = True
         except asyncio.CancelledError:
