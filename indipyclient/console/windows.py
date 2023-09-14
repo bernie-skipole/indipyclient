@@ -210,7 +210,7 @@ class DevicesScreen:
 
         self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, curses.COLS//2 - 10)
         self.messages_btn.focus = True
-        self.focus = "Messages"
+        self.focus = None
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, curses.COLS//2 + 2)
         # devicename to button dictionary
         self.devices = {}
@@ -230,9 +230,11 @@ class DevicesScreen:
         else:
             self.statwin.addstr(0, 0, "Choose a device:               ")
 
-
-        # draw buttons and devices
+        # draw devices
         self.drawdevices()
+
+        # draw buttons
+        self.drawbuttons()
 
         # refresh these sub-windows and update physical screen
 
@@ -247,24 +249,40 @@ class DevicesScreen:
 
     def drawdevices(self):
         self.devwin.clear()
-        self.buttwin.clear()
 
         # Remove current devices
         self.devices.clear()
         colnumber = curses.COLS//2 - 6
         for linenumber, devicename in enumerate(self.client):
             self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber, colnumber)
-        self.devices["Messages"] = self.messages_btn
-        self.devices["Quit"] = self.quit_btn
-        if self.focus in self.devices:
-            self.devices[self.focus].focus = True
+
+        # start with all device buttons focus False
+        for devbutton in self.devices.values():
+            devbutton.focus = False
+
+        if self.focus not in self.devices:
+            self.focus = None
         else:
-            # self.focus points at a device which has been removed, so set focus to messages
+            self.devices[self.focus].focus = True
+
+        # draw devices buttons
+        for devbutton in self.devices.values():
+            devbutton.draw()
+
+
+    def drawbuttons(self):
+        self.buttwin.clear()
+
+        # If a device is in focus, these buttons are not
+        if self.focus:
+            self.messages_btn.focus = False
+            self.quit_btn.focus = False
+        elif not self.quit_btn.focus:
+            # device button not in focus, so one of these must be
             self.messages_btn.focus = True
 
-        # draw buttons and devices
-        for devicewidget in self.devices.values():
-            devicewidget.draw()
+        self.messages_btn.draw()
+        self.quit_btn.draw()
 
 
 
@@ -279,6 +297,7 @@ class DevicesScreen:
         if isinstance(event, events.delProperty) and event.vectorname is None:
             # a device has being deleted
             self.drawdevices()
+            self.drawbuttons()
             self.devwin.noutrefresh()
             self.buttwin.noutrefresh()
             curses.doupdate()
@@ -290,13 +309,11 @@ class DevicesScreen:
                     # could be a new device
                     self.drawdevices()
                     self.devwin.noutrefresh()
-                    self.buttwin.noutrefresh()
                     curses.doupdate()
                 elif isinstance(event, events.defBLOBVector):
                     # could be a new device
                     self.drawdevices()
                     self.devwin.noutrefresh()
-                    self.buttwin.noutrefresh()
                     curses.doupdate()
 
 
@@ -314,47 +331,64 @@ class DevicesScreen:
                     continue
                 # which button has focus
                 btnlist = list(self.devices.keys())
-                if self.focus not in btnlist:
-                    self.messages_btn.focus = True
-                    self.focus = "Messages"
                 if key == 10:
-                    if self.focus == "Quit":
+                    if self.quit_btn.focus:
                         widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
                         self.messwin.noutrefresh()
                         curses.doupdate()
+                        return "Quit"
+                    if self.messages_btn.focus:
+                        return "Messages"
+                    # If not Quit or Messages, return the device in focus
                     return self.focus
+
                 if chr(key) == "q" or chr(key) == "Q":
                     widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
                     self.messwin.noutrefresh()
                     curses.doupdate()
                     return "Quit"
+
                 if chr(key) == "m" or chr(key) == "M":
                     return "Messages"
 
                 if key in (32, 9, 261, 338, 258):
                     # go to the next button
-                    if self.focus == "Quit":
-                        newfocus = btnlist[0]
+                    if self.quit_btn.focus:
+                        self.quit_btn.focus = False
+                        self.focus = btnlist[0]
+                    elif self.messages_btn.focus:
+                        self.messages_btn.focus = False
+                        self.quit_btn.focus = True
                     else:
                         indx = btnlist.index(self.focus)
-                        newfocus = btnlist[indx+1]
+                        if indx == len(btnlist) - 1:
+                            # last device
+                            self.focus = None
+                            self.messages_btn.focus = True
+                        else:
+                            self.focus = btnlist[indx+1]
+
                 elif key in (353, 260, 339, 259):
                     # go to previous button
-                    if self.focus == btnlist[0]:
-                        newfocus = "Quit"
+                    if self.quit_btn.focus:
+                        self.quit_btn.focus = False
+                        self.messages_btn.focus = True
+                    elif self.messages_btn.focus:
+                        self.messages_btn.focus = False
+                        self.focus = btnlist[-1]
+                    elif self.focus == btnlist[0]:
+                        self.focus = None
+                        self.quit_btn.focus = True
                     else:
                         indx = btnlist.index(self.focus)
-                        newfocus = btnlist[indx-1]
+                        self.focus = btnlist[indx-1]
                 else:
                     # button not recognised
                     continue
 
-                self.devices[self.focus].focus = False
-                self.devices[newfocus].focus = True
-                self.focus = newfocus
-
                 # draw devices and buttons
                 self.drawdevices()
+                self.drawbuttons()
                 self.devwin.noutrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
