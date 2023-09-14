@@ -22,6 +22,12 @@ class MessagesScreen:
         # messages window (8 lines, full row - 4, starting at 4,3)
         self.messwin = self.stdscr.subwin(8, curses.COLS-4, 4, 3)
 
+        # info window
+        self.infowin = self.stdscr.subwin(3, 60, curses.LINES-5, curses.COLS//2 - 29)
+        self.infowin.addstr(0, 0, "Once connected, choose 'Devices' and press Enter. Then use")
+        self.infowin.addstr(1, 0, "Tab/Shift-Tab to move between fields, Enter to select, and")
+        self.infowin.addstr(2, 0, "Arrow/Page keys to show further fields where necessary.")
+
         # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
         self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
 
@@ -91,6 +97,7 @@ class MessagesScreen:
 
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
+        self.infowin.noutrefresh()
         self.buttwin.noutrefresh()
         curses.doupdate()
 
@@ -194,6 +201,10 @@ class DevicesScreen:
         # devices window (8 lines, full row-4, starting at 6,4)
         self.devwin = self.stdscr.subwin(8, curses.COLS-4, 6, 4)
 
+        # create a pad of 50 lines, full row-4
+        #self.devwin = curses.newpad(50, curses.COLS-4)
+
+
         # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
         self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
 
@@ -218,6 +229,7 @@ class DevicesScreen:
             self.statwin.addstr(0, 0, "No devices have been discovered")
         else:
             self.statwin.addstr(0, 0, "Choose a device:               ")
+
 
         # draw buttons and devices
         self.drawdevices()
@@ -379,6 +391,10 @@ class MainScreen:
         self.groups = []
         self.group_btns = widgets.Groups(self.stdscr, self.groupswin, self.consoleclient)
 
+
+        # create a pad of 50 lines
+        self.gpad = curses.newpad(50, curses.COLS)
+
         # bottom buttons, [Devices] [Messages] [Quit]
 
         # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
@@ -391,6 +407,8 @@ class MainScreen:
 
         self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, curses.COLS//2 - 5)
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, curses.COLS//2 + 6)
+
+        self.line = 0
 
 
     @property
@@ -428,6 +446,26 @@ class MainScreen:
 
         # to do - draw the device vector widgets, as given by self.activegroup
 
+
+
+        # The refresh() and noutrefresh() methods of a pad require 6 arguments
+        # to specify the part of the pad to be displayed and the location on
+        # the screen to be used for the display. The arguments are
+        # pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
+        # the p arguments refer to the upper left corner of the pad region to be displayed and the
+        # s arguments define a clipping box on the screen within which the pad region is to be displayed.
+
+        for y in range(0,50):
+            for x in range(0, curses.COLS-1):
+                if x == y:
+                    self.gpad.addch(y,x, ord('a'))
+
+        coords = (0, 0, 6, 1, curses.LINES - 3, curses.COLS-2)
+                  # pad row, pad col,   win start row, win start col, win end row, win end col
+
+        self.gpad.overlay(self.stdscr, *coords)
+        self.gpad.noutrefresh(*coords)
+
         # draw the bottom buttons
         self.devices_btn.draw()
         self.messages_btn.draw()
@@ -441,6 +479,14 @@ class MainScreen:
 
         curses.doupdate()
 
+
+    def drawgpad(self, line=0):
+        "draw the group pad"
+        coords = (line, 0, 6, 1, curses.LINES - 3, curses.COLS-2)
+                  # pad row, pad col,   win start row, win start col, win end row, win end col
+        self.gpad.overwrite(self.stdscr, *coords)
+        self.gpad.noutrefresh(*coords)
+        curses.doupdate()
 
 
     def update(self, event):
@@ -491,6 +537,13 @@ class MainScreen:
                     return "Messages"
                 if chr(key) == "d" or chr(key) == "D":
                     return "Devices"
+
+                if chr(key) == "p":
+                    self.line += 1
+                    self.drawgpad(self.line)
+                    continue
+
+
                 if key in (32, 9, 261, 338, 258):
                     # go to the next widget
                     if self.focus == "Quit":
