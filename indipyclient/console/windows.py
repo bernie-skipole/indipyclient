@@ -198,12 +198,11 @@ class DevicesScreen:
         # status window (1 line, full row-4, starting at 4,4)
         self.statwin = self.stdscr.subwin(1, curses.COLS-4, 4, 4)
 
-        # devices window (8 lines, full row-4, starting at 6,4)
-        self.devwin = self.stdscr.subwin(8, curses.COLS-4, 6, 4)
+        # devices window - create a pad of 50 lines, full row-4
+        self.devwin = curses.newpad(50, curses.COLS-4)
 
-        # create a pad of 50 lines, full row-4
-        #self.devwin = curses.newpad(50, curses.COLS-4)
-
+        # topline of pad to show
+        self.topline = 0
 
         # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
         self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
@@ -241,14 +240,38 @@ class DevicesScreen:
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.statwin.noutrefresh()
-        self.devwin.noutrefresh()
+        self.devwinrefresh()
         self.buttwin.noutrefresh()
         curses.doupdate()
 
 
+    def devwinrefresh(self):
+
+        # The refresh() and noutrefresh() methods of a pad require 6 arguments
+        # to specify the part of the pad to be displayed and the location on
+        # the screen to be used for the display. The arguments are
+        # pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
+        # the p arguments refer to the upper left corner of the pad region to be displayed and the
+        # s arguments define a clipping box on the screen within which the pad region is to be displayed.
+
+
+        coords = (self.topline, 0, 6, 4, curses.LINES - 5, curses.COLS-2)
+                  # pad row, pad col,   win start row, win start col, win end row, win end col
+
+        # start row = 6
+        # end row = curses.LINES - 5
+        # rows = curses.LINES - 11
+
+        self.devwin.overlay(self.stdscr, *coords)
+        self.devwin.noutrefresh(*coords)
+
 
     def drawdevices(self):
         self.devwin.clear()
+
+        if not len(self.client):
+            self.focus = None
+            return
 
         # Remove current devices
         self.devices.clear()
@@ -268,6 +291,13 @@ class DevicesScreen:
         # draw devices buttons
         for devbutton in self.devices.values():
             devbutton.draw()
+
+        #for y in range(1,50):
+        #    for x in range(0, curses.COLS-5):
+        #        self.devwin.addch(y,x, ord('a'))
+
+
+
 
 
     def drawbuttons(self):
@@ -298,7 +328,7 @@ class DevicesScreen:
             # a device has being deleted
             self.drawdevices()
             self.drawbuttons()
-            self.devwin.noutrefresh()
+            self.devwinrefresh()
             self.buttwin.noutrefresh()
             curses.doupdate()
             return
@@ -308,12 +338,12 @@ class DevicesScreen:
                 if isinstance(event, events.defVector):
                     # could be a new device
                     self.drawdevices()
-                    self.devwin.noutrefresh()
+                    self.devwinrefresh()
                     curses.doupdate()
                 elif isinstance(event, events.defBLOBVector):
                     # could be a new device
                     self.drawdevices()
-                    self.devwin.noutrefresh()
+                    self.devwinrefresh()
                     curses.doupdate()
 
 
@@ -389,7 +419,7 @@ class DevicesScreen:
                 # draw devices and buttons
                 self.drawdevices()
                 self.drawbuttons()
-                self.devwin.noutrefresh()
+                self.devwinrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
 
