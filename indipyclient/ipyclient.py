@@ -115,9 +115,16 @@ class IPyClient(collections.UserDict):
         # self.connected is True if connection has been made
         self.connected = False
 
-        # timer used to check data received, if no answer in self._timeout seconds, close connection
-        self._timer = None
-        self._timeout = 15
+        # tx_timer is set when data is transmitted, it is used to check when data is received,
+        # at which point it becomes None again.
+        # if there is no answer, or no further transmission in
+        # self.respond_timeout seconds, close connection
+        self.tx_timer = None
+        self.respond_timeout = 15
+        # idle_timer is set when either data is transmitted or received.
+        # If nothing sent or received after idle_timeout reached, then a getProperties is transmitted
+        self.idle_timer = time.time()
+        self.idle_timeout = 20
         # this is populated with the running loop once it is available
         self.loop = None
         # this is set to True, to shut down the client
@@ -154,7 +161,8 @@ class IPyClient(collections.UserDict):
         "Create a connection to an INDI port"
         try:
             while not self._stop:
-                self._timer = None
+                self.tx_timer = None
+                self.idle_timer = time.time()
                 try:
                     # start by openning a connection
                     # clear messages
@@ -192,6 +200,7 @@ class IPyClient(collections.UserDict):
     def _clear_connection(self):
         "On a connection closing down, clears queues"
         self.connected = False
+        self.tx_timer = None
         # clear devices etc
         self.clear()
         # clear the writerque
@@ -217,10 +226,11 @@ class IPyClient(collections.UserDict):
         try:
             while self.connected and (not self._stop):
                 await asyncio.sleep(0)
-                if not self._timer is None:
-                    telapsed = time.time() - self._timer
-                    if telapsed > self._timeout:
-                        # no response to transmission self._timer seconds ago
+                if not self.tx_timer is None:
+                    # data has been sent, waiting for reply
+                    telapsed = time.time() - self.tx_timer
+                    if telapsed > self.respond_timeout:
+                        # no response to transmission self.respond_timeout seconds ago
                        writer.close()
                        await writer.wait_closed()
                        self._clear_connection()
@@ -258,9 +268,10 @@ class IPyClient(collections.UserDict):
                     # Send to the port
                     writer.write(binarydata)
                     await writer.drain()
-                if self._timer is None:
-                    # set a timer going
-                    self._timer = time.time()
+
+                # data has been transmitted set timers going
+                self.tx_timer = time.time()
+                self.idle_timer = time.time()
         except KeyboardInterrupt:
             self._shutdown = True
 
@@ -378,7 +389,8 @@ class IPyClient(collections.UserDict):
                 if not data:
                     continue
                 # data received
-                self._timer = None
+                self.tx_timer = None
+                self.idle_timer = time.time()
                 if b">" in data:
                     binarydata = binarydata + data
                     yield binarydata
@@ -482,7 +494,7 @@ class IPyClient(collections.UserDict):
 
     async def _autosend_getProperties(self):
         """Sends a getProperties every five seconds if no devices have been learnt
-           or every ten seconds if nothing else has been transmitted"""
+           or every self.idle_timeout seconds if nothing has been transmitted or received"""
         try:
             while (not self._stop):
                 await asyncio.sleep(0)
@@ -490,20 +502,20 @@ class IPyClient(collections.UserDict):
                     # so the connection is up, check devices exist
                     if len(self):
                         # connection is up and devices exist, if nothing has been
-                        # sent for ten seconds, send a getProperties
+                        # sent or received for self.idle_timeout seconds, send a getProperties
                         count = 0
-                        while (self._timer is None) and (not self._stop) and self.connected:
-                            # nothing is currently being transmitted
-                            await asyncio.sleep(0.5)
-                            count += 1
-                            if count >= 20:
-                                # ten seconds has passed without anything being transmitted
-                                # so send a getProperties
+                        while (not self._stop) and self.connected:
+                            # elapsed time since activity
+                            await asyncio.sleep(0)
+                            telapsed = time.time() - self.idle_timer
+                            if telapsed > self.idle_timeout:
                                 self.send_getProperties()
+                                #self.report("getProperties sent")
                                 break
                     else:
-                        # no devices, so send a getProperties
+                        # no devices, so send a getProperties every five seconds
                         self.send_getProperties()
+                        #self.report("getProperties sent")
                         # wait five seconds for a response
                         count = 0
                         while (not self._stop) and self.connected:
