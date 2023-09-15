@@ -201,6 +201,7 @@ class DevicesScreen:
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, curses.COLS, 6, 0)
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, curses.COLS//2 - 3)
+        self.topshow = False
 
         # devices window - create a pad of 50 lines, full row-4
         self.devwin = curses.newpad(50, curses.COLS-4)
@@ -211,6 +212,7 @@ class DevicesScreen:
         # botmorewin (1 line, full row, starting at curses.LINES - 4, 0)
         self.botmorewin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 4, 0)
         self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, curses.COLS//2 - 3)
+        self.botshow = False
 
         # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
         self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
@@ -262,19 +264,24 @@ class DevicesScreen:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
-        win_end_row = curses.LINES - 7
-
-        # make an odd number of rows
-        win_end_row = win_end_row + (win_end_row % 2)
+        win_end_row = self.botline - self.topline + 4
 
         coords = (self.topline, 0, 8, 4, win_end_row, curses.COLS-2)
-                  # pad row, pad col,   win start row, win start col, win end row, win end col
+                  # pad row, pad col, win start row, win start col, win end row, win end col
 
         self.devwin.overlay(self.stdscr, *coords)
 
         self.topmorewin.noutrefresh()
         self.devwin.noutrefresh(*coords)
         self.botmorewin.noutrefresh()
+
+
+    @property
+    def botline(self):
+        "Returns the bottem line of the pad to be displayed"
+        win_end_row = curses.LINES - 7
+        win_end_row = win_end_row + (win_end_row % 2)
+        return self.topline + win_end_row - 4
 
 
     def drawdevices(self):
@@ -305,18 +312,28 @@ class DevicesScreen:
         else:
             self.devices[self.focus].focus = True
 
-
         # draw top more button
-        self.topmore_btn.draw()
+        if self.topline:
+            self.topshow = True
+        if self.topshow:
+            self.topmore_btn.draw()
 
         # draw devices buttons
         for devbutton in self.devices.values():
             devbutton.draw()
 
-        # draw bottom more button
-        self.botmore_btn.draw()
+        number_of_devices = len(self.tempclient) ##################
+        # each device takes 2 lines
+        if self.botline <= 2*number_of_devices:
+            self.botshow = True
+        else:
+            self.botshow = False
 
-        #for y in range(1,50):
+        # draw bottom more button
+        if self.botshow:
+            self.botmore_btn.draw()
+
+        #for y in range(0,50):
         #    for x in range(0, curses.COLS-5):
         #        self.devwin.addch(y,x, ord('a'))
 
