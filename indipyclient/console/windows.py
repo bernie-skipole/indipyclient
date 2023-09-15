@@ -198,11 +198,19 @@ class DevicesScreen:
         # status window (1 line, full row-4, starting at 4,4)
         self.statwin = self.stdscr.subwin(1, curses.COLS-4, 4, 4)
 
+        # topmorewin (1 line, full row, starting at 6, 0)
+        self.topmorewin = self.stdscr.subwin(1, curses.COLS, 6, 0)
+        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, curses.COLS//2 - 3)
+
         # devices window - create a pad of 50 lines, full row-4
         self.devwin = curses.newpad(50, curses.COLS-4)
 
         # topline of pad to show
         self.topline = 0
+
+        # botmorewin (1 line, full row, starting at curses.LINES - 4, 0)
+        self.botmorewin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 4, 0)
+        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, curses.COLS//2 - 3)
 
         # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
         self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
@@ -229,8 +237,15 @@ class DevicesScreen:
         else:
             self.statwin.addstr(0, 0, "Choose a device:               ")
 
+        # draw top more button
+        self.topmore_btn.draw()
+
         # draw devices
         self.drawdevices()
+
+        # draw bottom more button
+        self.botmore_btn.draw()
+
 
         # draw buttons
         self.drawbuttons()
@@ -240,7 +255,9 @@ class DevicesScreen:
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.statwin.noutrefresh()
+        self.topmorewin.noutrefresh()
         self.devwinrefresh()
+        self.botmorewin.noutrefresh()
         self.buttwin.noutrefresh()
         curses.doupdate()
 
@@ -254,13 +271,14 @@ class DevicesScreen:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
+        win_end_row = curses.LINES - 7
 
-        coords = (self.topline, 0, 6, 4, curses.LINES - 5, curses.COLS-2)
+        # make an odd number of rows
+        win_end_row = win_end_row + (win_end_row % 2)
+
+        coords = (self.topline, 0, 8, 4, win_end_row, curses.COLS-2)
                   # pad row, pad col,   win start row, win start col, win end row, win end col
 
-        # start row = 6
-        # end row = curses.LINES - 5
-        # rows = curses.LINES - 11
 
         self.devwin.overlay(self.stdscr, *coords)
         self.devwin.noutrefresh(*coords)
@@ -276,8 +294,12 @@ class DevicesScreen:
         # Remove current devices
         self.devices.clear()
         colnumber = curses.COLS//2 - 6
-        for linenumber, devicename in enumerate(self.client):
-            self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber, colnumber)
+
+        self.tempclient = {f"led{c}":c for c in range(10)}
+
+        #for linenumber, devicename in enumerate(self.client):
+        for linenumber, devicename in enumerate(self.tempclient):
+            self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber*2, colnumber)
 
         # start with all device buttons focus False
         for devbutton in self.devices.values():

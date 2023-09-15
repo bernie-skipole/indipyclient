@@ -117,8 +117,7 @@ class IPyClient(collections.UserDict):
 
         # tx_timer is set when data is transmitted, it is used to check when data is received,
         # at which point it becomes None again.
-        # if there is no answer, or no further transmission in
-        # self.respond_timeout seconds, close connection
+        # if there is no answer after self.respond_timeout seconds, close connection
         self.tx_timer = None
         self.respond_timeout = 15
         # idle_timer is set when either data is transmitted or received.
@@ -270,7 +269,8 @@ class IPyClient(collections.UserDict):
                     await writer.drain()
 
                 # data has been transmitted set timers going
-                self.tx_timer = time.time()
+                if self.tx_timer is None:
+                    self.tx_timer = time.time()
                 self.idle_timer = time.time()
         except KeyboardInterrupt:
             self._shutdown = True
