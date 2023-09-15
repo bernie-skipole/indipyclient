@@ -237,17 +237,10 @@ class DevicesScreen:
         else:
             self.statwin.addstr(0, 0, "Choose a device:               ")
 
-        # draw top more button
-        self.topmore_btn.draw()
-
-        # draw devices
+        # draw device buttons, and if necessary more buttons
         self.drawdevices()
 
-        # draw bottom more button
-        self.botmore_btn.draw()
-
-
-        # draw buttons
+        # draw messages and quit buttons
         self.drawbuttons()
 
         # refresh these sub-windows and update physical screen
@@ -255,9 +248,7 @@ class DevicesScreen:
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.statwin.noutrefresh()
-        self.topmorewin.noutrefresh()
         self.devwinrefresh()
-        self.botmorewin.noutrefresh()
         self.buttwin.noutrefresh()
         curses.doupdate()
 
@@ -279,13 +270,17 @@ class DevicesScreen:
         coords = (self.topline, 0, 8, 4, win_end_row, curses.COLS-2)
                   # pad row, pad col,   win start row, win start col, win end row, win end col
 
-
         self.devwin.overlay(self.stdscr, *coords)
+
+        self.topmorewin.noutrefresh()
         self.devwin.noutrefresh(*coords)
+        self.botmorewin.noutrefresh()
 
 
     def drawdevices(self):
+        self.topmorewin.clear()
         self.devwin.clear()
+        self.botmorewin.clear()
 
         if not len(self.client):
             self.focus = None
@@ -310,9 +305,16 @@ class DevicesScreen:
         else:
             self.devices[self.focus].focus = True
 
+
+        # draw top more button
+        self.topmore_btn.draw()
+
         # draw devices buttons
         for devbutton in self.devices.values():
             devbutton.draw()
+
+        # draw bottom more button
+        self.botmore_btn.draw()
 
         #for y in range(1,50):
         #    for x in range(0, curses.COLS-5):
