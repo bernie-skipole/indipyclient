@@ -278,10 +278,24 @@ class DevicesScreen:
 
     @property
     def botline(self):
-        "Returns the bottem line of the pad to be displayed"
+        "Returns the bottom line of the pad to be displayed"
         win_end_row = curses.LINES - 7
         win_end_row = win_end_row + (win_end_row % 2)
         return self.topline + win_end_row - 4
+
+    @property
+    def topdevice(self):
+        "Returns the index of the top device being displayed"
+        return self.topline//2
+
+    @property
+    def bottomdevice(self):
+        "Returns the index of the bottom device being displayed"
+        number_of_devices = len(self.tempclient) ##################
+
+        if number_of_devices > self.botline//2:
+            return self.botline//2
+        return number_of_devices - 1
 
 
     def drawdevices(self):
@@ -291,6 +305,10 @@ class DevicesScreen:
 
         if not len(self.client):
             self.focus = None
+            self.topshow = False
+            self.botshow = False
+            self.topmore_btn.focus = False
+            self.botmore_btn.focus = False
             return
 
         # Remove current devices
@@ -345,12 +363,13 @@ class DevicesScreen:
         self.buttwin.clear()
 
         # If a device is in focus, these buttons are not
-        if self.focus:
+        if self.focus or self.topmore_btn.focus or self.botmore_btn.focus:
             self.messages_btn.focus = False
             self.quit_btn.focus = False
         elif not self.quit_btn.focus:
-            # device button not in focus, so one of these must be
             self.messages_btn.focus = True
+        elif not self.messages_btn.focus:
+            self.quit_btn.focus = True
 
         self.messages_btn.draw()
         self.quit_btn.draw()
@@ -410,6 +429,19 @@ class DevicesScreen:
                         return "Quit"
                     if self.messages_btn.focus:
                         return "Messages"
+                    if self.topmore_btn.focus:
+                        self.topline -= 2
+                        self.drawdevices()
+                        self.devwinrefresh()
+                        curses.doupdate()
+                        continue
+                    if self.botmore_btn.focus:
+                        self.topline += 2
+                        self.drawdevices()
+                        self.devwinrefresh()
+                        curses.doupdate()
+                        continue
+
                     # If not Quit or Messages, return the device in focus
                     return self.focus
 
@@ -426,16 +458,28 @@ class DevicesScreen:
                     # go to the next button
                     if self.quit_btn.focus:
                         self.quit_btn.focus = False
-                        self.focus = btnlist[0]
+                        if self.topshow:
+                            self.topmore_btn.focus = True
+                        else:
+                            self.focus = btnlist[0]
                     elif self.messages_btn.focus:
                         self.messages_btn.focus = False
                         self.quit_btn.focus = True
+                    elif self.topmore_btn.focus:
+                        self.topmore_btn.focus = False
+                        self.focus = btnlist[self.topline//2]
+                    elif self.botmore_btn.focus:
+                        self.botmore_btn.focus = False
+                        self.messages_btn.focus = True
                     else:
                         indx = btnlist.index(self.focus)
                         if indx == len(btnlist) - 1:
                             # last device
                             self.focus = None
                             self.messages_btn.focus = True
+                        elif indx >= self.botline//2 :
+                            self.focus = None
+                            self.botmore_btn.focus = True
                         else:
                             self.focus = btnlist[indx+1]
 
@@ -446,7 +490,16 @@ class DevicesScreen:
                         self.messages_btn.focus = True
                     elif self.messages_btn.focus:
                         self.messages_btn.focus = False
-                        self.focus = btnlist[-1]
+                        if self.botshow:
+                            self.botmore_btn.focus = True
+                        else:
+                            self.focus = btnlist[-1]
+                    elif self.botmore_btn.focus:
+                        self.botmore_btn.focus = False
+                        self.focus = btnlist[self.botline//2]
+                    elif self.topmore_btn.focus:
+                        self.topmore_btn.focus = False
+                        self.quit_btn.focus = True
                     elif self.focus == btnlist[0]:
                         self.focus = None
                         self.quit_btn.focus = True
