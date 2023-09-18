@@ -279,9 +279,35 @@ class DevicesScreen:
     @property
     def botline(self):
         "Returns the bottom line of the pad to be displayed"
-        win_end_row = curses.LINES - 7
+        win_end_row = curses.LINES - 11
         win_end_row = win_end_row + (win_end_row % 2)
-        return self.topline + win_end_row - 4
+        return self.topline + win_end_row
+
+
+    # ex1: topline = 0, curses.LINES = 30
+    # win_end_row = 20
+    # botline = 20
+
+    # ex2: topline = 0, curses.LINES = 31
+    # win_end_row = 20
+    # botline = 20
+
+    # ex3: topline = 0, curses.LINES = 32
+    # win_end_row = 22
+    # botline = 22
+
+    # ex4: topline = 2, curses.LINES = 15
+    # win_end_row = 4
+    # botline = 6
+
+    # ex4: topline = 2, curses.LINES = 16
+    # win_end_row = 6
+    # botline = 8
+
+    # ex4: topline = 2, curses.LINES = 17
+    # win_end_row = 6
+    # botline = 8
+
 
     @property
     def topdevice(self):
@@ -291,11 +317,13 @@ class DevicesScreen:
     @property
     def bottomdevice(self):
         "Returns the index of the bottom device being displayed"
-        number_of_devices = len(self.tempclient) ##################
+        idx_of_last_device = len(self.tempclient) - 1 ##################
 
-        if number_of_devices > self.botline//2:
-            return self.botline//2
-        return number_of_devices - 1
+        last_displayed = self.botline//2
+
+        if idx_of_last_device > last_displayed:
+            return last_displayed
+        return idx_of_last_device
 
 
     def drawdevices(self):
