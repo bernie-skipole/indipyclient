@@ -10,8 +10,11 @@ class Button:
         self.row = row
         self.col = col
         self.focus = False
+        self.show = True
 
     def draw(self):
+        if not self.show:
+            return
         if self.focus:
             self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_REVERSE)
         else:
