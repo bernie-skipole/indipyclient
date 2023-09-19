@@ -332,7 +332,7 @@ class DevicesScreen:
     @property
     def bottomdevice(self):
         "Returns the index of the bottom device being displayed"
-        idx_of_last_device = len(self.tempclient) - 1 ##################
+        idx_of_last_device = len(self.client) - 1
 
         last_displayed = self.botline//2
 
@@ -357,12 +357,8 @@ class DevicesScreen:
         # Remove current devices
         self.devices.clear()
 
-
-        self.tempclient = {f"led{c}":c for c in range(10)} ###############
-
         colnumber = self.maxcols//2 - 6
-        #for linenumber, devicename in enumerate(self.client):
-        for linenumber, devicename in enumerate(self.tempclient):
+        for linenumber, devicename in enumerate(self.client):
             self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber*2, colnumber)
 
         # start with all device buttons focus False
@@ -386,7 +382,7 @@ class DevicesScreen:
         for devbutton in self.devices.values():
             devbutton.draw()
 
-        number_of_devices = len(self.tempclient) ##################
+        number_of_devices = len(self.client)
         # each device takes 2 lines
         if self.bottomdevice < number_of_devices -1:
             self.botmore_btn.show = True
@@ -481,7 +477,7 @@ class DevicesScreen:
                     if self.botmore_btn.focus:
                         # pressing botmore button may cause last device to be displayed
                         # which results in the botmore button vanishing
-                        if self.bottomdevice == len(self.tempclient) - 2: ##################
+                        if self.bottomdevice == len(self.client) - 2:
                             self.botmore_btn.focus = False
                             self.focus = btnlist[-1]
                         self.topline += 2
@@ -523,7 +519,7 @@ class DevicesScreen:
                     else:
                         # one of the devices has focus
                         indx = btnlist.index(self.focus)
-                        if indx == len(self.tempclient) - 1: ##################
+                        if indx == len(self.client) - 1:
                             # very last device, the botmore_btn should not be shown
                             self.focus = None
                             self.messages_btn.focus = True
