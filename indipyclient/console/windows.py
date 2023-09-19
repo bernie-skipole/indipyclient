@@ -203,13 +203,17 @@ class DevicesScreen:
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, curses.COLS//2 - 3)
         self.topmore_btn.show = False
 
-        # devices window - create a pad of 50 lines, full row-4
-        self.devwin = curses.newpad(50, curses.COLS-4)
+        # devices window - create a pad of 40+2*devices lines, full row-4
+        self.devwin = curses.newpad(40 + 2* len(self.client), curses.COLS-4)
 
         # devices window top and bottom row numbers
         self.devwintop = 8
         # ensure bottom row is an even number at position curses.LINES - 6 or -7
         row = curses.LINES - 7
+        # very large screen may produce a window bigger that the pad,
+        # so reduce it to around ten times less than the pad
+        if row > 30 + 2* len(self.client):
+            row = 30 + 2* len(self.client)
         self.devwinbot = row + row % 2
 
 
@@ -308,11 +312,11 @@ class DevicesScreen:
     # self.devwinbot = 8
     # botline = 2 + 8 - 8 = 2
 
-    # ex4: self.topline = 2, curses.LINES = 16
+    # ex5: self.topline = 2, curses.LINES = 16
     # self.devwinbot = 10
     # botline = 2 + 10 - 8 = 4
 
-    # ex4: self.topline = 2, curses.LINES = 17
+    # ex6: self.topline = 2, curses.LINES = 17
     # self.devwinbot = 10
     # botline = 2 + 10 - 8 = 4
 
