@@ -528,9 +528,14 @@ class DevicesScreen:
                             self.focus = None
                             self.messages_btn.focus = True
                         elif indx == self.bottomdevice:
-                            # last device on display
-                            self.focus = None
-                            self.botmore_btn.focus = True
+                            if key in (338, 258):      # 338 page down, 258 down arrow
+                                # display next device
+                                self.topline += 2
+                                self.focus = btnlist[indx+1]
+                            else:
+                                # last device on display
+                                self.focus = None
+                                self.botmore_btn.focus = True
                         else:
                             self.focus = btnlist[indx+1]
 
