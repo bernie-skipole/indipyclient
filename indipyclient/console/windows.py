@@ -562,8 +562,12 @@ class DevicesScreen:
                     else:
                         indx = btnlist.index(self.focus)
                         if indx == self.topdevice:
-                            self.focus = None
-                            self.topmore_btn.focus = True
+                            if key in (339, 259): # 339 page up, 259 up arrow
+                                self.topline -= 2
+                                self.focus = btnlist[indx-1]
+                            else:
+                                self.focus = None
+                                self.topmore_btn.focus = True
                         else:
                             self.focus = btnlist[indx-1]
 
