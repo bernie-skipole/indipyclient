@@ -185,31 +185,34 @@ class DevicesScreen:
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
         self.stdscr.clear()
+
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+
         self.consoleclient = consoleclient
         self.client = consoleclient.client
 
         # title window  (1 line, full row, starting at 0,0)
-        self.titlewin = self.stdscr.subwin(1, curses.COLS, 0, 0)
+        self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
         self.titlewin.addstr(0, 0, "Devices", curses.A_BOLD)
 
         # messages window (1 line, full row, starting at 2,0)
-        self.messwin = self.stdscr.subwin(1, curses.COLS, 2, 0)
+        self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
 
         # status window (1 line, full row-4, starting at 4,4)
-        self.statwin = self.stdscr.subwin(1, curses.COLS-4, 4, 4)
+        self.statwin = self.stdscr.subwin(1, self.maxcols-4, 4, 4)
 
         # topmorewin (1 line, full row, starting at 6, 0)
-        self.topmorewin = self.stdscr.subwin(1, curses.COLS, 6, 0)
-        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, curses.COLS//2 - 3)
+        self.topmorewin = self.stdscr.subwin(1, self.maxcols, 6, 0)
+        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.topmore_btn.show = False
 
-        # devices window - create a pad of 40+2*devices lines, full row-4
-        self.devwin = curses.newpad(40 + 2* len(self.client), curses.COLS-4)
+        # devices window - create a pad of 40+2*devices lines, full row
+        self.devwin = curses.newpad(40 + 2* len(self.client), self.maxcols)
 
         # devices window top and bottom row numbers
         self.devwintop = 8
-        # ensure bottom row is an even number at position curses.LINES - 6 or -7
-        row = curses.LINES - 7
+        # ensure bottom row is an even number at position self.maxrows - 6 or -7
+        row = self.maxrows - 7
         # very large screen may produce a window bigger that the pad,
         # so reduce it to around ten times less than the pad
         if row > 30 + 2* len(self.client):
@@ -220,19 +223,19 @@ class DevicesScreen:
         # topline of pad to show
         self.topline = 0
 
-        # botmorewin (1 line, full row, starting at curses.LINES - 4, 0)
-        self.botmorewin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 4, 0)
-        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, curses.COLS//2 - 3)
+        # botmorewin (1 line, full row, starting at self.maxrows - 4, 0)
+        self.botmorewin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 4, 0)
+        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.botmore_btn.show = False
 
-        # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
+        # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         # this holds the messages and quit buttons
-        self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
+        self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
 
-        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, curses.COLS//2 - 10)
+        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 10)
         self.messages_btn.focus = True
         self.focus = None
-        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, curses.COLS//2 + 2)
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
         # devicename to button dictionary
         self.devices = {}
 
@@ -276,7 +279,7 @@ class DevicesScreen:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
-        coords = (self.topline, 0, self.devwintop, 4, self.devwinbot, curses.COLS-2)
+        coords = (self.topline, 0, self.devwintop, 0, self.devwinbot, self.maxcols-1)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
         self.devwin.overlay(self.stdscr, *coords)
@@ -293,30 +296,30 @@ class DevicesScreen:
         return self.topline + self.devwinbot - self.devwintop
 
     #    self.devwintop = 8
-    #    self.devwinbot = curses.LINES - 7 or - 6
+    #    self.devwinbot = self.maxrows - 7 or - 6
 
 
-    # ex1: self.topline = 0, curses.LINES = 30
+    # ex1: self.topline = 0, self.maxrows = 30
     # self.devwinbot = 24
     # botline = 0 + 24 - 8 = 16
 
-    # ex2: self.topline = 0, curses.LINES = 31
+    # ex2: self.topline = 0, self.maxrows = 31
     # self.devwinbot = 24
     # botline = 0 + 24 - 8 = 16
 
-    # ex3: topline = 0, curses.LINES = 32
+    # ex3: topline = 0, self.maxrows = 32
     # self.devwinbot = 26
     # botline = 0 + 26 - 8 = 18
 
-    # ex4: self.topline = 2, curses.LINES = 15
+    # ex4: self.topline = 2, self.maxrows = 15
     # self.devwinbot = 8
     # botline = 2 + 8 - 8 = 2
 
-    # ex5: self.topline = 2, curses.LINES = 16
+    # ex5: self.topline = 2, self.maxrows = 16
     # self.devwinbot = 10
     # botline = 2 + 10 - 8 = 4
 
-    # ex6: self.topline = 2, curses.LINES = 17
+    # ex6: self.topline = 2, self.maxrows = 17
     # self.devwinbot = 10
     # botline = 2 + 10 - 8 = 4
 
@@ -353,10 +356,11 @@ class DevicesScreen:
 
         # Remove current devices
         self.devices.clear()
-        colnumber = curses.COLS//2 - 6
 
-        self.tempclient = {f"led{c}":c for c in range(10)}
 
+        self.tempclient = {f"led{c}":c for c in range(10)} ###############
+
+        colnumber = self.maxcols//2 - 6
         #for linenumber, devicename in enumerate(self.client):
         for linenumber, devicename in enumerate(self.tempclient):
             self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber*2, colnumber)
@@ -390,10 +394,6 @@ class DevicesScreen:
             self.botmore_btn.show = False
             self.botmore_btn.focus = False
         self.botmore_btn.draw()
-
-        #for y in range(0,50):
-        #    for x in range(0, curses.COLS-5):
-        #        self.devwin.addch(y,x, ord('a'))
 
 
 
