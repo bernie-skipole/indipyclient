@@ -10,30 +10,33 @@ class MessagesScreen:
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
         self.stdscr.clear()
+
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+
         self.consoleclient = consoleclient
         self.client = consoleclient.client
 
         self.disconnectionflag = False
 
         # title window  (3 lines, full row, starting at 0,0)
-        self.titlewin = self.stdscr.subwin(3, curses.COLS, 0, 0)
+        self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
         self.titlewin.addstr(0, 0, "indipyclient console", curses.A_BOLD)
 
         # messages window (8 lines, full row - 4, starting at 4,3)
-        self.messwin = self.stdscr.subwin(8, curses.COLS-4, 4, 3)
+        self.messwin = self.stdscr.subwin(8, self.maxcols-4, 4, 3)
 
         # info window
-        self.infowin = self.stdscr.subwin(3, 60, curses.LINES-5, curses.COLS//2 - 29)
+        self.infowin = self.stdscr.subwin(3, 60, self.maxrows-5, self.maxcols//2 - 29)
         self.infowin.addstr(0, 0, "Once connected, choose 'Devices' and press Enter. Then use")
         self.infowin.addstr(1, 0, "Tab/Shift-Tab to move between fields, Enter to select, and")
         self.infowin.addstr(2, 0, "Arrow/Page keys to show further fields where necessary.")
 
-        # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
-        self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
+        # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
+        self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
 
-        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, curses.COLS//2 - 10)
+        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 10)
         self.devices_btn.focus = False
-        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, curses.COLS//2 + 2)
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
         self.quit_btn.focus = True
 
     @property
@@ -589,22 +592,25 @@ class MainScreen:
     def __init__(self, stdscr, consoleclient, devicename):
         self.stdscr = stdscr
         self.stdscr.clear()
+
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+
         self.consoleclient = consoleclient
         self.devicename = devicename
         self.client = consoleclient.client
 
         # title window  (1 line, full row, starting at 0,0)
-        self.titlewin = self.stdscr.subwin(1, curses.COLS, 0, 0)
+        self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
         self.titlewin.addstr(0, 0, "Device: " + self.devicename, curses.A_BOLD)
 
         # messages window (1 line, full row, starting at 2,0)
-        self.messwin = self.stdscr.subwin(1, curses.COLS, 2, 0)
+        self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
 
         # self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")  # still to do
         self.screenparts = ("Groups", "Devices", "Messages", "Quit")
 
         # groups window (1 line, full row, starting at 4,0)
-        self.groupswin = self.stdscr.subwin(1, curses.COLS, 4, 0)
+        self.groupswin = self.stdscr.subwin(1, self.maxcols, 4, 0)
 
         # groups list
         self.groups = []
@@ -612,20 +618,20 @@ class MainScreen:
 
 
         # create a pad of 50 lines
-        self.gpad = curses.newpad(50, curses.COLS)
+        self.gpad = curses.newpad(50, self.maxcols)
 
         # bottom buttons, [Devices] [Messages] [Quit]
 
-        # buttons window (1 line, full row, starting at  curses.LINES - 1, 0)
-        self.buttwin = self.stdscr.subwin(1, curses.COLS, curses.LINES - 1, 0)
+        # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
+        self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
 
         self.device = None
-        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, curses.COLS//2 - 15)
+        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 15)
         self.devices_btn.focus = True
         self.focus = "Devices"
 
-        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, curses.COLS//2 - 5)
-        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, curses.COLS//2 + 6)
+        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 5)
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
         self.line = 0
 
@@ -675,11 +681,11 @@ class MainScreen:
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
         for y in range(0,50):
-            for x in range(0, curses.COLS-1):
+            for x in range(0, self.maxcols-1):
                 if x == y:
                     self.gpad.addch(y,x, ord('a'))
 
-        coords = (0, 0, 6, 1, curses.LINES - 3, curses.COLS-2)
+        coords = (0, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
                   # pad row, pad col,   win start row, win start col, win end row, win end col
 
         self.gpad.overlay(self.stdscr, *coords)
@@ -701,7 +707,7 @@ class MainScreen:
 
     def drawgpad(self, line=0):
         "draw the group pad"
-        coords = (line, 0, 6, 1, curses.LINES - 3, curses.COLS-2)
+        coords = (line, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
                   # pad row, pad col,   win start row, win start col, win end row, win end col
         self.gpad.overwrite(self.stdscr, *coords)
         self.gpad.noutrefresh(*coords)
