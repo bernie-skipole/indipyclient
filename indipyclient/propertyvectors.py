@@ -1,5 +1,7 @@
 
-import collections, datetime, sys
+import collections, sys
+
+from datetime import datetime, timezone
 
 import asyncio
 
@@ -201,8 +203,8 @@ class SwitchVector(PropertyVector):
         if not self.enable:
             return
         if timestamp is None:
-            timestamp = datetime.datetime.utcnow()
-        if not isinstance(timestamp, datetime.datetime):
+            timestamp = datetime.now(tz=timezone.utc)
+        if not isinstance(timestamp, datetime):
             return
         self.state = 'Busy'
         xmldata = ET.Element('newSwitchVector')
@@ -343,8 +345,8 @@ class TextVector(PropertyVector):
         if not self.enable:
             return
         if timestamp is None:
-            timestamp = datetime.datetime.utcnow()
-        if not isinstance(timestamp, datetime.datetime):
+            timestamp = datetime.now(tz=timezone.utc)
+        if not isinstance(timestamp, datetime):
             return
         self.state = 'Busy'
         xmldata = ET.Element('newTextVector')
@@ -433,8 +435,8 @@ class NumberVector(PropertyVector):
         if not self.enable:
             return
         if timestamp is None:
-            timestamp = datetime.datetime.utcnow()
-        if not isinstance(timestamp, datetime.datetime):
+            timestamp = datetime.now(tz=timezone.utc)
+        if not isinstance(timestamp, datetime):
             return
         self.state = 'Busy'
         xmldata = ET.Element('newNumberVector')

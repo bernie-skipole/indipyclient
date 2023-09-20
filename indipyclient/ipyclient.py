@@ -8,7 +8,7 @@ import os, sys, collections, threading, asyncio, pathlib, time
 
 from time import sleep
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import xml.etree.ElementTree as ET
 
@@ -145,8 +145,10 @@ class IPyClient(collections.UserDict):
 
 
     async def report(self, message):
-        timestamp = datetime.utcnow()
-        root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat()}\" message=\"{message}\" />")
+        timestamp = datetime.now(tz=timezone.utc)
+        # note - limit timestamp characters to :21 to avoid long fractions of a second
+        # and do not include the +00:00 timezone info
+        root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')[:21]}\" message=\"{message}\" />")
         event = events.Message(root, None, self)
         await self.rxevent(event)
 
@@ -601,7 +603,7 @@ class _Device(Device):
         # if self.enable is False, this device has been 'deleted'
         self.enable = True
 
-        # self.messages is a deque of "Timestamp space message"
+        # self.messages is a deque of tuples (timestamp, message)
         self.messages = collections.deque(maxlen=8)
 
 

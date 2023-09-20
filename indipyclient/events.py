@@ -1,7 +1,7 @@
 
 import sys
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from base64 import standard_b64decode
 
@@ -37,7 +37,7 @@ class Event:
             except:
                 self.timestamp = None
         else:
-            self.timestamp = datetime.utcnow()
+            self.timestamp = datetime.now(tz=timezone.utc)
 
     def __str__(self):
         return ET.tostring(self.root, encoding='unicode')

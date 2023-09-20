@@ -1,6 +1,4 @@
 
-import sys
-
 
 class ParseException(Exception):
     "Raised if an error occurs when parsing received data"
