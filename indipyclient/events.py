@@ -33,7 +33,7 @@ class Event:
                 if '.' in timestamp_string:
                     # remove fractional part, not supported by datetime.fromisoformat
                     timestamp_string, remainder = timestamp_string.rsplit('.', maxsplit=1)
-                self.timestamp = datetime.fromisoformat(timestamp_string)
+                self.timestamp = datetime.fromisoformat(timestamp_string+"+00:00")
             except:
                 self.timestamp = None
         else:
