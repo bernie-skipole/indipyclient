@@ -17,6 +17,33 @@ from .error import ParseException
 
 
 
+def _parse_timestamp(timestamp_string):
+    """Parse a timestamp string and return either None on failure, or a datetime object
+       If the given timestamp_string is None, return the datetime for the current time.
+       Everything is UTC"""
+    if timestamp_string:
+        try:
+            if '.' in timestamp_string:
+                # remove fractional part, not supported by datetime.fromisoformat
+                timestamp_string, remainder = timestamp_string.rsplit('.', maxsplit=1)
+                if len(remainder) < 6:
+                    remainder = "{:<06}".format(remainder)
+                elif len(remainder) > 6:
+                    remainder = remainder[:6]
+                remainder = int(remainder)
+                timestamp = datetime.fromisoformat(timestamp_string)
+                timestamp = self.timestamp.replace(microsecond=remainder, tzinfo=timezone.utc)
+            else:
+                timestamp = datetime.fromisoformat(timestamp_string)
+                timestamp = self.timestamp.replace(tzinfo=timezone.utc)
+        except:
+            timestamp = None
+    else:
+        timestamp = datetime.now(tz=timezone.utc)
+    return timestamp
+
+
+
 class Event:
     "Parent class for events received from drivers"
     def __init__(self, root, device, client):
@@ -27,19 +54,7 @@ class Event:
         else:
             self.devicename = self.device.devicename
         self.root = root
-        timestamp_string = root.get("timestamp")
-        if timestamp_string:
-            try:
-                if '.' in timestamp_string:
-                    # remove fractional part, not supported by datetime.fromisoformat
-                    timestamp_string, remainder = timestamp_string.rsplit('.', maxsplit=1)
-                    remainder = "{:<06}".format(remainder)
-                self.timestamp = datetime.fromisoformat(timestamp_string)
-                self.timestamp = self.timestamp.replace(tzinfo=timezone.utc)
-            except:
-                self.timestamp = None
-        else:
-            self.timestamp = datetime.now(tz=timezone.utc)
+        self.timestamp = _parse_timestamp(root.get("timestamp"))
 
     def __str__(self):
         return ET.tostring(self.root, encoding='unicode')
