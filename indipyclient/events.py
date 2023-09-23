@@ -32,16 +32,15 @@ def _parse_timestamp(timestamp_string):
                     remainder = remainder[:6]
                 remainder = int(remainder)
                 timestamp = datetime.fromisoformat(timestamp_string)
-                timestamp = self.timestamp.replace(microsecond=remainder, tzinfo=timezone.utc)
+                timestamp = timestamp.replace(microsecond=remainder, tzinfo=timezone.utc)
             else:
                 timestamp = datetime.fromisoformat(timestamp_string)
-                timestamp = self.timestamp.replace(tzinfo=timezone.utc)
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
         except:
             timestamp = None
     else:
         timestamp = datetime.now(tz=timezone.utc)
     return timestamp
-
 
 
 class Event:
