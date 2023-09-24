@@ -26,10 +26,11 @@ class MessagesScreen:
         self.messwin = self.stdscr.subwin(8, self.maxcols-4, 4, 3)
 
         # info window
-        self.infowin = self.stdscr.subwin(3, 60, self.maxrows-5, self.maxcols//2 - 29)
-        self.infowin.addstr(0, 0, "Once connected, choose 'Devices' and press Enter. Then use")
-        self.infowin.addstr(1, 0, "Tab/Shift-Tab to move between fields, Enter to select, and")
-        self.infowin.addstr(2, 0, "Arrow/Page keys to show further fields where necessary.")
+        self.infowin = self.stdscr.subwin(4, 60, self.maxrows-6, self.maxcols//2 - 29)
+        self.infowin.addstr(0, 14, "All Timestamps are UTC")
+        self.infowin.addstr(1, 0, "Once connected, choose 'Devices' and press Enter. Then use")
+        self.infowin.addstr(2, 0, "Tab/Shift-Tab to move between fields, Enter to select, and")
+        self.infowin.addstr(3, 0, "Arrow/Page keys to show further fields where necessary.")
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)

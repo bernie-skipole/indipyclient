@@ -205,13 +205,20 @@ class SwitchVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.now(tz=timezone.utc)
         if not isinstance(timestamp, datetime):
+            # invalid timestamp given
             return
+        if not (timestamp.tzinfo is None):
+            if timestamp.tzinfo == timezone.utc:
+                timestamp = timestamp.replace(tzinfo = None)
+            else:
+                # invalid timestamp
+                return
+        # timestamp has no tzinfo so isoformat does not include timezone info
         self.state = 'Busy'
         xmldata = ET.Element('newSwitchVector')
         xmldata.set("device", self.devicename)
         xmldata.set("name", self.name)
-        # note - limit timestamp characters to :21 to avoid long fractions of a second
-        xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
+        xmldata.set("timestamp", timestamp.isoformat(sep='T'))
         # set member values to send
         sendvalues = {}
         for membername, value in members.items():
@@ -347,13 +354,20 @@ class TextVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.now(tz=timezone.utc)
         if not isinstance(timestamp, datetime):
+            # invalid timestamp given
             return
+        if not (timestamp.tzinfo is None):
+            if timestamp.tzinfo == timezone.utc:
+                timestamp = timestamp.replace(tzinfo = None)
+            else:
+                # invalid timestamp
+                return
+        # timestamp has no tzinfo so isoformat does not include timezone info
         self.state = 'Busy'
         xmldata = ET.Element('newTextVector')
         xmldata.set("device", self.devicename)
         xmldata.set("name", self.name)
-        # note - limit timestamp characters to :21 to avoid long fractions of a second
-        xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
+        xmldata.set("timestamp", timestamp.isoformat(sep='T'))
         # set member values to send
         for membername, textmember in self.data.items():
             if membername in members:
@@ -437,13 +451,20 @@ class NumberVector(PropertyVector):
         if timestamp is None:
             timestamp = datetime.now(tz=timezone.utc)
         if not isinstance(timestamp, datetime):
+            # invalid timestamp given
             return
+        if not (timestamp.tzinfo is None):
+            if timestamp.tzinfo == timezone.utc:
+                timestamp = timestamp.replace(tzinfo = None)
+            else:
+                # invalid timestamp
+                return
+        # timestamp has no tzinfo so isoformat does not include timezone info
         self.state = 'Busy'
         xmldata = ET.Element('newNumberVector')
         xmldata.set("device", self.devicename)
         xmldata.set("name", self.name)
-        # note - limit timestamp characters to :21 to avoid long fractions of a second
-        xmldata.set("timestamp", timestamp.isoformat(sep='T')[:21])
+        xmldata.set("timestamp", timestamp.isoformat(sep='T'))
         # set member values to send
         for membername, numbermember in self.data.items():
             if membername in members:

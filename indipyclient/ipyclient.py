@@ -146,9 +146,8 @@ class IPyClient(collections.UserDict):
 
     async def report(self, message):
         timestamp = datetime.now(tz=timezone.utc)
-        # note - limit timestamp characters to :21 to avoid long fractions of a second
-        # and do not include the +00:00 timezone info
-        root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')[:21]}\" message=\"{message}\" />")
+        timestamp = timestamp.replace(tzinfo=None)
+        root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
         event = events.Message(root, None, self)
         await self.rxevent(event)
 
