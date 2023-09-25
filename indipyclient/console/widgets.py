@@ -242,11 +242,23 @@ class Groups:
                 indx = self.groups.index(self.groupfocus)
                 if self.togroup and (indx+1 > self.togroup):
                     # next choice is beyond togroup
-                    # so highlight 'next' key
-                    self.drawnext(focus=True)
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    continue
+                    if key == 261:   # right arrow
+                        if self.fromgroup:
+                            self.fromgroup = self.fromgroup + 1
+                        else:
+                            self.fromgroup = 2
+                        # get the new group in focus
+                        self.groupfocus = self.groups[indx+1]
+                        self.draw()
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        continue
+                    else:
+                        # so highlight 'next' key
+                        self.drawnext(focus=True)
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        continue
                 # get the new group in focus
                 self.groupfocus = self.groups[indx+1]
                 self.draw()
