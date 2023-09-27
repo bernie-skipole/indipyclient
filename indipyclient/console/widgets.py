@@ -281,24 +281,40 @@ class Groups:
                     continue
                 # go to the previous group
                 indx = self.groups.index(self.groupfocus)
-                if indx and (indx == self.fromgroup):
-                    # the button to the left must be the 'Prev' button
-                    # remove focus from current button
-                    currentgroup = self.groupfocus
-                    self.groupfocus = None
-                    self.drawgroup(currentgroup)
-                    # set Prev button as the focus
-                    self.drawprev(focus=True)
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    continue
-                if indx-1 < 0:
+                if not indx:
+                    # indx zero means first group
                     return None, key
+                if indx == self.fromgroup:
+                    if key == 260:  # left arrow, moves to previous group
+                        self.fromgroup = self.fromgroup - 1
+                        if not self.fromgroup:
+                            # self.fromgroup is zero, so no prev button
+                            self.prevfocus = False
+                            self.groupfocus = self.groups[0]
+                        else:
+                            # get the new group in focus
+                            self.groupfocus = self.groups[indx-1]
+                        self.draw()
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        continue
+                    else:
+                        # the button to the left must be the 'Prev' button
+                        # remove focus from current button
+                        currentgroup = self.groupfocus
+                        self.groupfocus = None
+                        self.drawgroup(currentgroup)
+                        # set Prev button as the focus
+                        self.drawprev(focus=True)
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        continue
+
                 self.groupfocus = self.groups[indx-1]
                 self.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 continue
-            if key in (338, 258):          # 338 page down, 258 down arrow
+            if key in (338, 339, 258, 259):          # 338 page down, 339 page up, 258 down arrow, 259 up arrow
                 return None, key
         return None, -1
