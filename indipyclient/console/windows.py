@@ -1,7 +1,13 @@
 
 import asyncio, curses, sys
 
-import traceback
+# import traceback
+#        except Exception:
+#            traceback.print_exc(file=sys.stderr)
+#            raise
+
+
+
 
 from . import widgets
 
@@ -288,7 +294,7 @@ class DevicesScreen:
         coords = (self.topline, 0, self.devwintop, 0, self.devwinbot, self.maxcols-1)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
-        self.devwin.overlay(self.stdscr, *coords)
+        self.devwin.overwrite(self.stdscr, *coords)
 
         self.topmorewin.noutrefresh()
         self.devwin.noutrefresh(*coords)
@@ -617,13 +623,11 @@ class MainScreen:
 
         # groups list
         self.groups = []
-        self.group_btns = widgets.Groups(self.stdscr, self.groupbuttonswin, self.consoleclient)
+        self.group_btns = widgets.GroupButtons(self.stdscr, self.groupbuttonswin, self.consoleclient)
 
-        coords = (0, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
-                  # pad row, pad col, win start row, win start col, win end row, win end col
-
+        # window showing the vectors of the active group
         self.grouppad = curses.newpad(50, self.maxcols)
-        self.grouppad.overlay(self.stdscr, *coords)
+        self.vectors = Vectors(self.stdscr, self.grouppad, self.consoleclient)
 
         # bottom buttons, [Devices] [Messages] [Quit]
 
@@ -640,42 +644,10 @@ class MainScreen:
 
 
 
-    def create_group_panel(self):
-
-        coords = (0, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
-                  # pad row, pad col, win start row, win start col, win end row, win end col
-
-        try:
-
-
-
-            # The refresh() and noutrefresh() methods of a pad require 6 arguments
-            # to specify the part of the pad to be displayed and the location on
-            # the screen to be used for the display. The arguments are
-            # pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
-            # the p arguments refer to the upper left corner of the pad region to be displayed and the
-            # s arguments define a clipping box on the screen within which the pad region is to be displayed.
-
-
-            for y in range(0,50):
-                z = 97+y
-                for x in range(0, self.maxcols-1):
-                    if x == y:
-                        self.grouppad.addch(y,x, z)
-
-            self.grouppad.overwrite(self.stdscr, *coords)
-            self.grouppad.noutrefresh(*coords)
-
-
-        except Exception:
-            traceback.print_exc(file=sys.stderr)
-            raise
-
-
-
 
     @property
     def activegroup(self):
+        "Return name of group currently active"
         return self.group_btns.active
 
 
@@ -707,9 +679,8 @@ class MainScreen:
         self.group_btns.set_groups(self.groups)
         self.group_btns.draw()
 
-        # to do - draw the device vector widgets, as given by self.activegroup
-        self.create_group_panel()
-
+        # Draw the device vector widgets, as given by self.activegroup
+        self.vectors.draw(self.devicename, self.activegroup)
 
         # draw the bottom buttons
         self.devices_btn.draw()
@@ -720,6 +691,7 @@ class MainScreen:
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.groupbuttonswin.noutrefresh()
+        self.vectors.refresh()
         self.buttwin.noutrefresh()
 
         curses.doupdate()
@@ -831,3 +803,49 @@ class MainScreen:
             raise
         except Exception:
             return "Quit"
+
+
+class Vectors:
+
+    def __init__(self, stdscr, window, consoleclient):
+        self.stdscr = stdscr
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+        self.window = window
+        self.consoleclient = consoleclient
+        self.client = consoleclient.client
+        self.padtop = 0
+        self.groupname = None
+        self.devicename = None
+        self.device = None
+
+    def refresh(self):
+
+        # The refresh() and noutrefresh() methods of a pad require 6 arguments
+        # to specify the part of the pad to be displayed and the location on
+        # the screen to be used for the display. The arguments are
+        # pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
+        # the p arguments refer to the upper left corner of the pad region to be displayed and the
+        # s arguments define a clipping box on the screen within which the pad region is to be displayed.
+
+        coords = (self.padtop, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
+                  # pad row, pad col, win start row, win start col, win end row, win end col
+
+        self.window.overwrite(self.stdscr, *coords)
+        self.window.noutrefresh(*coords)
+
+    def draw(self, devicename, groupname):
+        if (groupname == self.groupname) and (devicename == self.devicename):
+            # no change
+            return
+        self.devicename = devicename
+        self.device = self.client[devicename]
+        self.groupname = groupname
+        self.window.clear()
+        # draw the vectors in the client with this device and group
+        line = 1
+        for name, vector in self.device.items():
+            if vector.group != self.groupname:
+                continue
+            # so draw the vector widget
+            self.window.addstr(0, line, name)
+            line += 2

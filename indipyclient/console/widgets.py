@@ -40,7 +40,7 @@ def drawmessage(window, message, bold = False):
         window.addstr(0, 0, messagetoshow)
 
 
-class Groups:
+class GroupButtons:
 
     def __init__(self, stdscr, window, consoleclient):
         self.stdscr = stdscr
