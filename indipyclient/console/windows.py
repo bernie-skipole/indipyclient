@@ -1,6 +1,8 @@
 
 import asyncio, curses, sys
 
+import traceback
+
 from . import widgets
 
 from .. import events
@@ -610,16 +612,18 @@ class MainScreen:
         # self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")  # still to do
         self.screenparts = ("Groups", "Devices", "Messages", "Quit")
 
-        # groups window (1 line, full row, starting at 4,0)
-        self.groupswin = self.stdscr.subwin(1, self.maxcols, 4, 0)
+        # groups button window (1 line, full row, starting at 4,0)
+        self.groupbuttonswin = self.stdscr.subwin(1, self.maxcols, 4, 0)
 
         # groups list
         self.groups = []
-        self.group_btns = widgets.Groups(self.stdscr, self.groupswin, self.consoleclient)
+        self.group_btns = widgets.Groups(self.stdscr, self.groupbuttonswin, self.consoleclient)
 
+        coords = (0, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
+                  # pad row, pad col, win start row, win start col, win end row, win end col
 
-        # create a pad of 50 lines
-        self.gpad = curses.newpad(50, self.maxcols)
+        self.grouppad = curses.newpad(50, self.maxcols)
+        self.grouppad.overlay(self.stdscr, *coords)
 
         # bottom buttons, [Devices] [Messages] [Quit]
 
@@ -634,7 +638,40 @@ class MainScreen:
         self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 5)
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
-        self.line = 0
+
+
+    def create_group_panel(self):
+
+        coords = (0, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
+                  # pad row, pad col, win start row, win start col, win end row, win end col
+
+        try:
+
+
+
+            # The refresh() and noutrefresh() methods of a pad require 6 arguments
+            # to specify the part of the pad to be displayed and the location on
+            # the screen to be used for the display. The arguments are
+            # pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
+            # the p arguments refer to the upper left corner of the pad region to be displayed and the
+            # s arguments define a clipping box on the screen within which the pad region is to be displayed.
+
+
+            for y in range(0,50):
+                z = 97+y
+                for x in range(0, self.maxcols-1):
+                    if x == y:
+                        self.grouppad.addch(y,x, z)
+
+            self.grouppad.overwrite(self.stdscr, *coords)
+            self.grouppad.noutrefresh(*coords)
+
+
+        except Exception:
+            traceback.print_exc(file=sys.stderr)
+            raise
+
+
 
 
     @property
@@ -671,26 +708,8 @@ class MainScreen:
         self.group_btns.draw()
 
         # to do - draw the device vector widgets, as given by self.activegroup
+        self.create_group_panel()
 
-
-
-        # The refresh() and noutrefresh() methods of a pad require 6 arguments
-        # to specify the part of the pad to be displayed and the location on
-        # the screen to be used for the display. The arguments are
-        # pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
-        # the p arguments refer to the upper left corner of the pad region to be displayed and the
-        # s arguments define a clipping box on the screen within which the pad region is to be displayed.
-
-        for y in range(0,50):
-            for x in range(0, self.maxcols-1):
-                if x == y:
-                    self.gpad.addch(y,x, ord('a'))
-
-        coords = (0, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
-                  # pad row, pad col,   win start row, win start col, win end row, win end col
-
-        self.gpad.overlay(self.stdscr, *coords)
-        self.gpad.noutrefresh(*coords)
 
         # draw the bottom buttons
         self.devices_btn.draw()
@@ -700,19 +719,12 @@ class MainScreen:
         #  and refresh
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
-        self.groupswin.noutrefresh()
+        self.groupbuttonswin.noutrefresh()
         self.buttwin.noutrefresh()
 
         curses.doupdate()
 
 
-    def drawgpad(self, line=0):
-        "draw the group pad"
-        coords = (line, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
-                  # pad row, pad col,   win start row, win start col, win end row, win end col
-        self.gpad.overwrite(self.stdscr, *coords)
-        self.gpad.noutrefresh(*coords)
-        curses.doupdate()
 
 
     def update(self, event):
@@ -764,12 +776,6 @@ class MainScreen:
                 if chr(key) == "d" or chr(key) == "D":
                     return "Devices"
 
-                if chr(key) == "p":
-                    self.line += 1
-                    self.drawgpad(self.line)
-                    continue
-
-
                 if key in (32, 9, 261, 338, 258):
                     # go to the next widget
                     if self.focus == "Quit":
@@ -818,7 +824,7 @@ class MainScreen:
                 self.messages_btn.draw()
                 self.quit_btn.draw()
 
-                self.groupswin.noutrefresh()
+                self.groupbuttonswin.noutrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
         except asyncio.CancelledError:
