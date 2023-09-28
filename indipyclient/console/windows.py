@@ -1,7 +1,7 @@
 
 import asyncio, curses, sys
 
-# import traceback
+import traceback
 #        except Exception:
 #            traceback.print_exc(file=sys.stderr)
 #            raise
@@ -230,7 +230,6 @@ class DevicesScreen:
         if row > 30 + 2* len(self.client):
             row = 30 + 2* len(self.client)
         self.devwinbot = row + row % 2
-
 
         # topline of pad to show
         self.topline = 0
@@ -625,9 +624,20 @@ class MainScreen:
         self.groups = []
         self.group_btns = widgets.GroupButtons(self.stdscr, self.groupbuttonswin, self.consoleclient)
 
+
+        # topmorewin (1 line, full row, starting at 6, 0)
+        self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
+        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
+        self.topmore_btn.show = True
+
         # window showing the vectors of the active group
         self.grouppad = curses.newpad(50, self.maxcols)
         self.vectors = Vectors(self.stdscr, self.grouppad, self.consoleclient)
+
+        # botmorewin (1 line, full row, starting at self.maxrows - 4, 0)
+        self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 4, 0)
+        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
+        self.botmore_btn.show = True
 
         # bottom buttons, [Devices] [Messages] [Quit]
 
@@ -641,8 +651,6 @@ class MainScreen:
 
         self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 5)
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
-
-
 
 
     @property
@@ -679,8 +687,19 @@ class MainScreen:
         self.group_btns.set_groups(self.groups)
         self.group_btns.draw()
 
-        # Draw the device vector widgets, as given by self.activegroup
-        self.vectors.draw(self.devicename, self.activegroup)
+        try:
+
+            self.topmore_btn.draw()
+
+            # Draw the device vector widgets, as given by self.activegroup
+            self.vectors.draw(self.devicename, self.activegroup)
+
+            self.botmore_btn.draw()
+
+        except Exception:
+            traceback.print_exc(file=sys.stderr)
+            raise
+
 
         # draw the bottom buttons
         self.devices_btn.draw()
@@ -691,7 +710,11 @@ class MainScreen:
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.groupbuttonswin.noutrefresh()
+
+        self.topmorewin.noutrefresh()
         self.vectors.refresh()
+        self.botmorewin.noutrefresh()
+
         self.buttwin.noutrefresh()
 
         curses.doupdate()
@@ -827,7 +850,7 @@ class Vectors:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
-        coords = (self.padtop, 0, 6, 1, self.maxrows - 3, self.maxcols-2)
+        coords = (self.padtop, 0, 9, 1, self.maxrows - 7, self.maxcols-2)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
         self.window.overwrite(self.stdscr, *coords)
