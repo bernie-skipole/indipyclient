@@ -631,11 +631,10 @@ class MainScreen:
         self.topmore_btn.show = True
 
         # window showing the vectors of the active group
-        self.grouppad = curses.newpad(50, self.maxcols)
-        self.vectors = Vectors(self.stdscr, self.grouppad, self.consoleclient)
+        self.vectors = Vectors(self.stdscr, self.consoleclient)
 
-        # botmorewin (1 line, full row, starting at self.maxrows - 4, 0)
-        self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 4, 0)
+        # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
+        self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
         self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.botmore_btn.show = True
 
@@ -830,10 +829,10 @@ class MainScreen:
 
 class Vectors:
 
-    def __init__(self, stdscr, window, consoleclient):
+    def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-        self.window = window
+        self.window = curses.newpad(50, self.maxcols)
         self.consoleclient = consoleclient
         self.client = consoleclient.client
         self.padtop = 0
@@ -850,7 +849,7 @@ class Vectors:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
-        coords = (self.padtop, 0, 9, 1, self.maxrows - 7, self.maxcols-2)
+        coords = (self.padtop, 0, 8, 1, self.maxrows - 5, self.maxcols-2)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
         self.window.overwrite(self.stdscr, *coords)
@@ -864,11 +863,24 @@ class Vectors:
         self.device = self.client[devicename]
         self.groupname = groupname
         self.window.clear()
+
+        try:
+
+            for line in range(50):
+                testchr = chr(97 + line)
+                teststr = testchr*(self.maxcols-1)
+                self.window.addstr(line, 0, teststr)
+
+        except Exception:
+            traceback.print_exc(file=sys.stderr)
+            raise
+
+
         # draw the vectors in the client with this device and group
-        line = 1
-        for name, vector in self.device.items():
-            if vector.group != self.groupname:
-                continue
-            # so draw the vector widget
-            self.window.addstr(0, line, name)
-            line += 2
+        #line = 1
+        #for name, vector in self.device.items():
+            #if vector.group != self.groupname:
+            #    continue
+            ## so draw the vector widget
+            #self.window.addstr(0, line, name)
+            #line += 2
