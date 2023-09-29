@@ -222,7 +222,7 @@ class GroupButtons:
                 self.active = self.groupfocus
                 return self.groupfocus, 10
             if chr(key) in ("q", "Q", "m", "M", "d", "D"):
-                return None, key
+                return key
             if key in (32, 9, 261):   # space, tab, right arrow
                 if self.prevfocus:
                     # remove focus from prev button
@@ -234,11 +234,11 @@ class GroupButtons:
                     curses.doupdate()
                     continue
                 if self.nextfocus:
-                    return None, 258   # treat as 258 down arrow key
+                    return 258   # treat as 258 down arrow key
                 # go to the next group
                 if self.groupfocus == self.groups[-1]:
                     # At the last group, cannot go further
-                    return None, key
+                    return key
                 indx = self.groups.index(self.groupfocus)
                 if self.togroup and (indx+1 > self.togroup):
                     # next choice is beyond togroup
@@ -269,7 +269,7 @@ class GroupButtons:
                 if self.prevfocus:
                     # remove focus from the button
                     self.drawprev(focus=False)
-                    return None, 258   # treat as 258 down arrow key
+                    return 258   # treat as 258 down arrow key
                 if self.nextfocus:
                     # group to the left of the 'Next' button, now has focus
                     self.groupfocus = self.groups[self.togroup]
@@ -283,7 +283,7 @@ class GroupButtons:
                 indx = self.groups.index(self.groupfocus)
                 if not indx:
                     # indx zero means first group
-                    return None, key
+                    return key
                 if indx == self.fromgroup:
                     if key == 260:  # left arrow, moves to previous group
                         self.fromgroup = self.fromgroup - 1
@@ -316,5 +316,5 @@ class GroupButtons:
                 curses.doupdate()
                 continue
             if key in (338, 339, 258, 259):          # 338 page down, 339 page up, 258 down arrow, 259 up arrow
-                return None, key
-        return None, -1
+                return key
+        return -1

@@ -614,8 +614,11 @@ class MainScreen:
         # messages window (1 line, full row, starting at 2,0)
         self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
 
-        # self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")  # still to do
-        self.screenparts = ("Groups", "Devices", "Messages", "Quit")
+        # list areas of the screen, one of these areas as the current 'focus'
+        # Groups being the horizontal line of group names associated with a device
+        # Vectors being the area showing the vectors associated with a device and group
+        # and Devices Messages and Quit are the bottom buttons
+        self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")
 
         # groups button window (1 line, full row, starting at 4,0)
         self.groupbuttonswin = self.stdscr.subwin(1, self.maxcols, 4, 0)
@@ -624,19 +627,8 @@ class MainScreen:
         self.groups = []
         self.group_btns = widgets.GroupButtons(self.stdscr, self.groupbuttonswin, self.consoleclient)
 
-
-        # topmorewin (1 line, full row, starting at 6, 0)
-        self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
-        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
-        self.topmore_btn.show = True
-
         # window showing the vectors of the active group
         self.vectors = Vectors(self.stdscr, self.consoleclient)
-
-        # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
-        self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
-        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
-        self.botmore_btn.show = True
 
         # bottom buttons, [Devices] [Messages] [Quit]
 
@@ -686,19 +678,8 @@ class MainScreen:
         self.group_btns.set_groups(self.groups)
         self.group_btns.draw()
 
-        try:
-
-            self.topmore_btn.draw()
-
-            # Draw the device vector widgets, as given by self.activegroup
-            self.vectors.draw(self.devicename, self.activegroup)
-
-            self.botmore_btn.draw()
-
-        except Exception:
-            traceback.print_exc(file=sys.stderr)
-            raise
-
+        # Draw the device vector widgets, as given by self.activegroup
+        self.vectors.draw(self.devicename, self.activegroup)
 
         # draw the bottom buttons
         self.devices_btn.draw()
@@ -710,9 +691,7 @@ class MainScreen:
         self.messwin.noutrefresh()
         self.groupbuttonswin.noutrefresh()
 
-        self.topmorewin.noutrefresh()
         self.vectors.refresh()
-        self.botmorewin.noutrefresh()
 
         self.buttwin.noutrefresh()
 
@@ -740,12 +719,14 @@ class MainScreen:
                     self.focus = "Devices"
                 if self.focus == "Groups":
                     # focus has been given to the groups widget which monitors its own inputs
-                    newgroup, key = await self.group_btns.input()
+                    key = await self.group_btns.input()
                     if key == 10:
                         # must update the screen with a new group
                         self.show()
                         continue
-                    # if key != 10 just continue below with key checking for q, m etc.,
+                elif self.focus == "Vectors":
+                    # focus has been given to Vectors which monitors its own inputs
+                    key = await self.vectors.input()
                 else:
                     key = self.stdscr.getch()
 
@@ -840,6 +821,17 @@ class Vectors:
         self.devicename = None
         self.device = None
 
+        # topmorewin (1 line, full row, starting at 6, 0)
+        self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
+        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
+        self.topmore_btn.show = True
+
+        # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
+        self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
+        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
+        self.botmore_btn.show = True
+
+
     def refresh(self):
 
         # The refresh() and noutrefresh() methods of a pad require 6 arguments
@@ -852,8 +844,10 @@ class Vectors:
         coords = (self.padtop, 0, 8, 1, self.maxrows - 5, self.maxcols-2)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
+        self.topmorewin.noutrefresh()
         self.window.overwrite(self.stdscr, *coords)
         self.window.noutrefresh(*coords)
+        self.botmorewin.noutrefresh()
 
     def draw(self, devicename, groupname):
         if (groupname == self.groupname) and (devicename == self.devicename):
@@ -863,6 +857,9 @@ class Vectors:
         self.device = self.client[devicename]
         self.groupname = groupname
         self.window.clear()
+
+        self.topmore_btn.draw()
+        self.botmore_btn.draw()
 
         try:
 
@@ -875,7 +872,6 @@ class Vectors:
             traceback.print_exc(file=sys.stderr)
             raise
 
-
         # draw the vectors in the client with this device and group
         #line = 1
         #for name, vector in self.device.items():
@@ -884,3 +880,22 @@ class Vectors:
             ## so draw the vector widget
             #self.window.addstr(0, line, name)
             #line += 2
+
+
+    async def input(self):
+        "Get key pressed while this object has focus"
+        self.stdscr.nodelay(True)
+        while not self.consoleclient.stop:
+            await asyncio.sleep(0)
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+
+            if key in (32, 9, 261, 338, 258):
+                # go to the next
+                return key
+            elif key in (353, 260, 339, 259):
+                # go to the previous
+                return key
+
+        return -1
