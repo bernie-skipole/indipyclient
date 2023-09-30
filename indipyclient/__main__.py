@@ -6,7 +6,7 @@ python3 -m indipyclient
 """
 
 
-import argparse, asyncio, collections, contextlib
+import sys, argparse, asyncio, collections, contextlib
 
 
 from . import version
@@ -14,7 +14,7 @@ from . import version
 from .console.consoleclient import ConsoleClient, ConsoleControl
 
 
-async def main(client, control):
+async def runclient(client, control):
     try:
         t1 = asyncio.create_task(client.asyncrun())
         t2 = asyncio.create_task(control.asyncrun())
@@ -27,8 +27,8 @@ async def main(client, control):
         await asyncio.sleep(0)
 
 
-if __name__ == "__main__":
-
+def main():
+    """The main routine."""
 
     parser = argparse.ArgumentParser(usage="python3 -m indipyclient [options]",
         description="INDI client communicating to indi service.")
@@ -45,4 +45,13 @@ if __name__ == "__main__":
 
     with open('err.txt', 'w') as f:
         with contextlib.redirect_stderr(f):
-            asyncio.run(main(client, control))
+            asyncio.run(runclient(client, control))
+
+    return 0
+
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+
