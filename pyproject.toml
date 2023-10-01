@@ -1,0 +1,21 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "indipyclient"
+authors = [{name = "Bernard Czenkusz", email = "bernie@skipole.co.uk"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License", "Operating System :: POSIX :: Linux","Topic :: Scientific/Engineering :: Astronomy", "Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator"]
+version = "0.0.1"
+description="Pure python package, providing a console client and a set of classes which can be used to create scripts or clients to control remote instruments using the INDI protocol."
+readme = "README.md"
+requires-python = ">=3.10"
+keywords=['indi', 'client', 'astronomy', 'instrument']
+
+[project.urls]
+Documentation = "https://indipyclient.readthedocs.io"
+Source = "https://github.com/bernie-skipole/indipyclient"
+
+[project.scripts]
+indipyclient = "indipyclient.__main__:main"
