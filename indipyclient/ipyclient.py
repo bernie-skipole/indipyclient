@@ -124,8 +124,6 @@ class IPyClient(collections.UserDict):
         # If nothing sent or received after idle_timeout reached, then a getProperties is transmitted
         self.idle_timer = time.time()
         self.idle_timeout = 20
-        # this is populated with the running loop once it is available
-        self.loop = None
         # this is set to True, to shut down the client
         self._shutdown = False
         # and shutdown routine sets this to True to stop coroutines
@@ -570,7 +568,6 @@ class IPyClient(collections.UserDict):
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self._stop = False
-        self.loop = asyncio.get_running_loop()
         await asyncio.gather(self._comms(), self._rxhandler(), self._autosend_getProperties(), self._checkshutdown(), return_exceptions=True)
         self.stopped = True
 

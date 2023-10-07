@@ -189,6 +189,7 @@ class MessagesScreen:
         except asyncio.CancelledError:
             raise
         except Exception:
+            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 
@@ -592,6 +593,7 @@ class DevicesScreen:
         except asyncio.CancelledError:
             raise
         except Exception:
+            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 
@@ -620,15 +622,16 @@ class MainScreen:
         # and Devices Messages and Quit are the bottom buttons
         self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")
 
-        # groups button window (1 line, full row, starting at 4,0)
-        self.groupbuttonswin = self.stdscr.subwin(1, self.maxcols, 4, 0)
-
         # groups list
-        self.groups = []
-        self.group_btns = widgets.GroupButtons(self.stdscr, self.groupbuttonswin, self.consoleclient)
+        try:
+            self.groups = []
+            self.group_btns = GroupButtons(self.stdscr, self.consoleclient)
 
-        # window showing the vectors of the active group
-        self.vectors = Vectors(self.stdscr, self.consoleclient)
+            # window showing the vectors of the active group
+            self.vectors = Vectors(self.stdscr, self.consoleclient)
+        except Exception:
+            traceback.print_exc(file=sys.stderr)
+            raise
 
         # bottom buttons, [Devices] [Messages] [Quit]
 
@@ -689,9 +692,9 @@ class MainScreen:
         #  and refresh
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
-        self.groupbuttonswin.noutrefresh()
+        self.group_btns.noutrefresh()
 
-        self.vectors.refresh()
+        self.vectors.noutrefresh()
 
         self.buttwin.noutrefresh()
 
@@ -741,6 +744,7 @@ class MainScreen:
                         curses.doupdate()
                     # return the focus value of whichever item was in focus when enter was pressed
                     return self.focus
+                print(key, file=sys.stderr)
                 if chr(key) == "q" or chr(key) == "Q":
                     widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
                     self.messwin.noutrefresh()
@@ -769,8 +773,7 @@ class MainScreen:
                     # key not recognised
                     continue
                 if self.focus == "Vectors":
-                    # still to do
-                    pass
+                    self.vectors.focus = False
                 elif self.focus == "Groups":
                     self.group_btns.focus = False
                 elif self.focus == "Devices":
@@ -780,8 +783,7 @@ class MainScreen:
                 elif self.focus == "Quit":
                     self.quit_btn.focus = False
                 if newfocus == "Vectors":
-                    # still to do
-                    pass
+                    self.vectors.focus = True
                 elif newfocus == "Groups":
                     self.group_btns.focus = True
                 elif newfocus == "Devices":
@@ -794,18 +796,312 @@ class MainScreen:
 
                 # so buttons have been set with the appropriate focus
                 # now draw them
+                self.vectors.draw(self.devicename, self.group_btns.active)
                 self.group_btns.draw()
                 self.devices_btn.draw()
                 self.messages_btn.draw()
                 self.quit_btn.draw()
 
-                self.groupbuttonswin.noutrefresh()
+                self.vectors.noutrefresh()
+                self.group_btns.noutrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
         except asyncio.CancelledError:
             raise
         except Exception:
+            traceback.print_exc(file=sys.stderr)
             return "Quit"
+
+
+
+class GroupButtons:
+
+    def __init__(self, stdscr, consoleclient):
+        self.stdscr = stdscr
+
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+
+        # window (1 line, full row, starting at 4,0)
+        self.window = self.stdscr.subwin(1, self.maxcols, 4, 0)
+        self.consoleclient = consoleclient
+        self.groups = []          # list of group names
+        self.groupcols = {}       # dictionary of groupname to column number
+        # active is the name of the group currently being shown
+        self.active = None
+        # this is True, if this widget is in focus
+        self._focus = False
+        # this is set to the group in focus, if any
+        self.groupfocus = None
+
+        # the horizontal display of group buttons may not hold all the buttons
+        # give the index of self.groups from and to
+        self.fromgroup = 0
+        self.togroup = 0
+        self.nextcol = 0
+        self.nextfocus = False
+        self.prevfocus = False
+
+
+    def noutrefresh(self):
+        self.window.noutrefresh()
+
+
+    @property
+    def focus(self):
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if self._focus == value:
+            return
+        self._focus = value
+        if value:
+            self.groupfocus = self.groups[self.fromgroup]
+        else:
+            self.groupfocus = None
+            self.nextfocus = False
+            self.prevfocus = False
+
+
+    def set_groups(self, groups):
+        self.groups = groups.copy()
+        self.groupcols.clear()
+        if self.groupfocus:
+            if self.groupfocus not in self.groups:
+                self.groupfocus = None
+                self.nextfocus = False
+                self.prevfocus = False
+        if self.active is None:
+            self.active = self.groups[0]
+        elif self.active not in self.groups:
+            self.active = self.groups[0]
+
+
+    def draw(self):
+        "Draw the line of groups"
+        self.groupcols.clear()
+        if self.active is None:
+            self.active = self.groups[0]
+        # clear the line
+        self.window.clear()
+
+        # draw 'Prev' button if necessary
+        if self.fromgroup:
+            self.drawprev(self.prevfocus)
+            col = 11
+        else:
+            col = 2
+
+        for indx, group in enumerate(self.groups):
+            if indx < self.fromgroup:
+                continue
+            self.groupcols[group] = col
+
+            # is this the last?
+            if group == self.groups[-1]:
+                self.togroup = indx
+                if self.nextfocus:
+                    self.nextfocus = False
+                    self.groupfocus = group
+
+            col = self.drawgroup(group)
+
+            # If not the last, check if another can be drawn
+            # otherwise print the 'Next' button
+            if (group != self.groups[-1]) and (col+20 >= curses.COLS):
+                self.nextcol = col
+                self.drawnext(self.nextfocus)
+                self.togroup = indx
+                break
+
+
+    def drawgroup(self, group):
+        # draw the group, return col position of next group to be shown
+        grouptoshow = "["+group+"]"
+        col = self.groupcols[group]
+        if group == self.active:
+            if self.groupfocus == group:
+                # group in focus
+                self.window.addstr(0, col, grouptoshow, curses.A_REVERSE)
+            else:
+                # active item
+                self.window.addstr(0, col, grouptoshow, curses.A_BOLD)
+        else:
+            if self.groupfocus == group:
+                # group in focus
+                self.window.addstr(0, col, grouptoshow, curses.A_REVERSE)
+            else:
+                self.window.addstr(0, col, grouptoshow)
+        col += (len(grouptoshow) + 2)
+        return col
+
+
+    def drawprev(self, focus=False):
+        if focus:
+            self.window.addstr(0, 2, "<<Prev]", curses.A_REVERSE)
+            # set focus on prev button
+            self.prevfocus = True
+            # remove focus from group
+            self.groupfocus = None
+        else:
+            self.window.addstr(0, 2, "<<Prev]")
+            self.prevfocus = False
+
+
+    def drawnext(self, focus=False):
+        if focus:
+            # remove focus from group
+            self.groupfocus = None
+            self.drawgroup(self.groups[self.togroup])
+            # set focus on next button
+            self.nextfocus = True
+            self.window.addstr(0, self.nextcol, "[Next>>", curses.A_REVERSE)
+        else:
+            self.window.addstr(0, self.nextcol, "[Next>>")
+            self.nextfocus = False
+
+
+    async def input(self):
+        "Get group button pressed, or next or previous"
+        self.stdscr.nodelay(True)
+        while not self.consoleclient.stop:
+            await asyncio.sleep(0)
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if key == 10:
+
+                if self.prevfocus:
+                    # Enter has been pressed when the 'Prev' button has focus
+                    self.fromgroup = self.fromgroup - 1
+                    if not self.fromgroup:
+                        # self.fromgroup is zero, so no prev button
+                        self.prevfocus = False
+                        self.groupfocus = self.groups[0]
+                    self.draw()
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    continue
+
+                if self.nextfocus:
+                    # Enter has been pressed when the 'Next' button has
+                    # focus
+                    if self.fromgroup:
+                        self.fromgroup = self.fromgroup + 1
+                    else:
+                        self.fromgroup = 2
+                    self.draw()
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    continue
+
+                # set this groupfocus button as the active button,
+                # and return its value
+                if self.active == self.groupfocus:
+                    # no change
+                    continue
+                # set a change of the active group
+                self.active = self.groupfocus
+                return 10
+            if chr(key) in ("q", "Q", "m", "M", "d", "D"):
+                return key
+            if key in (32, 9, 261):   # space, tab, right arrow
+                if self.prevfocus:
+                    # remove focus from prev button
+                    self.drawprev()
+                    # set focus on from button
+                    self.groupfocus = self.groups[self.fromgroup]
+                    self.drawgroup(self.groupfocus)
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    continue
+                if self.nextfocus:
+                    return 258   # treat as 258 down arrow key
+                # go to the next group
+                if self.groupfocus == self.groups[-1]:
+                    # At the last group, cannot go further
+                    return key
+                indx = self.groups.index(self.groupfocus)
+                if self.togroup and (indx+1 > self.togroup):
+                    # next choice is beyond togroup
+                    if key == 261:   # right arrow
+                        if self.fromgroup:
+                            self.fromgroup = self.fromgroup + 1
+                        else:
+                            self.fromgroup = 2
+                        # get the new group in focus
+                        self.groupfocus = self.groups[indx+1]
+                        self.draw()
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        continue
+                    else:
+                        # so highlight 'next' key
+                        self.drawnext(focus=True)
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        continue
+                # get the new group in focus
+                self.groupfocus = self.groups[indx+1]
+                self.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                continue
+            if key in (353, 260):   # 353 shift tab, 260 left arrow
+                if self.prevfocus:
+                    # remove focus from the button
+                    self.drawprev(focus=False)
+                    return 258   # treat as 258 down arrow key
+                if self.nextfocus:
+                    # group to the left of the 'Next' button, now has focus
+                    self.groupfocus = self.groups[self.togroup]
+                    self.drawgroup(self.groups[self.togroup])
+                    # remove focus from next button
+                    self.drawnext(focus=False)
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    continue
+                # go to the previous group
+                indx = self.groups.index(self.groupfocus)
+                if not indx:
+                    # indx zero means first group
+                    return key
+                if indx == self.fromgroup:
+                    if key == 260:  # left arrow, moves to previous group
+                        self.fromgroup = self.fromgroup - 1
+                        if not self.fromgroup:
+                            # self.fromgroup is zero, so no prev button
+                            self.prevfocus = False
+                            self.groupfocus = self.groups[0]
+                        else:
+                            # get the new group in focus
+                            self.groupfocus = self.groups[indx-1]
+                        self.draw()
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        continue
+                    else:
+                        # the button to the left must be the 'Prev' button
+                        # remove focus from current button
+                        currentgroup = self.groupfocus
+                        self.groupfocus = None
+                        self.drawgroup(currentgroup)
+                        # set Prev button as the focus
+                        self.drawprev(focus=True)
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        continue
+
+                self.groupfocus = self.groups[indx-1]
+                self.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                continue
+            if key in (338, 339, 258, 259):          # 338 page down, 339 page up, 258 down arrow, 259 up arrow
+                return key
+        return -1
+
+
 
 
 class Vectors:
@@ -821,18 +1117,43 @@ class Vectors:
         self.devicename = None
         self.device = None
 
+        # this is True, if this widget is in focus
+        self._focus = False
+
+        # this is set to the vector in focus, if any
+        self.vectorfocus = None
+
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.topmore_btn.show = True
+        self.topfocus = False
 
         # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
         self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
         self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.botmore_btn.show = True
+        self.botfocus = False
+
+    @property
+    def focus(self):
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if self._focus == value:
+            return
+        self._focus = value
+        if value:
+            self.vectorfocus = None # to be set to the first visible vector
+        else:
+            self.vectorfocus = None
+            self.topfocus = False
+            self.botfocus = False
 
 
-    def refresh(self):
+
+    def noutrefresh(self):
 
         # The refresh() and noutrefresh() methods of a pad require 6 arguments
         # to specify the part of the pad to be displayed and the location on
@@ -863,23 +1184,25 @@ class Vectors:
 
         try:
 
-            for line in range(50):
-                testchr = chr(97 + line)
-                teststr = testchr*(self.maxcols-1)
-                self.window.addstr(line, 0, teststr)
+            #for line in range(50):
+            #    testchr = chr(97 + line)
+            #    teststr = testchr*(self.maxcols-1)
+            #    self.window.addstr(line, 0, teststr)
+
+
+
+            # draw the vectors in the client with this device and group
+            line = 1
+            for name, vector in self.device.items():
+                if vector.group != self.groupname:
+                    continue
+                # so draw the vector widget
+                self.window.addstr(0, line, name)
+                line += 2
 
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
-
-        # draw the vectors in the client with this device and group
-        #line = 1
-        #for name, vector in self.device.items():
-            #if vector.group != self.groupname:
-            #    continue
-            ## so draw the vector widget
-            #self.window.addstr(0, line, name)
-            #line += 2
 
 
     async def input(self):
