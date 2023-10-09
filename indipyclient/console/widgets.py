@@ -9,8 +9,25 @@ class Button:
         self.btntext = btntext
         self.row = row
         self.col = col
-        self.focus = False
+        self._focus = False
         self.show = True
+
+
+    @property
+    def focus(self):
+        if not self._focus:
+            return False
+        if not self.show:
+            self._focus = False
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if not self.show:
+            self._focus = False
+            return
+        self._focus = value
+
 
     def draw(self):
         if not self.show:

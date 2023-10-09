@@ -1120,20 +1120,19 @@ class Vectors:
         # this is True, if this widget is in focus
         self._focus = False
 
-        # this is set to the vector in focus, if any
-        self.vectorfocus = None
-
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
-        self.topmore_btn.show = True
-        self.topfocus = False
+        self.topmore_btn.show = bool(self.padtop)
+        self.topmore_btn.focus = False
 
         # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
         self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
         self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.botmore_btn.show = True
-        self.botfocus = False
+        self.botmore_btn.focus = False
+
+        self.displaylines = self.maxrows - 5 - 8
 
     @property
     def focus(self):
@@ -1144,12 +1143,24 @@ class Vectors:
         if self._focus == value:
             return
         self._focus = value
-        if value:
-            self.vectorfocus = None # to be set to the first visible vector
-        else:
-            self.vectorfocus = None
-            self.topfocus = False
-            self.botfocus = False
+        if not value:
+            self.topmore_btn.focus = False
+            self.botmore_btn.focus = False
+        elif self.topmore_btn.show:
+            self.topmore_btn.focus = True
+            self.botmore_btn.focus = False
+        elif self.botmore_btn.show:
+            self.topmore_btn.focus = False
+            self.botmore_btn.focus = True
+
+        self.botmore_btn.draw()
+        self.botmorewin.noutrefresh()
+        self.topmore_btn.draw()
+        self.topmorewin.noutrefresh()
+
+
+        # else:
+        # set a vector to have focus
 
 
 
@@ -1162,7 +1173,7 @@ class Vectors:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
-        coords = (self.padtop, 0, 8, 1, self.maxrows - 5, self.maxcols-2)
+        coords = (self.padtop, 0, 8, 1, self.displaylines + 8, self.maxcols-2)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
         self.topmorewin.noutrefresh()
@@ -1179,30 +1190,45 @@ class Vectors:
         self.groupname = groupname
         self.window.clear()
 
+        self.topmore_btn.show = bool(self.padtop)
         self.topmore_btn.draw()
-        self.botmore_btn.draw()
+
 
         try:
 
-            #for line in range(50):
-            #    testchr = chr(97 + line)
-            #    teststr = testchr*(self.maxcols-1)
-            #    self.window.addstr(line, 0, teststr)
-
-
-
             # draw the vectors in the client with this device and group
-            line = 1
+            line = 0
             for name, vector in self.device.items():
                 if vector.group != self.groupname:
                     continue
                 # so draw the vector widget
-                self.window.addstr(0, line, name)
+                self.window.addstr(line, 0, name)
                 line += 2
+
+            # line-2 is the max lines being displayed
+            if self.padtop + self.displaylines < line - 2:
+                self.botmore_btn.show = True
+            else:
+                self.botmore_btn.show = False
+            self.botmore_btn.draw()
 
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
+
+    def upline(self):
+        self.padtop -= 1
+        self.topmore_btn.show = bool(self.padtop)
+        self.topmore_btn.draw()
+        self.noutrefresh()
+
+
+    def downline(self):
+        self.padtop += 1
+        self.botmore_btn.show = True ############## some way of finding if bottom is reached
+        self.botmore_btn.draw()
+        self.noutrefresh()
+
 
 
     async def input(self):
@@ -1214,11 +1240,46 @@ class Vectors:
             if key == -1:
                 continue
 
+            if key == 10:
+
+                if self.topmore_btn.focus:
+                    self.upline()
+                elif self.botmore_btn.focus:
+                    self.downline()
+                continue
+
+
             if key in (32, 9, 261, 338, 258):
                 # go to the next
-                return key
+                if self.botmore_btn.focus:
+                    self.focus = False
+                    return key
+                elif self.topmore_btn.focus:
+                    if not self.botmore_btn.show:
+                        self.focus = False
+                        return key
+                    self.topmore_btn.focus = False
+                    self.botmore_btn.focus = True
+                self.botmore_btn.draw()
+                self.botmorewin.noutrefresh()
+                self.topmore_btn.draw()
+                self.topmorewin.noutrefresh()
+
             elif key in (353, 260, 339, 259):
                 # go to the previous
-                return key
+                if self.topmore_btn.focus:
+                    self.focus = False
+                    return key
+                elif self.botmore_btn.focus:
+                    if not self.topmore_btn.show:
+                        self.focus = False
+                        return key
+                    self.topmore_btn.focus = True
+                    self.botmore_btn.focus = False
+                self.botmore_btn.draw()
+                self.botmorewin.noutrefresh()
+                self.topmore_btn.draw()
+                self.topmorewin.noutrefresh()
+
 
         return -1
