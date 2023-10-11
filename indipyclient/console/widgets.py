@@ -10,27 +10,35 @@ class Button:
         self.row = row
         self.col = col
         self._focus = False
-        self.show = True
+        self._show = True
+
+
+    @property
+    def show(self):
+        return self._show
+
+    @show.setter
+    def show(self, value):
+        # setting show False, also sets focus False
+        if not value:
+            self._focus = False
+        self._show = value
 
 
     @property
     def focus(self):
-        if not self._focus:
-            return False
-        if not self.show:
-            self._focus = False
         return self._focus
 
     @focus.setter
     def focus(self, value):
-        if not self.show:
-            self._focus = False
+        if not self._show:
+            # focus can only be set if show is True
             return
         self._focus = value
 
 
     def draw(self):
-        if not self.show:
+        if not self._show:
             self.window.addstr( self.row, self.col, " "*len(self.btntext) + "  ")
             return
         if self._focus:
