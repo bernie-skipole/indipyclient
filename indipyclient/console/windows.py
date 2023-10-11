@@ -707,8 +707,6 @@ class MainScreen:
         pass
 
 
-# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-
     async def inputs(self):
         "Gets inputs from the screen"
 
@@ -744,7 +742,6 @@ class MainScreen:
                         curses.doupdate()
                     # return the focus value of whichever item was in focus when enter was pressed
                     return self.focus
-                print(key, file=sys.stderr)
                 if chr(key) == "q" or chr(key) == "Q":
                     widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
                     self.messwin.noutrefresh()
@@ -773,7 +770,7 @@ class MainScreen:
                     # key not recognised
                     continue
                 if self.focus == "Vectors":
-                    self.vectors.focus = False
+                    self.vectors.set_focus(False)
                 elif self.focus == "Groups":
                     self.group_btns.focus = False
                 elif self.focus == "Devices":
@@ -783,7 +780,10 @@ class MainScreen:
                 elif self.focus == "Quit":
                     self.quit_btn.focus = False
                 if newfocus == "Vectors":
-                    self.vectors.focus = True
+                    if self.focus == "Groups":
+                        self.vectors.set_focus(True, True)
+                    else:
+                        self.vectors.set_focus(True, False)
                 elif newfocus == "Groups":
                     self.group_btns.focus = True
                 elif newfocus == "Devices":
@@ -1134,28 +1134,30 @@ class Vectors:
 
         self.displaylines = self.maxrows - 5 - 8
 
-    @property
-    def focus(self):
+
+    def get_focus(self):
         return self._focus
 
-    @focus.setter
-    def focus(self, value):
+
+    def set_focus(self, value, topfocus=True):
+        """If topfocus and value is True, top of window gets focus
+           elif topfocus is False, bottom of window gets focus"""
         if self._focus == value:
             return
         self._focus = value
         if not value:
             self.topmore_btn.focus = False
             self.botmore_btn.focus = False
-        elif self.topmore_btn.show:
+        elif self.topmore_btn.show and topfocus:
             self.topmore_btn.focus = True
             self.botmore_btn.focus = False
-        elif self.botmore_btn.show:
+        elif self.botmore_btn.show and (not topfocus):
             self.topmore_btn.focus = False
             self.botmore_btn.focus = True
 
         self.botmore_btn.draw()
-        self.botmorewin.noutrefresh()
         self.topmore_btn.draw()
+        self.botmorewin.noutrefresh()
         self.topmorewin.noutrefresh()
 
 
@@ -1173,7 +1175,7 @@ class Vectors:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
-        coords = (self.padtop, 0, 8, 1, self.displaylines + 8, self.maxcols-2)
+        coords = (self.padtop*2, 0, 8, 1, self.displaylines + 8, self.maxcols-2)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
         self.topmorewin.noutrefresh()
@@ -1192,7 +1194,6 @@ class Vectors:
 
         self.topmore_btn.show = bool(self.padtop)
         self.topmore_btn.draw()
-
 
         try:
 
@@ -1217,14 +1218,23 @@ class Vectors:
             raise
 
     def upline(self):
+        if not self.padtop:
+            # already at top
+            return
         self.padtop -= 1
         self.topmore_btn.show = bool(self.padtop)
         self.topmore_btn.draw()
+        if not self.padtop:
+             # move focus to bottom button
+             self.botmore_btn.focus = True
+             self.botmore_btn.draw()
         self.noutrefresh()
 
 
     def downline(self):
         self.padtop += 1
+        self.topmore_btn.show = True
+        self.topmore_btn.draw()
         self.botmore_btn.show = True ############## some way of finding if bottom is reached
         self.botmore_btn.draw()
         self.noutrefresh()
@@ -1241,7 +1251,6 @@ class Vectors:
                 continue
 
             if key == 10:
-
                 if self.topmore_btn.focus:
                     self.upline()
                 elif self.botmore_btn.focus:
@@ -1249,37 +1258,41 @@ class Vectors:
                 continue
 
 
+# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+
+
             if key in (32, 9, 261, 338, 258):
                 # go to the next
                 if self.botmore_btn.focus:
-                    self.focus = False
+                    self.set_focus(False)
                     return key
                 elif self.topmore_btn.focus:
                     if not self.botmore_btn.show:
-                        self.focus = False
+                        self.set_focus(False)
                         return key
                     self.topmore_btn.focus = False
                     self.botmore_btn.focus = True
-                self.botmore_btn.draw()
-                self.botmorewin.noutrefresh()
                 self.topmore_btn.draw()
+                self.botmore_btn.draw()
                 self.topmorewin.noutrefresh()
+                self.botmorewin.noutrefresh()
 
             elif key in (353, 260, 339, 259):
                 # go to the previous
                 if self.topmore_btn.focus:
-                    self.focus = False
+                    self.topmore_btn.focus = False
+                    self.set_focus(False)
                     return key
                 elif self.botmore_btn.focus:
                     if not self.topmore_btn.show:
-                        self.focus = False
+                        self.set_focus(False)
                         return key
                     self.topmore_btn.focus = True
                     self.botmore_btn.focus = False
-                self.botmore_btn.draw()
-                self.botmorewin.noutrefresh()
                 self.topmore_btn.draw()
+                self.botmore_btn.draw()
                 self.topmorewin.noutrefresh()
+                self.botmorewin.noutrefresh()
 
 
         return -1

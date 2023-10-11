@@ -31,8 +31,9 @@ class Button:
 
     def draw(self):
         if not self.show:
+            self.window.addstr( self.row, self.col, " "*len(self.btntext) + "  ")
             return
-        if self.focus:
+        if self._focus:
             self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_REVERSE)
         else:
             self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
