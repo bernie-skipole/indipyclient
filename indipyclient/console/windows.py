@@ -628,7 +628,7 @@ class MainScreen:
             self.group_btns = GroupButtons(self.stdscr, self.consoleclient)
 
             # window showing the vectors of the active group
-            self.vectors = Vectors(self.stdscr, self.consoleclient)
+            self.vectors = VectorListWin(self.stdscr, self.consoleclient)
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -1104,7 +1104,9 @@ class GroupButtons:
 
 
 
-class Vectors:
+class VectorListWin:
+
+    "Used to display a list of vectors"
 
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
@@ -1125,7 +1127,7 @@ class Vectors:
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.topmore_btn.show = True
         self.topmore_btn.focus = True
- 
+
         # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
         self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
         self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
@@ -1133,6 +1135,9 @@ class Vectors:
         self.botmore_btn.focus = False
 
         self.displaylines = self.maxrows - 5 - 8
+
+        # dictionary of vector names to vector list objects
+        self.vectors = {}
 
 
     @property
@@ -1198,15 +1203,40 @@ class Vectors:
         #self.topmore_btn.show = bool(self.padtop)
         self.topmore_btn.draw()
 
+        self.vectors.clear()
+
         try:
 
             # draw the vectors in the client with this device and group
-            line = 0
+
+            vectordisplays = {}
             for name, vector in self.device.items():
                 if vector.group != self.groupname:
                     continue
-                # so draw the vector widget
-                self.window.addstr(line, 0, name)
+
+                # get name, label state to display
+                nm = name[:17] + "..." if len(name) > 20 else name
+                lb = vector.label[:27] + "..." if len(vector.label) > 30 else vector.label
+
+                labelbtn = widgets.Button(self.window, lb, 0, 30)  # the label as a button
+
+                vectordisplays[name] = [nm, labelbtn, vector]
+
+            self.vectors = dict(sorted(vectordisplays.items()))
+
+            # so draw the vector widget, name, label, state
+
+            line = 0
+
+            for display in self.vectors.values():
+                self.window.addstr(line, 1, display[0])  # the shortenned name
+
+                # the label button
+                labelbtn = display[1]
+                labelbtn.row = line
+                labelbtn.draw()
+
+                self.window.addstr(line, 70, display[2].state)
                 line += 2
 
             # line-2 is the max lines being displayed
