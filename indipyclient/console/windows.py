@@ -1214,20 +1214,20 @@ class VectorListWin:
 
             self.vectors = sorted(vectorlist, key=lambda x: x.name)
 
-            # so draw the vector widget, name, label, state
+            # so draw the vector widget, name, label, state, with names as buttons
 
             self.vector_btns.clear()
 
             line = 0
 
             for v in self.vectors:
+                # shorten the name and set it as a button
                 nm = v.name[:17] + "..." if len(v.name) > 20 else v.name
-                self.window.addstr(line, 1, nm)  # the shortenned name
+                self.vector_btns[v.name] = widgets.Button(self.window, nm, line, 1)  # the name as a button
+                self.vector_btns[v.name].draw()
 
                 lb = v.label[:27] + "..." if len(v.label) > 30 else v.label
-                labelbtn = widgets.Button(self.window, lb, line, 30)  # the label as a button
-                self.vector_btns[v.name] = labelbtn
-                labelbtn.draw()
+                self.window.addstr(line, 30, lb)  # the shortenned label
 
                 self.window.addstr(line, 70, v.state)
                 line += 2
