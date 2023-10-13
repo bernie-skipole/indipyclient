@@ -1114,7 +1114,7 @@ class VectorListWin:
         self.window = curses.newpad(50, self.maxcols)
         self.consoleclient = consoleclient
         self.client = consoleclient.client
-        self.padtop = 0
+        self.padtop = 0        # vector index number of top vector being displayed
         self.groupname = None
         self.devicename = None
         self.device = None
@@ -1126,7 +1126,7 @@ class VectorListWin:
         self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.topmore_btn.show = True
-        self.topmore_btn.focus = True
+        self.topmore_btn.focus = False
 
         # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
         self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
@@ -1139,8 +1139,14 @@ class VectorListWin:
         # list of vectors associated with this group
         self.vectors = []
 
-        # dictionary of vector name : vector button
-        self.vector_btns = {}
+        # list of vector buttons
+        self.vector_btns = []
+
+
+    @property
+    def padbot(self):
+        "vector index number of bottom vector being displayed"
+        return self.padtop + self.displaylines//2
 
 
     @property
@@ -1172,8 +1178,11 @@ class VectorListWin:
         self.botmore_btn.focus = False
         self.topmore_btn.draw()
         self.botmore_btn.draw()
-        self.topmorewin.noutrefresh()
-        self.botmorewin.noutrefresh()
+        for btn in self.vector_btns:
+            if btn.focus:
+                btn.focus = False
+                btn.draw()
+        self.noutrefresh()
         curses.doupdate()
 
 
@@ -1187,8 +1196,11 @@ class VectorListWin:
         self.topmore_btn.focus = False
         self.topmore_btn.draw()
         self.botmore_btn.draw()
-        self.topmorewin.noutrefresh()
-        self.botmorewin.noutrefresh()
+        for btn in self.vector_btns:
+            if btn.focus:
+                btn.focus = False
+                btn.draw()
+        self.noutrefresh()
         curses.doupdate()
 
 
@@ -1216,15 +1228,15 @@ class VectorListWin:
 
             # so draw the vector widget, name, label, state, with names as buttons
 
-            self.vector_btns.clear()
+            self.vector_btns = []
 
             line = 0
 
             for v in self.vectors:
                 # shorten the name and set it as a button
                 nm = v.name[:17] + "..." if len(v.name) > 20 else v.name
-                self.vector_btns[v.name] = widgets.Button(self.window, nm, line, 1)  # the name as a button
-                self.vector_btns[v.name].draw()
+                self.vector_btns.append( widgets.Button(self.window, nm, line, 1) )  # the name as a button
+                self.vector_btns[-1].draw()
 
                 lb = v.label[:27] + "..." if len(v.label) > 30 else v.label
                 self.window.addstr(line, 30, lb)  # the shortenned label
@@ -1300,9 +1312,33 @@ class VectorListWin:
                 if self.botmore_btn.focus:
                     self.focus = False
                     return key
+                elif self.topmore_btn.focus:
+                    # set focus on top vector
+                    self.topmore_btn.focus = False
+                    btn = self.vector_btns[self.padtop]
+                    btn.focus = True
+                    self.topmore_btn.draw()
+                    btn.draw()
+                    self.noutrefresh()
+                    curses.doupdate()
                 else:
-                    # should set a vector here
-                    self.set_bot_focus()
+                    # find vector button in focus
+                    btnindex = 0
+                    for index, btn in enumerate(self.vector_btns):
+                        if btn.focus:
+                            btnindex = index
+                            break
+                    if btnindex >= self.padbot:
+                        self.set_bot_focus()
+                    else:
+                        self.vector_btns[btnindex].focus = False
+                        self.vector_btns[btnindex+1].focus = True
+                        self.vector_btns[btnindex].draw()
+                        self.vector_btns[btnindex+1].draw()
+                        self.noutrefresh()
+                        curses.doupdate()
+
+
             elif key in (353, 260, 339, 259):
                 # go to the previous
                 if self.topmore_btn.focus:
