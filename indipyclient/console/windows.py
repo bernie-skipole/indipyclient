@@ -1136,8 +1136,11 @@ class VectorListWin:
 
         self.displaylines = self.maxrows - 5 - 8
 
-        # dictionary of vector names to vector list objects
-        self.vectors = {}
+        # list of vectors associated with this group
+        self.vectors = []
+
+        # dictionary of vector name : vector button
+        self.vector_btns = {}
 
 
     @property
@@ -1203,40 +1206,30 @@ class VectorListWin:
         #self.topmore_btn.show = bool(self.padtop)
         self.topmore_btn.draw()
 
-        self.vectors.clear()
-
         try:
 
             # draw the vectors in the client with this device and group
 
-            vectordisplays = {}
-            for name, vector in self.device.items():
-                if vector.group != self.groupname:
-                    continue
+            vectorlist = [vector for vector in self.device.values() if vector.group == self.groupname]
 
-                # get name, label state to display
-                nm = name[:17] + "..." if len(name) > 20 else name
-                lb = vector.label[:27] + "..." if len(vector.label) > 30 else vector.label
-
-                labelbtn = widgets.Button(self.window, lb, 0, 30)  # the label as a button
-
-                vectordisplays[name] = [nm, labelbtn, vector]
-
-            self.vectors = dict(sorted(vectordisplays.items()))
+            self.vectors = sorted(vectorlist, key=lambda x: x.name)
 
             # so draw the vector widget, name, label, state
 
+            self.vector_btns.clear()
+
             line = 0
 
-            for display in self.vectors.values():
-                self.window.addstr(line, 1, display[0])  # the shortenned name
+            for v in self.vectors:
+                nm = v.name[:17] + "..." if len(v.name) > 20 else v.name
+                self.window.addstr(line, 1, nm)  # the shortenned name
 
-                # the label button
-                labelbtn = display[1]
-                labelbtn.row = line
+                lb = v.label[:27] + "..." if len(v.label) > 30 else v.label
+                labelbtn = widgets.Button(self.window, lb, line, 30)  # the label as a button
+                self.vector_btns[v.name] = labelbtn
                 labelbtn.draw()
 
-                self.window.addstr(line, 70, display[2].state)
+                self.window.addstr(line, 70, v.state)
                 line += 2
 
             # line-2 is the max lines being displayed
