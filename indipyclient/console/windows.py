@@ -1389,6 +1389,31 @@ class VectorListWin:
                     btn.draw()
                     self.noutrefresh()
                     curses.doupdate()
+                elif key in (338, 258):   # 338 page down, 258 down arrow
+                    # find vector button in focus
+                    btnindex = 0
+                    for index, btn in enumerate(self.vector_btns):
+                        if btn.focus:
+                            btnindex = index
+                            break
+                    if btnindex >= self.padbot:
+                        if not self.botmore_btn.show:
+                            # At the last vector
+                            self.focus = False
+                            return key
+                        else:
+                            self.vector_btns[btnindex].focus = False
+                            self.vector_btns[btnindex+1].focus = True
+                            self.vector_btns[btnindex].draw()
+                            self.vector_btns[btnindex+1].draw()
+                            self.downline()
+                    else:
+                        self.vector_btns[btnindex].focus = False
+                        self.vector_btns[btnindex+1].focus = True
+                        self.vector_btns[btnindex].draw()
+                        self.vector_btns[btnindex+1].draw()
+                        self.noutrefresh()
+                        curses.doupdate()
                 else:
                     # find vector button in focus
                     btnindex = 0
@@ -1426,6 +1451,30 @@ class VectorListWin:
                     btn.draw()
                     self.noutrefresh()
                     curses.doupdate()
+                elif key in (339, 259):   # 339 page up, 259 up arrow
+                    # find vector button in focus
+                    btnindex = 0
+                    for index, btn in enumerate(self.vector_btns):
+                        if btn.focus:
+                            btnindex = index
+                            break
+                    if not btnindex:
+                        # At the top vector
+                        self.focus = False
+                        return key
+                    if btnindex == self.padtop:
+                        self.vector_btns[btnindex].focus = False
+                        self.vector_btns[btnindex-1].focus = True
+                        self.vector_btns[btnindex].draw()
+                        self.vector_btns[btnindex-1].draw()
+                        self.upline()
+                    else:
+                        self.vector_btns[btnindex].focus = False
+                        self.vector_btns[btnindex-1].focus = True
+                        self.vector_btns[btnindex].draw()
+                        self.vector_btns[btnindex-1].draw()
+                        self.noutrefresh()
+                        curses.doupdate()
                 else:
                     # find vector button in focus
                     btnindex = 0
