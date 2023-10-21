@@ -7,7 +7,7 @@ from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message)
 
-from . import windows
+from . import windows, vector
 
 
 class ConsoleClient(IPyClient):
@@ -171,9 +171,25 @@ class ConsoleControl:
                         continue
                     if result == "Vectors":
                         # get device, vector and show VectorScreen
-                        #self.screen = windows.DevicesScreen(self.stdscr, self)
-                        #self.screen.show()
+                        self.screen = vector.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
+                        self.screen.show()
                         continue
+                if isinstance(self.screen, vector.VectorScreen):
+                    result = await self.screen.inputs()
+                    if result == "Quit":
+                        self._shutdown = True
+                        break
+                    if result == "Messages":
+                        self.screen = windows.MessagesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
+                    if result == "Devices":
+                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
+
+
+
         except asyncio.CancelledError:
             self._shutdown = True
             raise
