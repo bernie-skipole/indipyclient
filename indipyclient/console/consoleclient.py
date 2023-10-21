@@ -114,7 +114,7 @@ class ConsoleControl:
                 elif isinstance(self.screen, windows.DevicesScreen):
                     self.screen.update(event)
                     continue
-                elif isinstance(self.screen, windows.MainScreen):
+                elif isinstance(self.screen, windows.ChooseVectorScreen):
                     if event.devicename == self.screen.devicename:
                         # An event has occurred affecting this device
                         # vectors may need updating
@@ -153,10 +153,10 @@ class ConsoleControl:
                     devices = {devicename.lower():device for devicename, device in self.client.items()}
                     if result in devices:
                         devicename = devices[result].devicename
-                        self.screen = windows.MainScreen(self.stdscr, self, devicename)
+                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, devicename)
                         self.screen.show()
                         continue
-                if isinstance(self.screen, windows.MainScreen):
+                if isinstance(self.screen, windows.ChooseVectorScreen):
                     result = await self.screen.inputs()
                     if result == "Quit":
                         self._shutdown = True
@@ -168,6 +168,11 @@ class ConsoleControl:
                     if result == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
+                        continue
+                    if result == "Vectors":
+                        # get device, vector and show VectorScreen
+                        #self.screen = windows.DevicesScreen(self.stdscr, self)
+                        #self.screen.show()
                         continue
         except asyncio.CancelledError:
             self._shutdown = True

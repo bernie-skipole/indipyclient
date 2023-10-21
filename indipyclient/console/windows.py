@@ -597,7 +597,7 @@ class DevicesScreen:
             return "Quit"
 
 
-class MainScreen:
+class ChooseVectorScreen:
 
     def __init__(self, stdscr, consoleclient, devicename):
         self.stdscr = stdscr
@@ -607,6 +607,8 @@ class MainScreen:
 
         self.consoleclient = consoleclient
         self.devicename = devicename
+        # start with vectorname None, a vector to view will be chosen by this screen
+        self.vectorname = None
         self.client = consoleclient.client
 
         # title window  (1 line, full row, starting at 0,0)
@@ -728,6 +730,10 @@ class MainScreen:
                 elif self.focus == "Vectors":
                     # focus has been given to Vectors which monitors its own inputs
                     key = await self.vectors.input()
+                    if key == 10:
+                        # a vector has been chosen, get the vectorname chosen
+                        self.vectorname = self.vectors.vectorname
+                        return "Vectors"
                 else:
                     key = self.stdscr.getch()
 
@@ -996,7 +1002,7 @@ class GroupButtons:
                     continue
 
                 # set this groupfocus button as the active button,
-                # and return its value
+                # and return the key
                 if self.active == self.groupfocus:
                     # no change
                     continue
@@ -1142,6 +1148,9 @@ class VectorListWin:
         # list of vector buttons
         self.vector_btns = []
 
+        # start with vectorname None, a vector to view will be chosen by this screen
+        self.vectorname = None
+
 
     @property
     def padbot(self):
@@ -1254,6 +1263,7 @@ class VectorListWin:
         if (groupname == self.groupname) and (devicename == self.devicename):
             # no change
             return
+        self.padtop = 0
         self.devicename = devicename
         self.device = self.client[devicename]
         self.groupname = groupname
@@ -1366,15 +1376,25 @@ class VectorListWin:
             key = self.stdscr.getch()
             if key == -1:
                 continue
-
-# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-
-
             if key == 10:
                 if self.topmore_btn.focus:
                     self.upline()
                 elif self.botmore_btn.focus:
                     self.downline()
+                else:
+                    # find vector button in focus
+                    btnindex = 0
+                    for index, btn in enumerate(self.vector_btns):
+                        if btn.focus:
+                            btnindex = index
+                            break
+                    else:
+                        # no vector in focus
+                        continue
+                    self.vectorname = self.vectors[btnindex].name
+                    return 10
+            if chr(key) in ("q", "Q", "m", "M", "d", "D"):
+                return key
             elif key in (32, 9, 261, 338, 258):
                 # go to the next
                 if self.botmore_btn.focus:
