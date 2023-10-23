@@ -258,7 +258,7 @@ class DevicesScreen:
         # draw the message
         if self.client.messages:
             self.messwin.clear()
-            widgets.drawmessage(self.messwin, self.client.messages[0])
+            widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
 
         # draw status
         if not len(self.client):
@@ -425,7 +425,7 @@ class DevicesScreen:
     def update(self, event):
         "Only update if global message has changed, or a new device added or deleted"
         if isinstance(event, events.Message) and event.devicename is None:
-            widgets.drawmessage(self.messwin, self.client.messages[0])
+            widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
             self.messwin.noutrefresh()
             curses.doupdate()
             return
@@ -469,7 +469,7 @@ class DevicesScreen:
                 btnlist = list(self.devices.keys())
                 if key == 10:
                     if self.quit_btn.focus:
-                        widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
+                        widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
                         self.messwin.noutrefresh()
                         curses.doupdate()
                         return "Quit"
@@ -502,7 +502,7 @@ class DevicesScreen:
                     return self.focus
 
                 if chr(key) == "q" or chr(key) == "Q":
-                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
                     self.messwin.noutrefresh()
                     curses.doupdate()
                     return "Quit"
@@ -659,7 +659,7 @@ class ChooseVectorScreen:
         "Displays device"
 
         if self.devicename not in self.client:
-            widgets.drawmessage(self.messwin, f"{self.devicename} not found!")
+            widgets.drawmessage(self.messwin, f"{self.devicename} not found!", maxcols=self.maxcols)
             self.devices_btn.draw()
             self.messages_btn.draw()
             self.quit_btn.draw()
@@ -673,7 +673,7 @@ class ChooseVectorScreen:
 
         self.device = self.client[self.devicename]
         if self.device.messages:
-            widgets.drawmessage(self.messwin, self.device.messages[0])
+            widgets.drawmessage(self.messwin, self.device.messages[0], maxcols=self.maxcols)
 
 
         # get the groups this device contains, use a set to avoid duplicates
@@ -743,13 +743,13 @@ class ChooseVectorScreen:
                 if key == 10:
                     # enter key pressed
                     if self.focus == "Quit":
-                        widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
+                        widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
                         self.messwin.noutrefresh()
                         curses.doupdate()
                     # return the focus value of whichever item was in focus when enter was pressed
                     return self.focus
                 if chr(key) == "q" or chr(key) == "Q":
-                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True)
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
                     self.messwin.noutrefresh()
                     curses.doupdate()
                     return "Quit"

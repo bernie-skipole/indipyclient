@@ -13,6 +13,28 @@ from . import widgets
 
 from .. import events
 
+#<!ELEMENT defNumberVector (defNumber+) >
+#<!ATTLIST defNumberVector
+#device %nameValue; #REQUIRED
+#name of Device
+#name %nameValue; #REQUIRED
+#name of Property
+#label %labelValue; #IMPLIED
+#GUI label, use name by default
+#group %groupTag; #IMPLIED
+#Property group membership, blank by default
+#state %propertyState; #REQUIRED
+#current state of Property
+#perm %propertyPerm; #REQUIRED
+#ostensible Client controlability
+#timeout %numberValue; #IMPLIED
+#worse-case time to affect, 0 default, N/A for ro
+#timestamp %timeValue #IMPLIED
+#moment when these data were valid
+#message %textValue #IMPLIED
+#commentary
+
+
 
 class VectorScreen:
 
@@ -26,11 +48,13 @@ class VectorScreen:
         self.vectorname = vectorname
 
         self.device = self.client[self.devicename]
+        self.vector = self.device[self.vectorname]
 
-        # title window  (2 lines, full row, starting at 0,0)
-        self.titlewin = self.stdscr.subwin(2, self.maxcols, 0, 0)
-        self.titlewin.addstr(0, 0, "Device: " + self.devicename, curses.A_BOLD)
-        self.titlewin.addstr(1, 0, "Vector: " + self.vectorname, curses.A_BOLD)
+        # title window  (3 lines, full row, starting at 0,0)
+        self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
+        title = self.devicename + " : " + self.vectorname + " : " + self.vector.group
+        self.titlewin.addstr(0, 1, title)
+        self.titlewin.addstr(1, 1, self.vector.label, curses.A_BOLD)
 
         # messages window (1 line, full row, starting at 3,0)
         self.messwin = self.stdscr.subwin(1, self.maxcols, 3, 0)
@@ -52,8 +76,9 @@ class VectorScreen:
     def show(self):
         "Displays the window"
 
-        if self.device.messages:
-            widgets.drawmessage(self.messwin, self.device.messages[0])
+        if self.vector.message:
+            widgets.drawmessage(self.messwin, self.vector.message, maxcols=self.maxcols)
+
 
         # draw the bottom buttons
         self.vectors_btn.draw()

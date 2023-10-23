@@ -48,17 +48,19 @@ class Button:
 
 
 
-def drawmessage(window, message, bold = False):
+def drawmessage(window, message, bold = False, maxcols=None):
     """Shows message, message is either a text string, or a tuple of (timestamp, message text)"""
+    if not maxcols:
+        maxcols = curses.COLS
     if isinstance(message, str):
         rxmessage = "    " + message
     else:
         rxmessage = "    " + message[0].isoformat(sep='T')[11:21] + "  " + message[1]
 
-    if len(rxmessage) > curses.COLS:
-        messagetoshow = rxmessage[:curses.COLS-1]
+    if len(rxmessage) > maxcols:
+        messagetoshow = rxmessage[:maxcols-1]
     else:
-        messagetoshow = rxmessage + " "*(curses.COLS - len(rxmessage) - 1)
+        messagetoshow = rxmessage + " "*(maxcols - len(rxmessage) - 1)
 
     if bold:
         window.addstr(0, 0, messagetoshow, curses.A_BOLD)
@@ -66,3 +68,31 @@ def drawmessage(window, message, bold = False):
         window.addstr(0, 0, messagetoshow)
 
 
+
+#Define one member of a number vector
+#<!ELEMENT defNumber %numberValue >
+#<!ATTLIST defNumber
+#name %nameValue; #REQUIRED
+#label %labelValue; #IMPLIED
+#format %numberFormat; #REQUIRED
+#min %numberValue; #REQUIRED
+#max %numberValue; #REQUIRED
+#step %numberValue; #REQUIRED
+
+
+class BaseMember:
+
+    def __init__(self, window, startline):
+        self.window = window
+        self.startline = startline
+        self.linecount
+        self.col = 1
+
+
+    @property
+    def endline(self):
+        "self.endline is the empty line after the vector"
+        return self.startline + self.linecount
+
+    def draw(self):
+        self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
