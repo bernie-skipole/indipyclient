@@ -68,6 +68,12 @@ def drawmessage(window, message, bold = False, maxcols=None):
         window.addstr(0, 0, messagetoshow)
 
 
+def timestamp_state(window, vector, maxcols=None):
+    "Adds the vector timestamp, and its state to the window"
+    if not maxcols:
+        maxcols = curses.COLS
+
+
 
 #Define one member of a number vector
 #<!ELEMENT defNumber %numberValue >
