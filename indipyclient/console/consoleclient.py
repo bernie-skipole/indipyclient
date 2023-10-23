@@ -187,6 +187,10 @@ class ConsoleControl:
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
+                    if result == "Vectors":
+                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
+                        self.screen.show()
+                        continue
 
 
 
