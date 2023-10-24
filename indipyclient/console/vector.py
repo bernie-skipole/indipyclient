@@ -52,9 +52,9 @@ class VectorScreen:
 
         # title window  (3 lines, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
-        title = self.devicename + " : " + self.vectorname + " : " + self.vector.group
-        self.titlewin.addstr(0, 1, title)
-        self.titlewin.addstr(1, 1, self.vector.label, curses.A_BOLD)
+        self.titlewin.addstr(0, 1, self.devicename)
+        self.titlewin.addstr(1, 1, self.vectorname + " : " + self.vector.group)
+        self.titlewin.addstr(2, 1, self.vector.label, curses.A_BOLD)
 
         # messages window (1 line, full row, starting at 3,0)
         self.messwin = self.stdscr.subwin(1, self.maxcols, 3, 0)
