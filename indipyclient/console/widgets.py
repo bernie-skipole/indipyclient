@@ -50,6 +50,7 @@ class Button:
 
 def drawmessage(window, message, bold = False, maxcols=None):
     """Shows message, message is either a text string, or a tuple of (timestamp, message text)"""
+    window.clear()
     if not maxcols:
         maxcols = curses.COLS
     if isinstance(message, str):
@@ -68,11 +69,15 @@ def drawmessage(window, message, bold = False, maxcols=None):
         window.addstr(0, 0, messagetoshow)
 
 
-def timestamp_state(window, vector, maxcols=None):
+def draw_timestamp_state(window, vector, maxcols=None):
     "Adds the vector timestamp, and its state to the window"
+    window.clear()
     if not maxcols:
         maxcols = curses.COLS
-
+    state = vector.state
+    timestamp = vector.timestamp.isoformat(sep='T')[11:21]
+    string = " " + timestamp + " "*(maxcols - 20) + state
+    window.addstr(0, 0, string)
 
 
 #Define one member of a number vector

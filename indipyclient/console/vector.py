@@ -59,6 +59,9 @@ class VectorScreen:
         # messages window (1 line, full row, starting at 3,0)
         self.messwin = self.stdscr.subwin(1, self.maxcols, 3, 0)
 
+        # timestamp and state window (1 line, full row, starting at 4,0)
+        self.tstatewin = self.stdscr.subwin(1, self.maxcols, 4, 0)
+
         # bottom buttons, [Vectors] [Devices] [Messages] [Quit]
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
@@ -79,6 +82,7 @@ class VectorScreen:
         if self.vector.message:
             widgets.drawmessage(self.messwin, self.vector.message, maxcols=self.maxcols)
 
+        widgets.draw_timestamp_state(self.tstatewin, self.vector, maxcols=self.maxcols)
 
         # draw the bottom buttons
         self.vectors_btn.draw()
@@ -89,6 +93,7 @@ class VectorScreen:
         #  and refresh
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
+        self.tstatewin.noutrefresh()
         self.buttwin.noutrefresh()
 
         curses.doupdate()
