@@ -1296,8 +1296,15 @@ class VectorListWin:
 
                 lb = v.label[:27] + "..." if len(v.label) > 30 else v.label
                 self.window.addstr(line, 30, lb)  # the shortenned label
-
-                self.window.addstr(line, 70, v.state)
+                lowerstate = v.state.lower()
+                if lowerstate == "idle":
+                    self.window.addstr(line, self.maxcols - 20, "  Idle  ", self.consoleclient.color(v.state))
+                elif lowerstate == "ok":
+                    self.window.addstr(line, self.maxcols - 20, "  OK    ", self.consoleclient.color(v.state))
+                elif lowerstate == "busy":
+                    self.window.addstr(line, self.maxcols - 20, "  Busy  ", self.consoleclient.color(v.state))
+                elif lowerstate == "alert":
+                    self.window.addstr(line, self.maxcols - 20, "  Alert ", self.consoleclient.color(v.state))
                 line += 2
 
 

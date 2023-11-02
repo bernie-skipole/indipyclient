@@ -69,15 +69,27 @@ def drawmessage(window, message, bold = False, maxcols=None):
         window.addstr(0, 0, messagetoshow)
 
 
-def draw_timestamp_state(window, vector, maxcols=None):
+def draw_timestamp_state(consoleclient, window, vector, maxcols=None):
     "Adds the vector timestamp, and its state to the window"
     window.clear()
     if not maxcols:
         maxcols = curses.COLS
     state = vector.state
     timestamp = vector.timestamp.isoformat(sep='T')[11:21]
-    string = " " + timestamp + " "*(maxcols - 20) + state
-    window.addstr(0, 0, string)
+    window.addstr(0, 1, timestamp)
+
+    lowerstate = state.lower()
+    if lowerstate == "idle":
+        text = "  Idle  "
+    elif lowerstate == "ok":
+        text = "  OK    "
+    elif lowerstate == "busy":
+        text = "  Busy  "
+    elif lowerstate == "alert":
+        text = "  Alert "
+    else:
+        return
+    window.addstr(0, maxcols - 20, text, consoleclient.color(state))
 
 
 #Define one member of a number vector

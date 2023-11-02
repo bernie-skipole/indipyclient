@@ -82,7 +82,7 @@ class VectorScreen:
         if self.vector.message:
             widgets.drawmessage(self.messwin, self.vector.message, maxcols=self.maxcols)
 
-        widgets.draw_timestamp_state(self.tstatewin, self.vector, maxcols=self.maxcols)
+        widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector, maxcols=self.maxcols)
 
         # draw the bottom buttons
         self.vectors_btn.draw()

@@ -35,6 +35,13 @@ class ConsoleControl:
         curses.curs_set(0)
         self.stdscr.keypad(True)
 
+        # Idle, OK, Busy or Alert.
+        # gray, green, yellow and red
+
+        curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_GREEN)
+        curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_RED)
+
         # this keeps track of which screen is being displayed,
         # initially start with the messages screen
         self.screen = windows.MessagesScreen(self.stdscr, self)
@@ -57,6 +64,19 @@ class ConsoleControl:
             print("Terminal too small!")
             sys.exit(1)
 
+
+    def color(self, state):
+        "Returns curses.color_pair given a state"
+        if not curses.has_colors():
+            return curses.color_pair(0)
+        state = state.lower()
+        if state == "ok":
+            return curses.color_pair(1)
+        elif state == "busy":
+            return curses.color_pair(2)
+        elif state == "alert":
+            return curses.color_pair(3)
+        return curses.color_pair(0)
 
     @property
     def connected(self):
