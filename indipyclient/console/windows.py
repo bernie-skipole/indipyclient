@@ -1117,7 +1117,9 @@ class VectorListWin:
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-        self.window = curses.newpad(50, self.maxcols)
+        # number of lines in a pad, assume 50
+        self.padlines = 50
+        self.window = curses.newpad(self.padlines, self.maxcols)
         self.consoleclient = consoleclient
         self.client = consoleclient.client
         self.padtop = 0        # vector index number of top vector being displayed
@@ -1260,30 +1262,44 @@ class VectorListWin:
 
 
     def draw(self, devicename, groupname):
-        if (groupname == self.groupname) and (devicename == self.devicename):
-            # no change
-            return
-        self.padtop = 0
+
+        nochange = True  # flag to indicate the window does not need to be redrawn
+
+        if (groupname != self.groupname) or (devicename != self.devicename):
+            nochange = False
+
         self.devicename = devicename
         self.device = self.client[devicename]
         self.groupname = groupname
+
+        vectorlist = [vector for vector in self.device.values() if vector.group == self.groupname]
+        sortedlist = sorted(vectorlist, key=lambda x: x.name)
+        if nochange and (self.vectors == sortedlist):
+            # no change
+            return
+
+        self.vectors = sortedlist
+
         self.window.clear()
         self.topmorewin.clear()
         self.botmorewin.clear()
 
-        self.topmore_btn.show = bool(self.padtop)
+        self.topmore_btn.show = False
         self.topmore_btn.draw()
+
+        self.padtop = 0
 
         try:
 
             # draw the vectors in the client with this device and group
 
-            vectorlist = [vector for vector in self.device.values() if vector.group == self.groupname]
-
-            self.vectors = sorted(vectorlist, key=lambda x: x.name)
+            # pad may need increasing if extra members have been added
+            padlines = max(self.padlines, len(self.vectors)*2)
+            if padlines != self.padlines:
+                self.padlines = padlines
+                self.window.resize(self.padlines, self.maxcols)
 
             # so draw the vector widget, name, label, state, with names as buttons
-
             self.vector_btns = []
 
             line = 0

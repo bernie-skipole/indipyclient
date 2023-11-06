@@ -64,7 +64,7 @@ class VectorScreen:
 
         try:
             # window showing the members of the vector
-            self.members = MembersWin(self.stdscr, self.consoleclient, self.device, self.vector)
+            self.members = MembersWin(self.stdscr, self.consoleclient, self.vector)
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -223,21 +223,16 @@ class MembersWin:
 
     "Used to display the vector members"
 
-    def __init__(self, stdscr, consoleclient, device, vector):
+    def __init__(self, stdscr, consoleclient, vector):
         self.stdscr = stdscr
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-
-
 
 
         self.window = curses.newpad(50, self.maxcols)
         self.consoleclient = consoleclient
         self.client = consoleclient.client
 
-        self.device = device
         self.vector = vector
-
-        self.devicename = device.devicename
         self.vectorname = vector.name
 
         # pad lines depends on members, note this can be re-sized
