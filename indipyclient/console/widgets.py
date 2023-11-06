@@ -119,3 +119,9 @@ class BaseMember:
 
     def draw(self):
         self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
+
+
+class Member(member)
+
+    def __init__(self, window, startline, member):
+        super().__init__(window, startline)

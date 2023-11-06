@@ -241,12 +241,24 @@ class MembersWin:
         self.topline = 0
 
         # dictionary of member name to member this vector owns
-        members = self.vector.members()
+        members_dict = self.vector.members()
+
+        # list of member names in alphabetic order
+        self.membernames = sorted(members_dict.values(), key=lambda x: x.name)
 
         # number of lines in a pad, assume four lines per member, with a minimum of 50
-        self.padlines = max(50, len(members)*4)
+        self.padlines = max(50, len(self.membernames)*4)
 
         self.window = curses.newpad(self.padlines, self.maxcols)
+
+        # create the member widgets
+        line = 0
+        self.members = []
+        self.memberwidgets = []
+        for name in self.membernames:
+            member = members_dict[name]
+            self.members.append(member)
+            self.memberwidgets.append(widgets.Member(self.window, line, member))
 
         # this is True, if this widget is in focus
         self._focus = False
@@ -270,10 +282,12 @@ class MembersWin:
         self.window.clear()
 
         # dictionary of member name to member this vector owns
-        members = self.vector.members()
+        members_dict = self.vector.members()
+
+        self.membernames = sorted(members_dict.values(), key=lambda x: x.name)
 
         # pad may need increasing if extra members have been added
-        padlines = max(self.padlines, len(members)*4)
+        padlines = max(self.padlines, len(self.membernames)*4)
         if padlines != self.padlines:
             self.padlines = padlines
             self.window.resize(self.padlines, self.maxcols)
@@ -281,6 +295,9 @@ class MembersWin:
 
         self.topmorewin.clear()
         self.botmorewin.clear()
+
+        # draw the member widgets
+
 
         self.topmore_btn.draw()
         self.botmore_btn.draw()
