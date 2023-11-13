@@ -108,8 +108,10 @@ class BaseMember:
     def __init__(self, window, startline):
         self.window = window
         self.startline = startline
-        self.linecount
+        self.linecount = 4
         self.col = 1
+        self.row = 1
+        self.name = ""
 
 
     @property
@@ -118,11 +120,12 @@ class BaseMember:
         return self.startline + self.linecount
 
     def draw(self):
-        self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
+        self.window.addstr( self.row, self.col, "[" + self.name + "]")
 
 
-class NumberMember(BaseMember):
+class SwitchMember(BaseMember):
 
     def __init__(self, window, startline, member):
         super().__init__(window, startline)
         self.member = member
+        self.name = self.member.name
