@@ -11,6 +11,8 @@ import traceback
 
 from . import widgets
 
+from .. import propertymembers
+
 from .. import events
 
 #<!ELEMENT defNumberVector (defNumber+) >
@@ -258,7 +260,8 @@ class MembersWin:
         for name in self.membernames:
             member = members_dict[name]
             self.members.append(member)
-            self.memberwidgets.append(widgets.Member(self.window, line, member))
+            if isinstance(member, propertymembers.NumberMember):
+                self.memberwidgets.append(widgets.Member(self.window, line, member))
 
         # this is True, if this widget is in focus
         self._focus = False

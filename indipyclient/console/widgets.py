@@ -121,7 +121,8 @@ class BaseMember:
         self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
 
 
-class Member(BaseMember):
+class NumberMember(BaseMember):
 
     def __init__(self, window, startline, member):
         super().__init__(window, startline)
+        self.member = member
