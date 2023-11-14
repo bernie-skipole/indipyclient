@@ -23,11 +23,19 @@ INDI is often used with astronomical instruments, but is a general purpose proto
 
 The IPyClient object created listens to the data sent from drivers, and creates 'device' objects, each of which contains 'vector' objects, such as a SwitchVector or LightVector. These Vector objects can contain one or more 'members', such as a number of 'switches', or a number of 'lights' and their values.
 
-The package can be installed from:
+Using pip, the package can be installed from:
 
 https://pypi.org/project/indipyclient
 
-Typically you would create a subclass of IPyClient to handle the received data, and which automatically creates devices, vectors and their members.
+I would suggest (on debian derivatives) that you should start with::
+
+    sudo apt-get install python3-venv python3-setuptools python3-pip python3-wheel
+
+Then create a virtual environment, and use pip to install indipyclient, if you need further information on pip and virtual environments, try:
+
+https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
+
+Once installed you would typically create a subclass of IPyClient to handle the received data, and which automatically creates devices, vectors and their members.
 
 The class has a rxevent method which can be overwritten.
 

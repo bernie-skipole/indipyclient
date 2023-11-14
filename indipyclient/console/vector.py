@@ -11,7 +11,6 @@ import traceback
 
 from . import widgets
 
-from .. import propertymembers
 
 from .. import events
 
@@ -255,13 +254,10 @@ class MembersWin:
 
         # create the member widgets
         line = 0
-        self.members = []
         self.memberwidgets = []
         for name in self.membernames:
-            member = members_dict[name]
-            self.members.append(member)
-            if isinstance(member, propertymembers.SwitchMember):
-                self.memberwidgets.append(widgets.SwitchMember(self.window, line, member))
+            if self.vector.vectortype == "SwitchVector":
+                self.memberwidgets.append(widgets.SwitchMember(self.window, line, self.vector, name))
 
         # this is True, if this widget is in focus
         self._focus = False
@@ -299,7 +295,7 @@ class MembersWin:
         # draw the member widgets
 
         for memberwidget in self.memberwidgets:
-            print(memberwidget.name, file=sys.stderr)
+            # print(memberwidget.name, file=sys.stderr)
             memberwidget.draw()
 
 

@@ -105,13 +105,14 @@ def draw_timestamp_state(consoleclient, window, vector, maxcols=None):
 
 class BaseMember:
 
-    def __init__(self, window, startline):
+    def __init__(self, window, startline, vector, name):
         self.window = window
         self.startline = startline
+        self.vector = vector
+        self.member = vector[name]
         self.linecount = 4
         self.col = 1
-        self.row = 1
-        self.name = ""
+        self.name = name
 
 
     @property
@@ -120,12 +121,10 @@ class BaseMember:
         return self.startline + self.linecount
 
     def draw(self):
-        self.window.addstr( self.row, self.col, "[" + self.name + "]")
+        self.window.addstr( self.startline, self.col, "[" + self.name + "]")
 
 
 class SwitchMember(BaseMember):
 
-    def __init__(self, window, startline, member):
-        super().__init__(window, startline)
-        self.member = member
-        self.name = self.member.name
+    def __init__(self, window, startline, vector, name):
+        super().__init__(window, startline, vector, name)
