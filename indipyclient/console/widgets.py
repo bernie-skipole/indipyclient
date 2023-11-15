@@ -122,6 +122,20 @@ class BaseMember:
         # linecount is the number of lines this widget takes up,
         # including an end empty line
         self.linecount = 4
+        self.name_btn = Button(window, self.name, 0, 1)
+        self._focus = False
+
+    @property
+    def focus(self):
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if self._focus == value:
+            return
+        self._focus = value
+        self.name_btn.focus = value
+
 
     @property
     def endline(self):
@@ -130,7 +144,8 @@ class BaseMember:
 
     def draw(self, startline):
         self.startline = startline
-        self.window.addstr( self.startline, 1, "[" + self.name + "]")
+        self.name_btn.row = startline
+        self.name_btn.draw()
 
 
 class SwitchMember(BaseMember):

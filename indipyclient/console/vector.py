@@ -392,4 +392,27 @@ class MembersWin:
             key = self.stdscr.getch()
             if key == -1:
                 continue
-            return key
+            if key in (32, 9, 261, 338, 258):   # go to next button
+                if self.botmore_btn.focus:
+                    return key
+                elif self.topmore_btn.focus:
+                    self.topmore_btn.focus = False
+                    self.botmore_btn.focus = True
+                    self.topmore_btn.draw()
+                    self.botmore_btn.draw()
+                    self.topmorewin.noutrefresh()
+                    self.botmorewin.noutrefresh()
+                    curses.doupdate()
+                    continue
+            if key in (353, 260, 339, 259):   # go to prev button
+                if self.topmore_btn.focus:
+                    return key
+                elif self.botmore_btn.focus:
+                    self.topmore_btn.focus = True
+                    self.botmore_btn.focus = False
+                    self.topmore_btn.draw()
+                    self.botmore_btn.draw()
+                    self.topmorewin.noutrefresh()
+                    self.botmorewin.noutrefresh()
+                    curses.doupdate()
+                    continue
