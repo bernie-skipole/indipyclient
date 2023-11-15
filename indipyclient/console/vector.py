@@ -133,7 +133,7 @@ class VectorScreen:
                 self.quit_btn.focus = True
             elif self.quit_btn.focus:
                 self.quit_btn.focus = False
-                self.vectors_btn.focus = True
+                self.members.set_topfocus()
             else:
                 return
             self.buttwin.clear()
@@ -147,7 +147,7 @@ class VectorScreen:
         elif key in (353, 260, 339, 259):   # go to prev button
             if self.vectors_btn.focus:
                 self.vectors_btn.focus = False
-                self.quit_btn.focus = True
+                self.members.set_botfocus()
             elif self.devices_btn.focus:
                 self.devices_btn.focus = False
                 self.vectors_btn.focus = True
@@ -205,8 +205,30 @@ class VectorScreen:
                     result = self.check_bottom_btn(key)
                     if result:
                         return result
-                    else:
-                        continue
+
+                if self.members.focus:
+                    # focus has been given to the members window which monitors its own inputs
+                    key = await self.members.input()
+                    if key in (32, 9, 261, 338, 258):   # go to next button
+                        self.members.set_nofocus()
+                        self.vectors_btn.focus = True
+                        self.buttwin.clear()
+                        self.vectors_btn.draw()
+                        self.devices_btn.draw()
+                        self.messages_btn.draw()
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                        curses.doupdate()
+                    if key in (353, 260, 339, 259):   # go to prev button
+                        self.members.set_nofocus()
+                        self.quit_btn.focus = True
+                        self.buttwin.clear()
+                        self.vectors_btn.draw()
+                        self.devices_btn.draw()
+                        self.messages_btn.draw()
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                        curses.doupdate()
 
 
 
@@ -263,7 +285,7 @@ class MembersWin:
             raise
 
         # this is True, if this widget is in focus
-        self._focus = False
+        self.focus = False
 
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
@@ -279,6 +301,38 @@ class MembersWin:
 
         self.displaylines = self.maxrows - 5 - 8
 
+    def set_nofocus(self):
+        self.focus = False
+        self.topmore_btn.focus = False
+        self.botmore_btn.focus = False
+        self.topmorewin.clear()
+        self.botmorewin.clear()
+        self.topmore_btn.draw()
+        self.botmore_btn.draw()
+        self.topmorewin.noutrefresh()
+        self.botmorewin.noutrefresh()
+
+    def set_topfocus(self):
+        self.focus = True
+        self.topmore_btn.focus = True
+        self.botmore_btn.focus = False
+        self.topmorewin.clear()
+        self.botmorewin.clear()
+        self.topmore_btn.draw()
+        self.botmore_btn.draw()
+        self.topmorewin.noutrefresh()
+        self.botmorewin.noutrefresh()
+
+    def set_botfocus(self):
+        self.focus = True
+        self.topmore_btn.focus = False
+        self.botmore_btn.focus = True
+        self.topmorewin.clear()
+        self.botmorewin.clear()
+        self.topmore_btn.draw()
+        self.botmore_btn.draw()
+        self.topmorewin.noutrefresh()
+        self.botmorewin.noutrefresh()
 
     def draw(self):
         self.window.clear()
@@ -328,3 +382,14 @@ class MembersWin:
         self.window.overwrite(self.stdscr, *coords)
         self.window.noutrefresh(*coords)
         self.botmorewin.noutrefresh()
+
+
+    async def input(self):
+        "This window is in focus"
+        self.stdscr.nodelay(True)
+        while not self.consoleclient.stop:
+            await asyncio.sleep(0)
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            return key
