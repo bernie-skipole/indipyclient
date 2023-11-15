@@ -5,7 +5,7 @@ The following example shows the control of an LED On or Off switch. The driver f
 
 https://indipydriver.readthedocs.io
 
-This is a simple client dedicated to the LED switch driver. A more complex general purpose client would learn about the remote drivers from testing the mappings of the IPyClient object, and learning which devices and vectors were available.
+This is a simple client dedicated to the LED switch driver. A more complex general purpose client would learn about the remote drivers from testing the mappings of the IPyClient object, to discover which devices and vectors were available.
 
 
 The client

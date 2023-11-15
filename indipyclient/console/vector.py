@@ -253,11 +253,14 @@ class MembersWin:
         self.window = curses.newpad(self.padlines, self.maxcols)
 
         # create the member widgets
-        line = 0
-        self.memberwidgets = []
-        for name in self.membernames:
-            if self.vector.vectortype == "SwitchVector":
-                self.memberwidgets.append(widgets.SwitchMember(self.window, line, self.vector, name))
+        try:
+            self.memberwidgets = []
+            for name in self.membernames:
+                if self.vector.vectortype == "SwitchVector":
+                    self.memberwidgets.append(widgets.SwitchMember(self.window, self.vector, name))
+        except Exception:
+            traceback.print_exc(file=sys.stderr)
+            raise
 
         # this is True, if this widget is in focus
         self._focus = False
@@ -294,10 +297,16 @@ class MembersWin:
 
         # draw the member widgets
 
-        for memberwidget in self.memberwidgets:
-            # print(memberwidget.name, file=sys.stderr)
-            memberwidget.draw()
+        try:
 
+            line = 0
+            for memberwidget in self.memberwidgets:
+                # print(memberwidget.name, file=sys.stderr)
+                memberwidget.draw(line)
+                line = memberwidget.endline + 1
+        except Exception:
+            traceback.print_exc(file=sys.stderr)
+            raise
 
         self.topmore_btn.draw()
         self.botmore_btn.draw()

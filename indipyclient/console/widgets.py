@@ -1,6 +1,12 @@
 
 import asyncio, curses, sys
 
+import traceback
+#        except Exception:
+#            traceback.print_exc(file=sys.stderr)
+#            raise
+
+
 
 class Button:
 
@@ -105,26 +111,38 @@ def draw_timestamp_state(consoleclient, window, vector, maxcols=None):
 
 class BaseMember:
 
-    def __init__(self, window, startline, vector, name):
+    def __init__(self, window, vector, name):
         self.window = window
-        self.startline = startline
         self.vector = vector
-        self.member = vector[name]
-        self.linecount = 4
-        self.col = 1
+        membersdict = vector.members()
+        self.member = membersdict[name]
         self.name = name
-
+        self.maxrows, self.maxcols = self.window.getmaxyx()
+        self.startline = 0
+        # linecount is the number of lines this widget takes up,
+        # including an end empty line
+        self.linecount = 4
 
     @property
     def endline(self):
         "self.endline is the empty line after the vector"
         return self.startline + self.linecount
 
-    def draw(self):
-        self.window.addstr( self.startline, self.col, "[" + self.name + "]")
+    def draw(self, startline):
+        self.startline = startline
+        self.window.addstr( self.startline, 1, "[" + self.name + "]")
 
 
 class SwitchMember(BaseMember):
 
-    def __init__(self, window, startline, vector, name):
-        super().__init__(window, startline, vector, name)
+    def __init__(self, window, vector, name):
+        super().__init__(window, vector, name)
+
+    def draw(self, startline):
+        super().draw(startline)
+        # draw the On or Off value
+        self.window.addstr( self.startline, self.maxcols-10, self.member.membervalue)
+        # draw the label
+        label = self.member.label
+        if label:
+            self.window.addstr( self.startline+1, 1, label)

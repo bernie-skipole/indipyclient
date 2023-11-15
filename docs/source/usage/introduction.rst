@@ -23,7 +23,7 @@ INDI is often used with astronomical instruments, but is a general purpose proto
 
 The IPyClient object created listens to the data sent from drivers, and creates 'device' objects, each of which contains 'vector' objects, such as a SwitchVector or LightVector. These Vector objects can contain one or more 'members', such as a number of 'switches', or a number of 'lights' and their values.
 
-Using pip, the package can be installed from:
+The package can be installed from:
 
 https://pypi.org/project/indipyclient
 

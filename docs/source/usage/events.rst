@@ -2,11 +2,11 @@ Events
 ======
 
 
-The client has method::
+You would typically create a subclass of IPyClient, and overwrite the method::
 
     async def rxevent(self, event):
 
-If your client needs to act as events are received from the driver, this method would typically be written using match and case to determine the type of event, and read the event contents, and then take any appropriate action.
+If your client needs to act as events are received from the driver, this method could be written using match and case to determine the type of event, and read the event contents, and then take any appropriate action.
 
 
 
