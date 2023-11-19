@@ -142,9 +142,10 @@ class BaseMember:
         "self.endline is the empty line after the vector"
         return self.startline + self.linecount
 
-    def draw(self, startline):
-        self.startline = startline
-        self.name_btn.row = startline
+    def draw(self, startline=None):
+        if not startline is None:
+            self.startline = startline
+        self.name_btn.row = self.startline
         self.name_btn.draw()
 
 
@@ -153,7 +154,7 @@ class SwitchMember(BaseMember):
     def __init__(self, window, vector, name):
         super().__init__(window, vector, name)
 
-    def draw(self, startline):
+    def draw(self, startline=None):
         super().draw(startline)
         # draw the On or Off value
         self.window.addstr( self.startline, self.maxcols-10, self.member.membervalue)

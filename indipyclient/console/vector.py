@@ -303,6 +303,12 @@ class MembersWin:
 
     def set_nofocus(self):
         self.focus = False
+        for widget in self.memberwidgets:
+            if widget.focus:
+                widget.focus = False
+                widget.draw()
+                self.noutrefresh()
+                return
         self.topmore_btn.focus = False
         self.botmore_btn.focus = False
         self.topmorewin.clear()
@@ -384,6 +390,13 @@ class MembersWin:
         self.botmorewin.noutrefresh()
 
 
+    def widgetindex_in_focus(self):
+        "Returns the memberwidget index which has focus, or None"
+        for index,widget in enumerate(self.memberwidgets):
+            if widget.focus:
+                return index
+
+
     async def input(self):
         "This window is in focus"
         self.stdscr.nodelay(True)
@@ -397,22 +410,54 @@ class MembersWin:
                     return key
                 elif self.topmore_btn.focus:
                     self.topmore_btn.focus = False
-                    self.botmore_btn.focus = True
                     self.topmore_btn.draw()
-                    self.botmore_btn.draw()
-                    self.topmorewin.noutrefresh()
-                    self.botmorewin.noutrefresh()
+                    nextwidget = self.memberwidgets[0]
+                    nextwidget.focus = True
+                    nextwidget.draw()
+                    self.noutrefresh()
+                    curses.doupdate()
+                    continue
+                elif (widgetindex := self.widgetindex_in_focus()) is not None:
+                    widget = self.memberwidgets[widgetindex]
+                    widget.focus = False
+                    widget.draw()
+                    if widgetindex == len(self.memberwidgets) -1:
+                        # last widget, so set botmore in focus ---- this to be changed as botmore should not be shown
+                        self.botmore_btn.focus = True
+                        self.botmore_btn.draw()
+                    else:
+                        # set next widget in focus
+                        nextwidget = self.memberwidgets[widgetindex+1]
+                        nextwidget.focus = True
+                        nextwidget.draw()
+                    self.noutrefresh()
                     curses.doupdate()
                     continue
             if key in (353, 260, 339, 259):   # go to prev button
                 if self.topmore_btn.focus:
                     return key
                 elif self.botmore_btn.focus:
-                    self.topmore_btn.focus = True
                     self.botmore_btn.focus = False
-                    self.topmore_btn.draw()
                     self.botmore_btn.draw()
-                    self.topmorewin.noutrefresh()
-                    self.botmorewin.noutrefresh()
+                    prevwidget = self.memberwidgets[-1]
+                    prevwidget.focus = True
+                    prevwidget.draw()
+                    self.noutrefresh()
+                    curses.doupdate()
+                    continue
+                elif (widgetindex := self.widgetindex_in_focus()) is not None:
+                    widget = self.memberwidgets[widgetindex]
+                    widget.focus = False
+                    widget.draw()
+                    if widgetindex == 0:
+                        # first widget, so set topmore in focus ---- this to be changed as topmore should not be shown
+                        self.topmore_btn.focus = True
+                        self.topmore_btn.draw()
+                    else:
+                        # set prev widget in focus
+                        prevwidget = self.memberwidgets[widgetindex-1]
+                        prevwidget.focus = True
+                        prevwidget.draw()
+                    self.noutrefresh()
                     curses.doupdate()
                     continue
