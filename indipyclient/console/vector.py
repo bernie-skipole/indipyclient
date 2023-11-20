@@ -397,6 +397,22 @@ class MembersWin:
                 return index
 
 
+    def widgetindex_bottom_displayed(self):
+        "Return the memberwidget index being displayed at bottom of window"
+        for index,widget in enumerate(self.memberwidgets):
+            if widget.endline >= self.topline + self.displaylines - 1:
+                return index
+        else:
+            return len(self.memberwidgets) - 1
+
+
+    def widgetindex_top_displayed(self):
+        "Return the memberwidget index being displayed at top of window"
+        for index,widget in enumerate(self.memberwidgets):
+            if widget.startline >= self.topline:
+                return index
+
+
     async def input(self):
         "This window is in focus"
         self.stdscr.nodelay(True)
@@ -408,10 +424,12 @@ class MembersWin:
             if key in (32, 9, 261, 338, 258):   # go to next button
                 if self.botmore_btn.focus:
                     return key
-                elif self.topmore_btn.focus:
+                # get the top widget being displayed
+                topwidgetindex = self.widgetindex_top_displayed()
+                if self.topmore_btn.focus:
                     self.topmore_btn.focus = False
                     self.topmore_btn.draw()
-                    nextwidget = self.memberwidgets[0]
+                    nextwidget = self.memberwidgets[topwidgetindex]
                     nextwidget.focus = True
                     nextwidget.draw()
                     self.noutrefresh()
@@ -419,14 +437,19 @@ class MembersWin:
                     continue
                 elif (widgetindex := self.widgetindex_in_focus()) is not None:
                     widget = self.memberwidgets[widgetindex]
-                    widget.focus = False
-                    widget.draw()
                     if widgetindex == len(self.memberwidgets) -1:
+                        widget.focus = False
+                        widget.draw()
                         # last widget, so set botmore in focus ---- this to be changed as botmore should not be shown
                         self.botmore_btn.focus = True
                         self.botmore_btn.draw()
+                    elif widget.endline >= self.topline + self.displaylines - 3:
+                        # if widget in focus is at bottom of visible window, scroll the window up
+                        self.topline += 1
                     else:
                         # set next widget in focus
+                        widget.focus = False
+                        widget.draw()
                         nextwidget = self.memberwidgets[widgetindex+1]
                         nextwidget.focus = True
                         nextwidget.draw()
@@ -436,10 +459,12 @@ class MembersWin:
             if key in (353, 260, 339, 259):   # go to prev button
                 if self.topmore_btn.focus:
                     return key
-                elif self.botmore_btn.focus:
+                # get the bottom widget being displayed
+                bottomwidgetindex = self.widgetindex_bottom_displayed()
+                if self.botmore_btn.focus:
                     self.botmore_btn.focus = False
                     self.botmore_btn.draw()
-                    prevwidget = self.memberwidgets[-1]
+                    prevwidget = self.memberwidgets[bottomwidgetindex]
                     prevwidget.focus = True
                     prevwidget.draw()
                     self.noutrefresh()
@@ -447,14 +472,19 @@ class MembersWin:
                     continue
                 elif (widgetindex := self.widgetindex_in_focus()) is not None:
                     widget = self.memberwidgets[widgetindex]
-                    widget.focus = False
-                    widget.draw()
                     if widgetindex == 0:
+                        widget.focus = False
+                        widget.draw()
                         # first widget, so set topmore in focus ---- this to be changed as topmore should not be shown
                         self.topmore_btn.focus = True
                         self.topmore_btn.draw()
+                    elif widget.startline <= self.topline + 4:
+                        # if widget in focus is at top of visible window, scroll the window down
+                        self.topline -= 1
                     else:
                         # set prev widget in focus
+                        widget.focus = False
+                        widget.draw()
                         prevwidget = self.memberwidgets[widgetindex-1]
                         prevwidget.focus = True
                         prevwidget.draw()
