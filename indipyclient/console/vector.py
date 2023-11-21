@@ -299,7 +299,11 @@ class MembersWin:
         self.botmore_btn.show = True
         self.botmore_btn.focus = False
 
-        self.displaylines = self.maxrows - 5 - 8
+        # top more btn on 7th line ( coords 0 to 6 )
+        # bot more btn on line (self.maxrows - 3) + 1
+        # displaylines = (self.maxrows - 2) - 7  - 1
+
+        self.displaylines = self.maxrows - 10
 
     def set_nofocus(self):
         self.focus = False
@@ -344,9 +348,13 @@ class MembersWin:
         self.window.clear()
 
         # self.memberwidgets is the list of widgets
+        # get the number of lines the widgets take
+        lines = 0
+        for widget in self.memberwidgets:
+            lines += widget.linecount
 
         # pad may need increasing if extra members have been added
-        padlines = max(self.padlines, len(self.memberwidgets)*4)
+        padlines = max(self.padlines, lines)
         if padlines != self.padlines:
             self.padlines = padlines
             self.window.resize(self.padlines, self.maxcols)
@@ -358,10 +366,8 @@ class MembersWin:
         # draw the member widgets
 
         try:
-
             line = 0
             for memberwidget in self.memberwidgets:
-                # print(memberwidget.name, file=sys.stderr)
                 memberwidget.draw(line)
                 line = memberwidget.endline + 1
         except Exception:
@@ -381,7 +387,7 @@ class MembersWin:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
-        coords = (self.topline, 0, 8, 1, self.displaylines + 8, self.maxcols-2)
+        coords = (self.topline, 0, 7, 1, self.maxrows - 4, self.maxcols-2)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
         self.topmorewin.noutrefresh()
@@ -400,8 +406,8 @@ class MembersWin:
     def widgetindex_bottom_displayed(self):
         "Return the memberwidget index being displayed at bottom of window"
         for index,widget in enumerate(self.memberwidgets):
-            if widget.endline >= self.topline + self.displaylines - 1:
-                return index
+            if widget.endline > self.topline + self.displaylines - 1:
+                return index-1
         else:
             return len(self.memberwidgets) - 1
 

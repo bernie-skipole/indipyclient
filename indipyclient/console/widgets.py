@@ -140,7 +140,7 @@ class BaseMember:
     @property
     def endline(self):
         "self.endline is the empty line after the vector"
-        return self.startline + self.linecount
+        return self.startline + self.linecount - 1
 
     def draw(self, startline=None):
         if not startline is None:
@@ -162,3 +162,4 @@ class SwitchMember(BaseMember):
         label = self.member.label
         if label:
             self.window.addstr( self.startline+1, 1, label)
+        self.window.addstr( self.endline, 1, "----")
