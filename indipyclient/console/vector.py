@@ -481,9 +481,17 @@ class MembersWin:
                     if widgetindex == 0:
                         widget.focus = False
                         widget.draw()
+                        self.topline = 0
                         # first widget, so set topmore in focus ---- this to be changed as topmore should not be shown
                         self.topmore_btn.focus = True
                         self.topmore_btn.draw()
+                    elif (not self.topline) and (widgetindex == 1):
+                        # set first widget in focus
+                        widget.focus = False
+                        widget.draw()
+                        prevwidget = self.memberwidgets[0]
+                        prevwidget.focus = True
+                        prevwidget.draw()
                     elif widget.startline <= self.topline + 4:
                         # if widget in focus is at top of visible window, scroll the window down
                         self.topline -= 1
