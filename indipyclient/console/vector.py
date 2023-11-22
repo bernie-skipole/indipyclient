@@ -479,6 +479,7 @@ class MembersWin:
                 elif (widgetindex := self.widgetindex_in_focus()) is not None:
                     widget = self.memberwidgets[widgetindex]
                     if widgetindex == 0:
+                        # The topmost widget is in focus, remove focus
                         widget.focus = False
                         widget.draw()
                         self.topline = 0
@@ -486,14 +487,15 @@ class MembersWin:
                         self.topmore_btn.focus = True
                         self.topmore_btn.draw()
                     elif (not self.topline) and (widgetindex == 1):
-                        # set first widget in focus
+                        # topline is zero, and set first widget in focus
                         widget.focus = False
                         widget.draw()
                         prevwidget = self.memberwidgets[0]
                         prevwidget.focus = True
                         prevwidget.draw()
-                    elif widget.startline <= self.topline + 4:
-                        # if widget in focus is at top of visible window, scroll the window down
+                    elif self.memberwidgets[widgetindex-1].startline < self.topline:
+                        # if widget previous to current in focus widget is not fully displayed
+                        # scroll the window down
                         self.topline -= 1
                     else:
                         # set prev widget in focus
