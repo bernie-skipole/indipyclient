@@ -434,11 +434,6 @@ class MembersWin:
         else:
             return len(self.memberwidgets) - 1
 
-#            if widget.endline > self.topline + self.displaylines - 1:
-#                return index-1
-#        else:
-#            return len(self.memberwidgets) - 1
-
 
     def widgetindex_top_displayed(self):
         "Return the memberwidget index being displayed at top of window"
