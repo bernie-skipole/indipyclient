@@ -324,19 +324,29 @@ class MembersWin:
 
     def set_topfocus(self):
         self.focus = True
-        self.topmore_btn.focus = True
         self.botmore_btn.focus = False
-        self.topmorewin.clear()
-        self.botmorewin.clear()
-        self.topmore_btn.draw()
         self.botmore_btn.draw()
-        self.topmorewin.noutrefresh()
         self.botmorewin.noutrefresh()
+
+        if self.topline:
+            # self.topline is not zero, so topmore button must be shown
+            # and with focus set
+            self.topmore_btn.show = True
+            self.topmore_btn.focus = True
+            self.topmore_btn.draw()
+            self.topmorewin.noutrefresh()
+        else:
+            # self.topline is zero, so top member widget must be shown
+            # and with focus set
+            widget = self.memberwidgets[0]
+            widget.focus = True
+            self.draw()
+            self.noutrefresh()
+
 
     def set_botfocus(self):
         self.focus = True
         self.topmore_btn.focus = False
-        self.topmorewin.clear()
         self.topmore_btn.draw()
         self.topmorewin.noutrefresh()
 
@@ -371,9 +381,6 @@ class MembersWin:
             self.window.resize(self.padlines, self.maxcols)
             self.topline = 0
 
-        self.topmorewin.clear()
-        self.botmorewin.clear()
-
         # draw the member widgets
 
         try:
@@ -385,6 +392,11 @@ class MembersWin:
             traceback.print_exc(file=sys.stderr)
             raise
 
+        # Is the top of the pad being displayed?
+        if self.topline:
+            self.topmore_btn.show = True
+        else:
+            self.topmore_btn.show = False
         self.topmore_btn.draw()
 
         # Is the bottom widget being displayed?
@@ -472,6 +484,18 @@ class MembersWin:
                     elif self.memberwidgets[widgetindex+1].endline > self.topline + self.displaylines - 1:
                         # if next widget is still not displayed, scroll the window up
                         self.topline += 1
+                        if not self.topmore_btn.show:
+                            # top more button should be displayed
+                            self.topmore_btn.show = True
+                            self.topmore_btn.draw()
+                            self.topmorewin.noutrefresh()
+                        if self.botmore_btn.show:
+                            botindex = self.widgetindex_bottom_displayed()
+                            if botindex == len(self.memberwidgets)-1:
+                                # bottom more button should not be displayed
+                                self.botmore_btn.show = False
+                                self.botmore_btn.draw()
+                                self.botmorewin.noutrefresh()
                     else:
                         # set next widget in focus
                         widget.focus = False
@@ -521,6 +545,11 @@ class MembersWin:
                         # if widget previous to current in focus widget is not fully displayed
                         # scroll the window down
                         self.topline -= 1
+                        if not self.topline:
+                            # if topline is zero, topmore button should not be shown
+                            self.topmore_btn.show = False
+                            self.topmore_btn.draw()
+                            self.topmorewin.noutrefresh()
                         if not self.botmore_btn.show:
                             botindex = self.widgetindex_bottom_displayed()
                             if botindex != len(self.memberwidgets)-1:
