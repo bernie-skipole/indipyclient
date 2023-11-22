@@ -341,11 +341,8 @@ class MembersWin:
         self.topmorewin.noutrefresh()
 
         botindex = self.widgetindex_bottom_displayed()
-        if botindex == self.memberwidgets[-1]:
+        if botindex == len(self.memberwidgets)-1:
             # last widget is displayed
-            self.botmore_btn.show = False
-            self.botmore_btn.draw()
-            self.botmorewin.noutrefresh()
             # set focus on bottom member widget
             widget = self.memberwidgets[botindex]
             widget.focus = True
