@@ -450,6 +450,8 @@ class MembersWin:
             if widget.startline >= self.topline:
                 return index
 
+# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+
 
     async def input(self):
         "This window is in focus"
@@ -475,27 +477,37 @@ class MembersWin:
                     continue
                 elif (widgetindex := self.widgetindex_in_focus()) is not None:
                     widget = self.memberwidgets[widgetindex]
+                    # widget is the widget currently in focus
                     if widgetindex == len(self.memberwidgets) -1:
                         # last widget, so go on to the vector button by returning from this members window
                         widget.focus = False
                         widget.draw()
                         self.noutrefresh()
                         return key
-                    elif self.memberwidgets[widgetindex+1].endline > self.topline + self.displaylines - 1:
-                        # if next widget is still not displayed, scroll the window up
-                        self.topline += 1
-                        if not self.topmore_btn.show:
-                            # top more button should be displayed
-                            self.topmore_btn.show = True
-                            self.topmore_btn.draw()
-                            self.topmorewin.noutrefresh()
-                        if self.botmore_btn.show:
-                            botindex = self.widgetindex_bottom_displayed()
-                            if botindex == len(self.memberwidgets)-1:
-                                # bottom more button should not be displayed
-                                self.botmore_btn.show = False
-                                self.botmore_btn.draw()
-                                self.botmorewin.noutrefresh()
+                    if self.memberwidgets[widgetindex+1].endline > self.topline + self.displaylines - 1:
+                        # next widget is still not displayed
+                        if key == 9:
+                            # tab key pressed, go to bottom more button
+                            widget.focus = False
+                            widget.draw()
+                            self.botmore_btn.focus = True
+                            self.botmore_btn.draw()
+                            self.botmorewin.noutrefresh()
+                        else:
+                            # page/arrow pressed, scroll the window up
+                            self.topline += 1
+                            if not self.topmore_btn.show:
+                                # top more button should be displayed
+                                self.topmore_btn.show = True
+                                self.topmore_btn.draw()
+                                self.topmorewin.noutrefresh()
+                            if self.botmore_btn.show:
+                                botindex = self.widgetindex_bottom_displayed()
+                                if botindex == len(self.memberwidgets)-1:
+                                    # bottom more button should not be displayed
+                                    self.botmore_btn.show = False
+                                    self.botmore_btn.draw()
+                                    self.botmorewin.noutrefresh()
                     else:
                         # set next widget in focus
                         widget.focus = False
@@ -534,7 +546,7 @@ class MembersWin:
                         # First widget, so go on to the quit button by returning from this members window
                         self.noutrefresh()
                         return key
-                    elif (not self.topline) and (widgetindex == 1):
+                    if (not self.topline) and (widgetindex == 1):
                         # topline is zero, and set first widget in focus
                         widget.focus = False
                         widget.draw()
@@ -542,21 +554,29 @@ class MembersWin:
                         prevwidget.focus = True
                         prevwidget.draw()
                     elif self.memberwidgets[widgetindex-1].startline < self.topline:
-                        # if widget previous to current in focus widget is not fully displayed
-                        # scroll the window down
-                        self.topline -= 1
-                        if not self.topline:
-                            # if topline is zero, topmore button should not be shown
-                            self.topmore_btn.show = False
+                        # widget previous to current in focus widget is not fully displayed
+                        if key == 353:
+                            # shift tab pressed, jump to top more button
+                            widget.focus = False
+                            widget.draw()
+                            self.topmore_btn.focus = True
                             self.topmore_btn.draw()
                             self.topmorewin.noutrefresh()
-                        if not self.botmore_btn.show:
-                            botindex = self.widgetindex_bottom_displayed()
-                            if botindex != len(self.memberwidgets)-1:
-                                # bottom more button should be displayed
-                                self.botmore_btn.show = True
-                                self.botmore_btn.draw()
-                                self.botmorewin.noutrefresh()
+                        else:
+                            # scroll the window down
+                            self.topline -= 1
+                            if not self.topline:
+                                # if topline is zero, topmore button should not be shown
+                                self.topmore_btn.show = False
+                                self.topmore_btn.draw()
+                                self.topmorewin.noutrefresh()
+                            if not self.botmore_btn.show:
+                                botindex = self.widgetindex_bottom_displayed()
+                                if botindex != len(self.memberwidgets)-1:
+                                    # bottom more button should be displayed
+                                    self.botmore_btn.show = True
+                                    self.botmore_btn.draw()
+                                    self.botmorewin.noutrefresh()
                     else:
                         # set prev widget in focus
                         widget.focus = False
