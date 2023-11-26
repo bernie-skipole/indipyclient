@@ -587,3 +587,8 @@ class MembersWin:
                     self.noutrefresh()
                     curses.doupdate()
                     continue
+#            if key == 10:
+#                if self.topmore_btn.focus:
+
+
+#                elif self.botmore_btn.focus:
