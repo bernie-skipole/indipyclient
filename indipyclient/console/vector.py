@@ -587,8 +587,33 @@ class MembersWin:
                     self.noutrefresh()
                     curses.doupdate()
                     continue
-#            if key == 10:
-#                if self.topmore_btn.focus:
-
-
-#                elif self.botmore_btn.focus:
+            if key == 10:
+                if self.topmore_btn.focus:
+                    # scroll the window down
+                    self.topline -= 1
+                    if not self.topline:
+                        # if topline is zero, topmore button should not be shown
+                        self.topmore_btn.show = False
+                        self.topmore_btn.draw()
+                        self.topmorewin.noutrefresh()
+                        # but the top widget should get focus
+                        topwidget = self.memberwidgets[0]
+                        topwidget.focus = True
+                        topwidget.draw()
+                    self.noutrefresh()
+                    curses.doupdate()
+                elif self.botmore_btn.focus:
+                    # scroll the window up
+                    self.topline += 1
+                    botindex = self.widgetindex_bottom_displayed()
+                    if botindex == len(self.memberwidgets)-1:
+                        # bottom widget displayed, so more button should be hidden
+                        self.botmore_btn.show = False
+                        self.botmore_btn.draw()
+                        self.botmorewin.noutrefresh()
+                        # and the bottom widget should get focus
+                        botwidget = self.memberwidgets[botindex]
+                        botwidget.focus = True
+                        botwidget.draw()
+                    self.noutrefresh()
+                    curses.doupdate()
