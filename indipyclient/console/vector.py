@@ -14,28 +14,6 @@ from . import widgets
 
 from .. import events
 
-#<!ELEMENT defNumberVector (defNumber+) >
-#<!ATTLIST defNumberVector
-#device %nameValue; #REQUIRED
-#name of Device
-#name %nameValue; #REQUIRED
-#name of Property
-#label %labelValue; #IMPLIED
-#GUI label, use name by default
-#group %groupTag; #IMPLIED
-#Property group membership, blank by default
-#state %propertyState; #REQUIRED
-#current state of Property
-#perm %propertyPerm; #REQUIRED
-#ostensible Client controlability
-#timeout %numberValue; #IMPLIED
-#worse-case time to affect, 0 default, N/A for ro
-#timestamp %timeValue #IMPLIED
-#moment when these data were valid
-#message %textValue #IMPLIED
-#commentary
-
-
 
 class VectorScreen:
 
