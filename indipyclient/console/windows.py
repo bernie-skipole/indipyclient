@@ -627,7 +627,7 @@ class ChooseVectorScreen:
         # groups list
         try:
             self.groups = []
-            self.group_btns = GroupButtons(self.stdscr, self.consoleclient)
+            self.groupwin = GroupButtons(self.stdscr, self.consoleclient)
 
             # window showing the vectors of the active group
             self.vectors = VectorListWin(self.stdscr, self.consoleclient)
@@ -652,7 +652,7 @@ class ChooseVectorScreen:
     @property
     def activegroup(self):
         "Return name of group currently active"
-        return self.group_btns.active
+        return self.groupwin.active
 
 
     def show(self):
@@ -680,8 +680,8 @@ class ChooseVectorScreen:
         groupset = {vector.group for vector in self.device.values()}
         self.groups = sorted(list(groupset))
         # populate a widget showing horizontal list of groups
-        self.group_btns.set_groups(self.groups)
-        self.group_btns.draw()
+        self.groupwin.set_groups(self.groups)
+        self.groupwin.draw()
 
         # Draw the device vector widgets, as given by self.activegroup
         self.vectors.draw(self.devicename, self.activegroup)
@@ -694,7 +694,7 @@ class ChooseVectorScreen:
         #  and refresh
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
-        self.group_btns.noutrefresh()
+        self.groupwin.noutrefresh()
 
         self.vectors.noutrefresh()
 
@@ -722,7 +722,7 @@ class ChooseVectorScreen:
                     self.focus = "Devices"
                 if self.focus == "Groups":
                     # focus has been given to the groups widget which monitors its own inputs
-                    key = await self.group_btns.input()
+                    key = await self.groupwin.input()
                     if key == 10:
                         # must update the screen with a new group
                         self.show()
@@ -778,7 +778,7 @@ class ChooseVectorScreen:
                 if self.focus == "Vectors":
                     self.vectors.focus = False
                 elif self.focus == "Groups":
-                    self.group_btns.focus = False
+                    self.groupwin.focus = False
                 elif self.focus == "Devices":
                     self.devices_btn.focus = False
                 elif self.focus == "Messages":
@@ -791,7 +791,7 @@ class ChooseVectorScreen:
                     else:
                         self.vectors.set_bot_focus()
                 elif newfocus == "Groups":
-                    self.group_btns.focus = True
+                    self.groupwin.focus = True
                 elif newfocus == "Devices":
                     self.devices_btn.focus = True
                 elif newfocus == "Messages":
@@ -802,14 +802,14 @@ class ChooseVectorScreen:
 
                 # so buttons have been set with the appropriate focus
                 # now draw them
-                self.vectors.draw(self.devicename, self.group_btns.active)
-                self.group_btns.draw()
+                self.vectors.draw(self.devicename, self.groupwin.active)
+                self.groupwin.draw()
                 self.devices_btn.draw()
                 self.messages_btn.draw()
                 self.quit_btn.draw()
 
                 self.vectors.noutrefresh()
-                self.group_btns.noutrefresh()
+                self.groupwin.noutrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
         except asyncio.CancelledError:
@@ -914,7 +914,7 @@ class GroupButtons:
 
             # If not the last, check if another can be drawn
             # otherwise print the 'Next' button
-            if (group != self.groups[-1]) and (col+20 >= curses.COLS):
+            if (group != self.groups[-1]) and (col+20 >= self.maxcols):
                 self.nextcol = col
                 self.drawnext(self.nextfocus)
                 self.togroup = indx
