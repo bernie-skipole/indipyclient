@@ -184,9 +184,12 @@ class SwitchMember(BaseMember):
         super().__init__(stdscr, consoleclient, window, pad, vector, name)
         # create  ON, OFF buttons
         self.on = Button(window, 'ON', 0, 0)
+        self.on.bold = True if self.member.membervalue == "On" else False
         self.on.show = False
         self.off = Button(window, 'OFF', 0, 0)
         self.off.show = False
+        self.submit = Button(window, 'Submit', 0, 0)
+        self.submit.show = False
 
     def draw(self, startline=None):
         super().draw(startline)
@@ -199,8 +202,7 @@ class SwitchMember(BaseMember):
         self.window.addstr( self.endline, 1, "----")
         if self.vector.perm == "ro":
             return
-        # Draw the two buttons
-        self.on.bold = True if self.member.membervalue == "On" else False
+        # Draw the on/off buttons
         self.on.row = self.startline+1
         self.on.col = self.maxcols-15
         self.on.show = True
@@ -210,6 +212,11 @@ class SwitchMember(BaseMember):
         self.off.col = self.maxcols-10
         self.off.show = True
         self.off.draw()
+        # draw the submit button
+        self.submit.row = self.startline+2
+        self.submit.col = self.maxcols-15
+        self.submit.show = True
+        self.submit.draw()
 
     @property
     def focus(self):
@@ -247,14 +254,18 @@ class SwitchMember(BaseMember):
                 curses.doupdate()
                 continue
             elif self.on.focus:
-                if key in (338, 258):
-                    # down to next member
+                if key == 10:
+                    self.on.bold = True
+                    self.off.bold = False
+                    self.on.draw()
+                    self.off.draw()
+                elif key in (338, 258):
+                    # down to submit
                     self.on.focus = False
                     self.on.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                    return 258
-                if key in (353, 260, 339, 259):
+                    self.submit.focus = True
+                    self.submit.draw()
+                elif key in (353, 260, 339, 259):
                     # back to name_btn
                     self.name_btn.focus = True
                     self.on.focus = False
@@ -272,19 +283,42 @@ class SwitchMember(BaseMember):
                 curses.doupdate()
                 continue
             elif self.off.focus:
-                if key in (32, 9, 261, 338, 258):
-                    # move down to next member
+                if key == 10:
+                    self.off.bold = True
+                    self.on.bold = False
+                    self.off.draw()
+                    self.on.draw()
+                elif key in (32, 9, 261, 338, 258):
+                    # move down to submit
                     self.off.focus = False
                     self.off.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                    return 258
-                if key in (353, 260, 339, 259):
+                    self.submit.focus = True
+                    self.submit.draw()
+                elif key in (353, 260, 339, 259):
                     # back to on btn
                     self.off.focus = False
                     self.off.draw()
                     self.on.focus = True
                     self.on.draw()
+                else:
+                    continue
+                self.pad.noutrefresh()
+                curses.doupdate()
+                continue
+            elif self.submit.focus:
+                if key in (32, 9, 261, 338, 258):
+                    # move down to next member
+                    self.submit.focus = False
+                    self.submit.draw()
+                    self.name_btn.focus = True
+                    self.name_btn.draw()
+                    return 258
+                if key in (353, 260, 339, 259):
+                    # back to off btn
+                    self.submit.focus = False
+                    self.submit.draw()
+                    self.off.focus = True
+                    self.off.draw()
                 else:
                     continue
                 self.pad.noutrefresh()
