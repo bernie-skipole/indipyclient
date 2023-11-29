@@ -187,7 +187,7 @@ class VectorScreen:
                 if self.members.focus:
                     # focus has been given to the members window which monitors its own inputs
                     key = await self.members.input()
-                    if key in (32, 9, 261, 338, 258):   # go to next button
+                    if key in (10, 32, 9, 261, 338, 258):   # go to next button
                         self.members.set_nofocus()
                         self.vectors_btn.focus = True
                         self.buttwin.clear()
@@ -257,7 +257,7 @@ class MembersWin:
             self.memberwidgets = []
             for name in self.membernames:
                 if self.vector.vectortype == "SwitchVector":
-                    self.memberwidgets.append(widgets.SwitchMember(self.window, self.vector, name))
+                    self.memberwidgets.append(widgets.SwitchMember(self.stdscr, self.consoleclient, self.window, self.vector, name))
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -432,14 +432,56 @@ class MembersWin:
 
 
     async def input(self):
-        "This window is in focus"
+        "This window is in focus, and monitors inputs"
         self.stdscr.nodelay(True)
         while not self.consoleclient.stop:
             await asyncio.sleep(0)
-            key = self.stdscr.getch()
+            # check if a widget is in focus
+            for widget in self.memberwidgets:
+                if widget.focus:
+                    # a widget is in focus, the widget monitors its own input
+                    key = await widget.input()
+                    break
+            else:
+                key = self.stdscr.getch()
+
             if key == -1:
                 continue
-            if key in (32, 9, 261, 338, 258):   # go to next button
+
+            if key == 10:
+                if self.topmore_btn.focus:
+                    # scroll the window down
+                    self.topline -= 1
+                    if not self.topline:
+                        # if topline is zero, topmore button should not be shown
+                        self.topmore_btn.show = False
+                        self.topmore_btn.draw()
+                        self.topmorewin.noutrefresh()
+                        # but the top widget should get focus
+                        topwidget = self.memberwidgets[0]
+                        topwidget.focus = True
+                        topwidget.draw()
+                    self.noutrefresh()
+                    curses.doupdate()
+                    continue
+                elif self.botmore_btn.focus:
+                    # scroll the window up
+                    self.topline += 1
+                    botindex = self.widgetindex_bottom_displayed()
+                    if botindex == len(self.memberwidgets)-1:
+                        # bottom widget displayed, so more button should be hidden
+                        self.botmore_btn.show = False
+                        self.botmore_btn.draw()
+                        self.botmorewin.noutrefresh()
+                        # and the bottom widget should get focus
+                        botwidget = self.memberwidgets[botindex]
+                        botwidget.focus = True
+                        botwidget.draw()
+                    self.noutrefresh()
+                    curses.doupdate()
+                    continue
+
+            if key in (10, 32, 9, 261, 338, 258):   # go to next button
                 if self.botmore_btn.focus:
                     return key
                 # get the top widget being displayed
@@ -565,33 +607,3 @@ class MembersWin:
                     self.noutrefresh()
                     curses.doupdate()
                     continue
-            if key == 10:
-                if self.topmore_btn.focus:
-                    # scroll the window down
-                    self.topline -= 1
-                    if not self.topline:
-                        # if topline is zero, topmore button should not be shown
-                        self.topmore_btn.show = False
-                        self.topmore_btn.draw()
-                        self.topmorewin.noutrefresh()
-                        # but the top widget should get focus
-                        topwidget = self.memberwidgets[0]
-                        topwidget.focus = True
-                        topwidget.draw()
-                    self.noutrefresh()
-                    curses.doupdate()
-                elif self.botmore_btn.focus:
-                    # scroll the window up
-                    self.topline += 1
-                    botindex = self.widgetindex_bottom_displayed()
-                    if botindex == len(self.memberwidgets)-1:
-                        # bottom widget displayed, so more button should be hidden
-                        self.botmore_btn.show = False
-                        self.botmore_btn.draw()
-                        self.botmorewin.noutrefresh()
-                        # and the bottom widget should get focus
-                        botwidget = self.memberwidgets[botindex]
-                        botwidget.focus = True
-                        botwidget.draw()
-                    self.noutrefresh()
-                    curses.doupdate()

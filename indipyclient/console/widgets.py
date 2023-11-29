@@ -111,7 +111,11 @@ def draw_timestamp_state(consoleclient, window, vector, maxcols=None):
 
 class BaseMember:
 
-    def __init__(self, window, vector, name):
+    def __init__(self, stdscr, consoleclient, window, vector, name):
+
+        self.stdscr = stdscr
+        self.consoleclient = consoleclient
+        self.client = consoleclient.client
         self.window = window
         self.vector = vector
         membersdict = vector.members()
@@ -148,11 +152,20 @@ class BaseMember:
         self.name_btn.row = self.startline
         self.name_btn.draw()
 
+    async def input(self):
+        "This widget is in focus, and monitors inputs"
+        while not self.consoleclient.stop:
+            await asyncio.sleep(0)
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            return key
+
 
 class SwitchMember(BaseMember):
 
-    def __init__(self, window, vector, name):
-        super().__init__(window, vector, name)
+    def __init__(self, stdscr, consoleclient, window, vector, name):
+        super().__init__(stdscr, consoleclient, window, vector, name)
 
     def draw(self, startline=None):
         super().draw(startline)
