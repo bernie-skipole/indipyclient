@@ -190,6 +190,7 @@ class SwitchMember(BaseMember):
         self.off.show = False
         self.submit = Button(window, 'Submit', 0, 0)
         self.submit.show = False
+        self.linecount = 3
 
     def draw(self, startline=None):
         super().draw(startline)
@@ -199,7 +200,7 @@ class SwitchMember(BaseMember):
         label = self.member.label
         if label:
             self.window.addstr( self.startline+1, 1, label)
-        self.window.addstr( self.endline, 1, "----")
+        #self.window.addstr( self.endline, 1, "----")
         if self.vector.perm == "ro":
             return
         # Draw the on/off buttons
@@ -212,11 +213,7 @@ class SwitchMember(BaseMember):
         self.off.col = self.maxcols-10
         self.off.show = True
         self.off.draw()
-        # draw the submit button
-        self.submit.row = self.startline+2
-        self.submit.col = self.maxcols-15
-        self.submit.show = True
-        self.submit.draw()
+
 
     @property
     def focus(self):
@@ -241,37 +238,42 @@ class SwitchMember(BaseMember):
             if key == -1:
                 continue
             if self.name_btn.focus:
-                if key in (353, 260, 339, 338, 259, 258):
+                if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                    # go to next or previous member widget
                     return key
-                if key in (32, 9, 261, 10):
+                if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+                    # go to on button
                     self.name_btn.focus = False
                     self.on.focus = True
                     self.name_btn.draw()
                     self.on.draw()
                 else:
+                    # ignore any other key
                     continue
                 self.pad.noutrefresh()
                 curses.doupdate()
                 continue
             elif self.on.focus:
-                if key == 10:
+                if key == 10:                  # 10 return
+                    # set on key as bold, off key as standard
                     self.on.bold = True
                     self.off.bold = False
                     self.on.draw()
                     self.off.draw()
-                elif key in (338, 258):
-                    # down to submit
+                elif key in (338, 339, 258, 259):   # 338 page down, 258 down arrow, 339 page up, 259 up arrow
+                    # go to next or previous member widget
                     self.on.focus = False
                     self.on.draw()
-                    self.submit.focus = True
-                    self.submit.draw()
-                elif key in (353, 260, 339, 259):
+                    self.name_btn.focus = True
+                    self.name_btn.draw()
+                    return key
+                elif key in (353, 260): # 353 shift tab, 260 left arrow
                     # back to name_btn
                     self.name_btn.focus = True
                     self.on.focus = False
                     self.name_btn.draw()
                     self.on.draw()
-                elif key in (32, 9, 261):
+                elif key in (32, 9, 261):  # 32 space, 9 tab, 261 right arrow
                     # move to off btn
                     self.on.focus = False
                     self.on.draw()
@@ -283,42 +285,38 @@ class SwitchMember(BaseMember):
                 curses.doupdate()
                 continue
             elif self.off.focus:
-                if key == 10:
+                if key == 10:                      # 10 return
+                    # set off key as bold, on key as standard
                     self.off.bold = True
                     self.on.bold = False
                     self.off.draw()
                     self.on.draw()
-                elif key in (32, 9, 261, 338, 258):
-                    # move down to submit
+                elif key in (339, 259):   # 339 page up, 259 up arrow
+                    # go to previous member widget or scroll pad
                     self.off.focus = False
                     self.off.draw()
-                    self.submit.focus = True
-                    self.submit.draw()
-                elif key in (353, 260, 339, 259):
+                    self.name_btn.focus = True
+                    self.name_btn.draw()
+                    return key
+                elif key == 261:   # 261 right arrow
+                    # go to name_btn
+                    self.off.focus = False
+                    self.off.draw()
+                    self.name_btn.focus = True
+                    self.name_btn.draw()
+                elif key in (32, 9, 338, 339, 258, 259):   # 32 space, 9 tab, 338 page down, 258 down arrow
+                    # go to next widget or scroll pad
+                    self.off.focus = False
+                    self.off.draw()
+                    self.name_btn.focus = True
+                    self.name_btn.draw()
+                    return 258   # down arrow rather than tab to scroll pad
+                elif key in (353, 260):  # 353 shift tab, 260 left arrow
                     # back to on btn
                     self.off.focus = False
                     self.off.draw()
                     self.on.focus = True
                     self.on.draw()
-                else:
-                    continue
-                self.pad.noutrefresh()
-                curses.doupdate()
-                continue
-            elif self.submit.focus:
-                if key in (32, 9, 261, 338, 258):
-                    # move down to next member
-                    self.submit.focus = False
-                    self.submit.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                    return 258
-                if key in (353, 260, 339, 259):
-                    # back to off btn
-                    self.submit.focus = False
-                    self.submit.draw()
-                    self.off.focus = True
-                    self.off.draw()
                 else:
                     continue
                 self.pad.noutrefresh()
