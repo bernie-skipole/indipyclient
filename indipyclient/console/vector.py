@@ -271,11 +271,24 @@ class MembersWin:
         self.topmore_btn.show = True
         self.topmore_btn.focus = False
 
-        # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
-        self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
-        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
+        # window.subwin(nlines, ncols, begin_y, begin_x)
+        # Return a sub-window, whose upper-left corner is at (begin_y, begin_x), and whose width/height is ncols/nlines.
+
+
+        # botmorewin = 1 line height, columns just over half of self.maxrows, to give room on the right for submitwin
+        # starting at y = columns - 11, x = 0)
+        botmorewincols = self.maxcols//2 + 4
+        self.botmorewin = self.stdscr.subwin(1, botmorewincols, self.maxrows - 3, 0)
+        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, botmorewincols-11)
         self.botmore_btn.show = True
         self.botmore_btn.focus = False
+
+        # submitwin and submit_btn, located to the right of botmorewin
+        # submitwin = 1 line height, 12 columns width, starting at y=self.maxrows - 3, x = self.maxcols-14)
+        self.submitwin = self.stdscr.subwin(1, 12, self.maxrows - 3, botmorewincols + 4)
+        self.submit_btn = widgets.Button(self.submitwin, "Submit", 0, 0)
+        self.submit_btn.show = True
+        self.submit_btn.focus = False
 
         # top more btn on 7th line ( coords 0 to 6 )
         # bot more btn on line (self.maxrows - 3) + 1
@@ -385,6 +398,8 @@ class MembersWin:
             self.botmore_btn.show = True
         self.botmore_btn.draw()
 
+        self.submit_btn.draw()
+
 
     def noutrefresh(self):
 
@@ -402,6 +417,7 @@ class MembersWin:
         self.window.overwrite(self.stdscr, *coords)
         self.window.noutrefresh(*coords)
         self.botmorewin.noutrefresh()
+        self.submitwin.noutrefresh()
 
 
     def widgetindex_in_focus(self):
@@ -436,14 +452,18 @@ class MembersWin:
         self.stdscr.nodelay(True)
         while not self.consoleclient.stop:
             await asyncio.sleep(0)
-            # check if a widget is in focus
-            for widget in self.memberwidgets:
-                if widget.focus:
-                    # a widget is in focus, the widget monitors its own input
-                    key = await widget.input()
-                    break
-            else:
+            if self.vector.perm == "ro":
                 key = self.stdscr.getch()
+            else:
+                # check if a widget is in focus
+                for widget in self.memberwidgets:
+                    if widget.focus:
+                        # a widget is in focus, and writeable the widget monitors its own input
+                        key = await widget.input()
+                        break
+                else:
+                    # no widget is in focus
+                    key = self.stdscr.getch()
 
             if key == -1:
                 continue
