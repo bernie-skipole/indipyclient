@@ -268,7 +268,7 @@ class MembersWin:
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
-        self.topmore_btn.show = True
+        self.topmore_btn.show = False
         self.topmore_btn.focus = False
 
         # window.subwin(nlines, ncols, begin_y, begin_x)
@@ -279,15 +279,21 @@ class MembersWin:
         # starting at y = columns - 11, x = 0)
         botmorewincols = self.maxcols//2 + 4
         self.botmorewin = self.stdscr.subwin(1, botmorewincols, self.maxrows - 3, 0)
-        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, botmorewincols-11)
-        self.botmore_btn.show = True
+        if self.vector.perm == 'ro':
+            self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, botmorewincols-11)
+        else:
+            self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, botmorewincols-20)
+        self.botmore_btn.show = False
         self.botmore_btn.focus = False
 
         # submitwin and submit_btn, located to the right of botmorewin
-        # submitwin = 1 line height, 12 columns width, starting at y=self.maxrows - 3, x = self.maxcols-14)
-        self.submitwin = self.stdscr.subwin(1, 12, self.maxrows - 3, botmorewincols + 4)
+        # submitwin = 1 line height, 12 columns width, starting at y=self.maxrows - 3, x = botmorewincols + 1
+        self.submitwin = self.stdscr.subwin(1, 12, self.maxrows - 3, botmorewincols + 1)
         self.submit_btn = widgets.Button(self.submitwin, "Submit", 0, 0)
-        self.submit_btn.show = True
+        if self.vector.perm == 'ro':
+            self.submit_btn.show = False
+        else:
+            self.submit_btn.show = True
         self.submit_btn.focus = False
 
         # top more btn on 7th line ( coords 0 to 6 )
@@ -306,18 +312,23 @@ class MembersWin:
                 return
         self.topmore_btn.focus = False
         self.botmore_btn.focus = False
-        self.topmorewin.clear()
-        self.botmorewin.clear()
+        self.submit_btn.focus = False
         self.topmore_btn.draw()
         self.botmore_btn.draw()
+        self.submit_btn.draw()
         self.topmorewin.noutrefresh()
         self.botmorewin.noutrefresh()
+        self.submitwin.noutrefresh()
 
     def set_topfocus(self):
         self.focus = True
         self.botmore_btn.focus = False
         self.botmore_btn.draw()
         self.botmorewin.noutrefresh()
+        self.submit_btn.focus = False
+        self.submit_btn.draw()
+        self.submitwin.noutrefresh()
+
 
         if self.topline:
             # self.topline is not zero, so topmore button must be shown
@@ -340,6 +351,15 @@ class MembersWin:
         self.topmore_btn.focus = False
         self.topmore_btn.draw()
         self.topmorewin.noutrefresh()
+
+        if self.submit_btn.show:
+            self.submit_btn.focus = True
+            self.submit_btn.draw()
+            self.submitwin.noutrefresh()
+            return
+
+        # no submit button, so either bottom widget is set in focus
+        # or bottom more button is set in focus
 
         botindex = self.widgetindex_bottom_displayed()
         if botindex == len(self.memberwidgets)-1:
@@ -502,8 +522,20 @@ class MembersWin:
                     continue
 
             if key in (10, 32, 9, 261, 338, 258):   # go to next button
-                if self.botmore_btn.focus:
+                if self.submit_btn.focus:
                     return key
+                if self.botmore_btn.focus:
+                    if self.submit_btn.show:
+                        self.botmore_btn.focus = False
+                        self.botmore_btn.draw()
+                        self.submit_btn.focus = True
+                        self.submit_btn.draw()
+                        self.botmorewin.noutrefresh()
+                        self.submitwin.noutrefresh()
+                        curses.doupdate()
+                        continue
+                    else:
+                        return key
                 # get the top widget being displayed
                 topwidgetindex = self.widgetindex_top_displayed()
                 if self.topmore_btn.focus:
@@ -519,11 +551,19 @@ class MembersWin:
                     widget = self.memberwidgets[widgetindex]
                     # widget is the widget currently in focus
                     if widgetindex == len(self.memberwidgets) -1:
-                        # last widget, so go on to the vector button by returning from this members window
+                        # last widget,
                         widget.focus = False
                         widget.draw()
-                        self.noutrefresh()
-                        return key
+                        if self.submit_btn.show:
+                            self.submit_btn.focus = True
+                            self.submit_btn.draw()
+                            self.noutrefresh()
+                            curses.doupdate()
+                            continue
+                        else:
+                            # go on to the vector button by returning from this members window
+                            self.noutrefresh()
+                            return key
                     if self.memberwidgets[widgetindex+1].endline > self.topline + self.displaylines - 1:
                         # next widget is still not displayed
                         if key == 9:
