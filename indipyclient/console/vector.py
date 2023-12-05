@@ -608,17 +608,23 @@ class MembersWin:
                 # get the bottom widget being displayed
                 bottomwidgetindex = self.widgetindex_bottom_displayed()
                 if self.submit_btn.focus:
+                    self.submit_btn.focus = False
+                    self.submit_btn.draw()
+                    self.submitwin.noutrefresh()
                     if self.botmore_btn.show:
-                        self.submit_btn.focus = False
-                        self.submit_btn.draw()
-                        self.submitwin.noutrefresh()
                         self.botmore_btn.focus = True
                         self.botmore_btn.draw()
                         self.botmorewin.noutrefresh()
                         curses.doupdate()
                         continue
-###########################################################
-
+                    else:
+                        # botmore button not shown, so go to last widget
+                        prevwidget = self.memberwidgets[bottomwidgetindex]
+                        prevwidget.focus = True
+                        prevwidget.draw()
+                        self.noutrefresh()
+                        curses.doupdate()
+                        continue
                 if self.botmore_btn.focus:
                     self.botmore_btn.focus = False
                     self.botmore_btn.draw()
