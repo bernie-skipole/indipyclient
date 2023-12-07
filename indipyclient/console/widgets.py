@@ -54,6 +54,12 @@ class Button:
         else:
             self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
 
+    def alert(self):
+        "draw the button with a red background"
+        if not self._show:
+            return
+        self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.color_pair(3))
+
 
 
 def drawmessage(window, message, bold = False, maxcols=None):

@@ -520,6 +520,20 @@ class MembersWin:
                     self.noutrefresh()
                     curses.doupdate()
                     continue
+                elif self.submit_btn.focus:
+                    if True:
+                        # error condition
+                        curses.beep()
+                        self.submit_btn.alert()
+                        self.submitwin.noutrefresh()
+                        curses.doupdate()
+                        await asyncio.sleep(0.2)
+                        self.submit_btn.draw()
+                        self.submitwin.noutrefresh()
+                        curses.doupdate()
+                        continue
+
+                    return key
 
             if key in (10, 32, 9, 261, 338, 258):   # go to next button
                 if self.submit_btn.focus:
