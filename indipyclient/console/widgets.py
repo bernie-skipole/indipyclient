@@ -133,8 +133,6 @@ class BaseMember:
         self.window = window
         self.pad = pad
         self.vector = vector
-        membersdict = vector.members()
-        self.member = membersdict[name]
         self.name = name
         self.maxrows, self.maxcols = self.window.getmaxyx()
         self.startline = 0
@@ -143,6 +141,9 @@ class BaseMember:
         self.linecount = 4
         self.name_btn = Button(window, self.name, 0, 1)
         self._focus = False
+
+    def value(self):
+        return self.vector[self.name]
 
     @property
     def focus(self):
@@ -200,7 +201,7 @@ class SwitchMember(BaseMember):
         super().__init__(stdscr, consoleclient, window, pad, vector, name)
         # create  ON, OFF buttons
         self.on = Button(window, 'ON', 0, 0)
-        self.on.bold = True if self.member.membervalue == "On" else False
+        self.on.bold = True if self.value() == "On" else False
         self.on.show = False
         self.off = Button(window, 'OFF', 0, 0)
         self.off.show = False
@@ -215,11 +216,9 @@ class SwitchMember(BaseMember):
     def draw(self, startline=None):
         super().draw(startline)
         # draw the On or Off value
-        self.window.addstr( self.startline+1, self.maxcols-20, self.member.membervalue)
+        self.window.addstr( self.startline+1, self.maxcols-20, self.value() )
         # draw the label
-        label = self.member.label
-        if label:
-            self.window.addstr( self.startline+1, 1, label)
+        self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
         #self.window.addstr( self.endline, 1, "----")
         if self.vector.perm == "ro":
             return

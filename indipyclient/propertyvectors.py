@@ -66,6 +66,10 @@ class Vector(collections.UserDict):
         "Returns a dictionary of member objects"
         return self.data
 
+    def memberlabel(self, membername):
+        "Returns the member label, given a member name"
+        return self.data[membername].label
+
 
 
 class PropertyVector(Vector):
