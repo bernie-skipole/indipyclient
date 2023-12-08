@@ -55,10 +55,16 @@ class Button:
             self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
 
     def alert(self):
-        "draw the button with a red background"
+        "draw the button with a red background and INVALID Message"
         if not self._show:
             return
         self.window.addstr( self.row, self.col, "[" + self.btntext + "] INVALID!", curses.color_pair(3))
+
+    def ok(self):
+        "draw the button with a green background and OK Message"
+        if not self._show:
+            return
+        self.window.addstr( self.row, self.col, "[" + self.btntext + "] OK!", curses.color_pair(1))
 
 
 
@@ -220,6 +226,11 @@ class SwitchMember(BaseMember):
         self.off.show = True
         self.off.draw()
 
+
+    def newvalue(self):
+        if self.on.bold:
+            return "On"
+        return "Off"
 
     @property
     def focus(self):

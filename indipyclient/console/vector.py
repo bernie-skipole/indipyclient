@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys
+import asyncio, curses, sys, time
 
 import traceback
 #        except Exception:
@@ -187,6 +187,10 @@ class VectorScreen:
                 if self.members.focus:
                     # focus has been given to the members window which monitors its own inputs
                     key = await self.members.input()
+                    if key == 10 and self.members.submit_btn.focus:
+                        # The vector has been submitted, draw vector state
+                        widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector, maxcols=self.maxcols)
+                        self.tstatewin.noutrefresh()
                     if key in (10, 32, 9, 261, 338, 258):   # go to next button
                         self.members.set_nofocus()
                         self.vectors_btn.focus = True
@@ -522,19 +526,30 @@ class MembersWin:
                     curses.doupdate()
                     continue
                 elif self.submit_btn.focus:
-                    if True:
+                    if submitvector(self.vector, self.memberwidgets):
+                        # submitted ok condition
+                        self.submit_btn.ok()
+                        self.submitwin.noutrefresh()
+                        curses.doupdate()
+                        time.sleep(0.3)      # blocking, to avoid screen being changed while this time elapses
+                        self.submitwin.clear()
+                        self.submit_btn.draw()
+                        self.submitwin.noutrefresh()
+                        # curses.doupdate() - not needed, called by vector window on submission
+                        self.vector.state = 'Busy'
+                        return key
+                    else:
                         # error condition
                         self.submit_btn.alert()
                         self.submitwin.noutrefresh()
                         curses.doupdate()
-                        await asyncio.sleep(0.3)
+                        time.sleep(0.3)        # blocking, to avoid screen being changed while this time elapses
                         self.submitwin.clear()
                         self.submit_btn.draw()
                         self.submitwin.noutrefresh()
                         curses.doupdate()
                         continue
 
-                    return key
 
             if key in (10, 32, 9, 261, 338, 258):   # go to next button
                 if self.submit_btn.focus:
@@ -700,3 +715,22 @@ class MembersWin:
                     self.noutrefresh()
                     curses.doupdate()
                     continue
+
+
+def submitvector(vector, memberwidgets):
+    "Checks and submits the vector, if ok returns True, if not returns False"
+    if vector.vectortype == "SwitchVector":
+        members = {member.name:member.newvalue() for member in memberwidgets}
+        # members is a dictionary of membername : member value ('On' or 'Off')
+        # check if switches obey the switch rules 'OneOfMany','AtMostOne','AnyOfMany'
+        oncount = sum(value == 'On' for value in members.values())
+        if (vector.rule == 'OneOfMany') and oncount != 1:
+            # one, and only one must be set
+            return False
+        if (vector.rule == 'AtMostOne') and oncount > 1:
+            # one, or none can be set, but not more than 1
+            return False
+        vector.send_newSwitchVector(members=members)
+        return True
+    # other vector types tested here
+    return False
