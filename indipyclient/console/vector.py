@@ -90,7 +90,17 @@ class VectorScreen:
         return
 
     def update(self, event):
-        pass
+        "An event affecting this vector has occurred, re-draw the screen"
+        self.titlewin.clear()
+        self.titlewin.addstr(0, 1, self.devicename)
+        self.titlewin.addstr(1, 1, self.vectorname + " : " + self.vector.group)
+        self.titlewin.addstr(2, 1, self.vector.label, curses.A_BOLD)
+
+        self.messwin.clear()
+        self.tstatewin.clear()
+        self.members.update(event)
+        self.buttwin.clear()
+        self.show()
 
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -380,6 +390,11 @@ class MembersWin:
             self.botmore_btn.draw()
             self.botmorewin.noutrefresh()
 
+    def update(self, event):
+        "An event affecting this vector has occurred, re-draw the screen"
+        for widget in self.memberwidgets:
+            widget.update(event)
+        self.draw()
 
     def draw(self):
         self.window.clear()

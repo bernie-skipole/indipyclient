@@ -161,6 +161,10 @@ class BaseMember:
         "self.endline is the empty line after the vector"
         return self.startline + self.linecount - 1
 
+    def update(self, event):
+        "An event affecting this widget has occurred"
+        pass
+
     def draw(self, startline=None):
         if not startline is None:
             self.startline = startline
@@ -203,6 +207,10 @@ class SwitchMember(BaseMember):
         self.submit = Button(window, 'Submit', 0, 0)
         self.submit.show = False
         self.linecount = 3
+
+    def update(self, event):
+        "An event affecting this widget has occurred"
+        self.draw()
 
     def draw(self, startline=None):
         super().draw(startline)

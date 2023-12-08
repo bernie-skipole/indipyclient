@@ -48,6 +48,7 @@ class Event:
     def __init__(self, root, device, client):
         self.device = device
         self._client = client
+        self.vectorname = None
         if device is None:
             self.devicename = None
         else:

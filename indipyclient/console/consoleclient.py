@@ -130,15 +130,19 @@ class ConsoleControl:
                     continue
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
-                    continue
                 elif isinstance(self.screen, windows.DevicesScreen):
                     self.screen.update(event)
+                elif event.devicename != self.screen.devicename:
+                    # the remaining screens are only affected if the event devicename
+                    # is the device they refer to
                     continue
                 elif isinstance(self.screen, windows.ChooseVectorScreen):
-                    if event.devicename == self.screen.devicename:
-                        # An event has occurred affecting this device
-                        # vectors may need updating
-                        self.screen.update(event)
+                    self.screen.update(event)
+                elif isinstance(self.screen, vector.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                    # The event refers to this vector
+                    self.screen.update(event)
+
+
         except asyncio.CancelledError:
             self._shutdown = True
             raise
