@@ -287,8 +287,9 @@ class MembersWin:
         self.botmore_btn.focus = False
 
         # submitwin and submit_btn, located to the right of botmorewin
-        # submitwin = 1 line height, 12 columns width, starting at y=self.maxrows - 3, x = botmorewincols + 1
-        self.submitwin = self.stdscr.subwin(1, 12, self.maxrows - 3, botmorewincols + 1)
+        # submitwin = 1 line height, starting at y=self.maxrows - 3, x = botmorewincols + 1
+        # width = self.maxcols -x - 2
+        self.submitwin = self.stdscr.subwin(1, self.maxcols - botmorewincols - 3, self.maxrows - 3, botmorewincols + 1)
         self.submit_btn = widgets.Button(self.submitwin, "Submit", 0, 0)
         if self.vector.perm == 'ro':
             self.submit_btn.show = False
@@ -523,11 +524,11 @@ class MembersWin:
                 elif self.submit_btn.focus:
                     if True:
                         # error condition
-                        curses.beep()
                         self.submit_btn.alert()
                         self.submitwin.noutrefresh()
                         curses.doupdate()
-                        await asyncio.sleep(0.2)
+                        await asyncio.sleep(0.3)
+                        self.submitwin.clear()
                         self.submit_btn.draw()
                         self.submitwin.noutrefresh()
                         curses.doupdate()

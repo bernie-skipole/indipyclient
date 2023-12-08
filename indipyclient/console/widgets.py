@@ -58,7 +58,7 @@ class Button:
         "draw the button with a red background"
         if not self._show:
             return
-        self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.color_pair(3))
+        self.window.addstr( self.row, self.col, "[" + self.btntext + "] INVALID!", curses.color_pair(3))
 
 
 
@@ -312,11 +312,7 @@ class SwitchMember(BaseMember):
                     self.name_btn.draw()
                 elif key in (32, 9, 338, 339, 258, 259):   # 32 space, 9 tab, 338 page down, 258 down arrow
                     # go to next widget or scroll pad
-                    self.off.focus = False
-                    self.off.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                    return 258   # down arrow rather than tab to scroll pad
+                    return key
                 elif key in (353, 260):  # 353 shift tab, 260 left arrow
                     # back to on btn
                     self.off.focus = False
