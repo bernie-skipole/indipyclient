@@ -216,7 +216,7 @@ class SwitchMember(BaseMember):
     def draw(self, startline=None):
         super().draw(startline)
         # draw the On or Off value
-        self.window.addstr( self.startline+1, self.maxcols-20, self.value() )
+        self.window.addstr( self.startline+1, self.maxcols-20, self.value(), curses.A_BOLD )
         # draw the label
         self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
         #self.window.addstr( self.endline, 1, "----")
