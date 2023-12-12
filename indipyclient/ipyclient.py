@@ -461,8 +461,6 @@ class IPyClient(collections.UserDict):
             snap = {}
             if self.data:
                 for devicename, device in self.data.items():
-                    if not device.enable:
-                        continue
                     snap[devicename] = device._snapshot()
         # other threads can now access client.data
         # return the snapshot
@@ -584,6 +582,15 @@ class Device(collections.UserDict):
         # this is a dictionary of property name to propertyvector this device owns
         self.data = {}
 
+    @property
+    def enable(self):
+        "Returns True if any vector of this device has enable True, otherwise False"
+        ebl = False
+        for vector in self.data.values():
+            if vector.enable:
+                return True
+        return False
+
 
 class _Device(Device):
 
@@ -595,9 +602,6 @@ class _Device(Device):
 
         # and the device has a reference to its client
         self._client = client
-
-        # if self.enable is False, this device has been 'deleted'
-        self.enable = True
 
         # self.messages is a deque of tuples (timestamp, message)
         self.messages = collections.deque(maxlen=8)
@@ -611,8 +615,6 @@ class _Device(Device):
     def rxvector(self, root):
         """Handle received data, sets new propertyvector into self.data,
            or updates existing property vector and returns an event"""
-        if not self.enable:
-            raise ParseException
         if root.tag == "delProperty":
             return events.delProperty(root, self._client)
         elif root.tag == "message":
@@ -643,8 +645,6 @@ class _Device(Device):
     def _snapshot(self):
         snapdevice = Device(self.devicename)
         for vectorname, vector in self.data:
-            if not vector.enable:
-                continue
             snapdevice[vectorname] = vector._snapshot()
         snapdevice.messages = list(self.messages)
         return snapdevice

@@ -84,8 +84,22 @@ class delProperty(Event):
         super().__init__(root, device, client)
         if self.devicename is None:
             raise ParseException
+        if not self.device.enable:
+            # already deleted
+            raise ParseException
         self.vectorname = root.get("name")
         self.message = root.get("message", "")
+        # properties is a dictionary of property name to propertyvector this device owns
+        # This method updates a property vector and sets it into properties
+        properties = device.data
+        if self.vectorname:
+            # does this vector already exist, if it does, disable it
+            if vector := properties.get(self.vectorname]:
+                vector.enable = False
+        else:
+            # No vectorname given, disable all properties
+            for vector in properties.values():
+                vector.enable = False
 
 
 class defVector(Event, UserDict):
@@ -399,7 +413,11 @@ class setVector(Event, UserDict):
             raise ParseException
         # This vector must already exist, properties is a dictionary of property name to propertyvector this device owns
         properties = device.data
-        if not self.vectorname in properties:
+        # if it exists, check enable status
+        if vector := properties.get(self.vectorname]:
+            if not vector.enable:
+                raise ParseException
+        else:
             raise ParseException
         state = root.get("state")
         if state and (state in ('Idle','Ok','Busy','Alert')):

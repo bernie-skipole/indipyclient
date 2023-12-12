@@ -28,6 +28,8 @@ class Vector(collections.UserDict):
         self._rule = None
         self._perm = None
         self.timeout = None
+        # if self.enable is False, this property is 'deleted'
+        self.enable = True
 
         # this is a dictionary of member name to member this vector owns
         self.data = {}
@@ -81,8 +83,6 @@ class PropertyVector(Vector):
         self._client = client
         self.device = device
         self.devicename = device.devicename
-        # if self.enable is False, this property ignores incoming traffic
-        self.enable = True
 
 
     def checkvalue(self, value, allowed):
@@ -109,6 +109,9 @@ class PropertyVector(Vector):
 
     def _setvector(self, event):
         "Updates this vector with new values after a set... vector has been received"
+        if not self.enable:
+            # this property does not exist
+            return
         if event.state:
             self.state = event.state
         if event.timestamp:
@@ -126,6 +129,7 @@ class PropertyVector(Vector):
         snapvector = Vector(self.name, self.label, self.group, self.state, self.timestamp, self.message)
         snapvector.vectortype = self.vectortype
         snapvector.devicename = self.devicename
+        snapvector.enable = self.enable
         if hasattr(self, 'rule'):
             snapvector.rule = self.rule
         if hasattr(self, 'perm'):
@@ -199,11 +203,10 @@ class SwitchVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
+        self.enable = True
 
     def _newSwitchVector(self, timestamp=None, members={}):
         "Creates the xmldata for sending a newSwitchVector"
-        if not self.device.enable:
-            return
         if not self.enable:
             return
         if timestamp is None:
@@ -297,6 +300,7 @@ class LightVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = LightMember(membername, event.memberlabels[membername], membervalue)
+        self.enable = True
 
     def _snapshot(self):
         snapvector = PropertyVector._snapshot(self)
@@ -347,12 +351,11 @@ class TextVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = TextMember(membername, event.memberlabels[membername], membervalue)
+        self.enable = True
 
 
     def _newTextVector(self, timestamp=None, members={}):
         "Creates the xmldata for sending a newTextVector"
-        if not self.device.enable:
-            return
         if not self.enable:
             return
         if timestamp is None:
@@ -444,12 +447,11 @@ class NumberVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
+        self.enable = True
 
 
     def _newNumberVector(self, timestamp=None, members={}):
         "Creates the xmldata for sending a newNumberVector"
-        if not self.device.enable:
-            return
         if not self.enable:
             return
         if timestamp is None:
@@ -543,3 +545,4 @@ class BLOBVector(PropertyVector):
         # create  members
         for membername, label in event.memberlabels.items():
             self.data[membername] = BLOBMember(membername, label)
+        self.enable = True
