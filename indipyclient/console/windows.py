@@ -219,8 +219,10 @@ class DevicesScreen:
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
         self.topmore_btn.show = False
 
+        dnumber = self.devicenumber()
+
         # devices window - create a pad of 40+2*devices lines, full row
-        self.devwin = curses.newpad(40 + 2* len(self.client), self.maxcols)
+        self.devwin = curses.newpad(40 + 2* dnumber, self.maxcols)
 
         # devices window top and bottom row numbers
         self.devwintop = 8
@@ -228,8 +230,8 @@ class DevicesScreen:
         row = self.maxrows - 7
         # very large screen may produce a window bigger that the pad,
         # so reduce it to around ten times less than the pad
-        if row > 30 + 2* len(self.client):
-            row = 30 + 2* len(self.client)
+        if row > 30 + 2* dnumber:
+            row = 30 + 2* dnumber
         self.devwinbot = row + row % 2
 
         # topline of pad to show
@@ -251,6 +253,14 @@ class DevicesScreen:
         # devicename to button dictionary
         self.devices = {}
 
+    def devicenumber(self):
+        "Returns the number of enabled devices"
+        dnumber = 0
+        for device in self.client.values():
+            if device.enable:
+                dnumber += 1
+        return dnumber
+
 
     def show(self):
         "Displays the screen with list of devices"
@@ -261,7 +271,7 @@ class DevicesScreen:
             widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
 
         # draw status
-        if not len(self.client):
+        if not self.devicenumber():
             self.statwin.addstr(0, 0, "No devices have been discovered")
         else:
             self.statwin.addstr(0, 0, "Choose a device:               ")
@@ -344,7 +354,7 @@ class DevicesScreen:
     @property
     def bottomdevice(self):
         "Returns the index of the bottom device being displayed"
-        idx_of_last_device = len(self.client) - 1
+        idx_of_last_device = self.devicenumber() - 1
 
         last_displayed = self.botline//2
 
@@ -358,7 +368,7 @@ class DevicesScreen:
         self.devwin.clear()
         self.botmorewin.clear()
 
-        if not len(self.client):
+        if not self.devicenumber():
             self.focus = None
             self.topmore_btn.show = False
             self.botmore_btn.show = False
@@ -370,7 +380,8 @@ class DevicesScreen:
         self.devices.clear()
 
         colnumber = self.maxcols//2 - 6
-        for linenumber, devicename in enumerate(self.client):
+        enabledclients = {devicename:device for devicename,device in self.client.items() if device.enable}
+        for linenumber, devicename in enumerate(enabledclients):
             self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber*2, colnumber)
 
         # start with all device buttons focus False
@@ -394,7 +405,7 @@ class DevicesScreen:
         for devbutton in self.devices.values():
             devbutton.draw()
 
-        number_of_devices = len(self.client)
+        number_of_devices = self.devicenumber()
         # each device takes 2 lines
         if self.bottomdevice < number_of_devices -1:
             self.botmore_btn.show = True
@@ -630,7 +641,7 @@ class ChooseVectorScreen:
             self.groupwin = GroupButtons(self.stdscr, self.consoleclient)
 
             # window showing the vectors of the active group
-            self.vectors = VectorListWin(self.stdscr, self.consoleclient)
+            self.vectorswin = VectorListWin(self.stdscr, self.consoleclient)
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -648,6 +659,10 @@ class ChooseVectorScreen:
         self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 5)
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
+    @property
+    def devices(self):
+        "Returns a list of enabled devices"
+        return [ device for device in self.client.values() if device.enable ]
 
     @property
     def activegroup(self):
@@ -658,7 +673,7 @@ class ChooseVectorScreen:
     def show(self):
         "Displays device"
 
-        if self.devicename not in self.client:
+        if self.devicename not in self.devices:
             widgets.drawmessage(self.messwin, f"{self.devicename} not found!", maxcols=self.maxcols)
             self.devices_btn.draw()
             self.messages_btn.draw()
@@ -677,14 +692,14 @@ class ChooseVectorScreen:
 
 
         # get the groups this device contains, use a set to avoid duplicates
-        groupset = {vector.group for vector in self.device.values()}
+        groupset = {vector.group for vector in self.device.values() if vector.enable}
         self.groups = sorted(list(groupset))
         # populate a widget showing horizontal list of groups
         self.groupwin.set_groups(self.groups)
         self.groupwin.draw()
 
         # Draw the device vector widgets, as given by self.activegroup
-        self.vectors.draw(self.devicename, self.activegroup)
+        self.vectorswin.draw(self.devicename, self.activegroup)
 
         # draw the bottom buttons
         self.devices_btn.draw()
@@ -696,7 +711,7 @@ class ChooseVectorScreen:
         self.messwin.noutrefresh()
         self.groupwin.noutrefresh()
 
-        self.vectors.noutrefresh()
+        self.vectorswin.noutrefresh()
 
         self.buttwin.noutrefresh()
 
@@ -729,10 +744,10 @@ class ChooseVectorScreen:
                         continue
                 elif self.focus == "Vectors":
                     # focus has been given to Vectors which monitors its own inputs
-                    key = await self.vectors.input()
+                    key = await self.vectorswin.input()
                     if key == 10:
                         # a vector has been chosen, get the vectorname chosen
-                        self.vectorname = self.vectors.vectorname
+                        self.vectorname = self.vectorswin.vectorname
                         return "Vectors"
                 else:
                     key = self.stdscr.getch()
@@ -776,7 +791,7 @@ class ChooseVectorScreen:
                     # key not recognised
                     continue
                 if self.focus == "Vectors":
-                    self.vectors.focus = False
+                    self.vectorswin.focus = False
                 elif self.focus == "Groups":
                     self.groupwin.focus = False
                 elif self.focus == "Devices":
@@ -787,9 +802,9 @@ class ChooseVectorScreen:
                     self.quit_btn.focus = False
                 if newfocus == "Vectors":
                     if self.focus == "Groups":
-                        self.vectors.set_top_focus()
+                        self.vectorswin.set_top_focus()
                     else:
-                        self.vectors.set_bot_focus()
+                        self.vectorswin.set_bot_focus()
                 elif newfocus == "Groups":
                     self.groupwin.focus = True
                 elif newfocus == "Devices":
@@ -802,13 +817,13 @@ class ChooseVectorScreen:
 
                 # so buttons have been set with the appropriate focus
                 # now draw them
-                self.vectors.draw(self.devicename, self.groupwin.active)
+                self.vectorswin.draw(self.devicename, self.groupwin.active)
                 self.groupwin.draw()
                 self.devices_btn.draw()
                 self.messages_btn.draw()
                 self.quit_btn.draw()
 
-                self.vectors.noutrefresh()
+                self.vectorswin.noutrefresh()
                 self.groupwin.noutrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
@@ -1272,7 +1287,7 @@ class VectorListWin:
         self.device = self.client[devicename]
         self.groupname = groupname
 
-        vectorlist = [vector for vector in self.device.values() if vector.group == self.groupname]
+        vectorlist = [vector for vector in self.device.values() if vector.group == self.groupname and vector.enable]
         sortedlist = sorted(vectorlist, key=lambda x: x.name)
         if nochange and (self.vectors == sortedlist):
             # no change

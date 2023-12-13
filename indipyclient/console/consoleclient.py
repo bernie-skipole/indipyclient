@@ -136,6 +136,8 @@ class ConsoleControl:
                     # the remaining screens are only affected if the event devicename
                     # is the device they refer to
                     continue
+               ##################### check for deleted vectors here, and if so change self.screen
+
                 elif isinstance(self.screen, windows.ChooseVectorScreen):
                     self.screen.update(event)
                 elif isinstance(self.screen, vector.VectorScreen) and (self.screen.vectorname == event.vectorname):
@@ -174,7 +176,7 @@ class ConsoleControl:
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    devices = {devicename.lower():device for devicename, device in self.client.items()}
+                    devices = {devicename.lower():device for devicename, device in self.client.items() if device.enable}
                     if result in devices:
                         devicename = devices[result].devicename
                         self.screen = windows.ChooseVectorScreen(self.stdscr, self, devicename)
