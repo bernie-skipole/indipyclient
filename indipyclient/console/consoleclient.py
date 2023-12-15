@@ -130,17 +130,34 @@ class ConsoleControl:
                     continue
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
-                elif isinstance(self.screen, windows.DevicesScreen):
+                    continue
+                if isinstance(self.screen, windows.DevicesScreen):
                     self.screen.update(event)
-                elif event.devicename != self.screen.devicename:
+                    continue
+                if event.devicename != self.screen.devicename:
                     # the remaining screens are only affected if the event devicename
                     # is the device they refer to
                     continue
-               ##################### check for deleted vectors here, and if so change self.screen
-
-                elif isinstance(self.screen, windows.ChooseVectorScreen):
+                if isinstance(event, delProperty):
+                    if event.vectorname is None:
+                        # the whole device is disabled, show devicesscreen
+                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
+                    if isinstance(self.screen, windows.ChooseVectorScreen):
+                        self.screen.update(event)
+                        continue
+                    if isinstance(self.screen, vector.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                        # This vector has been disabled
+                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, devicename)
+                        self.screen.show()
+                        continue
+                    continue
+                # so its not a delete property
+                if isinstance(self.screen, windows.ChooseVectorScreen):
                     self.screen.update(event)
-                elif isinstance(self.screen, vector.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                    continue
+                if isinstance(self.screen, vector.VectorScreen) and (self.screen.vectorname == event.vectorname):
                     # The event refers to this vector
                     self.screen.update(event)
 
