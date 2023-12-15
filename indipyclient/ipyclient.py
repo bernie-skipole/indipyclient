@@ -124,23 +124,13 @@ class IPyClient(collections.UserDict):
         # If nothing sent or received after idle_timeout reached, then a getProperties is transmitted
         self.idle_timer = time.time()
         self.idle_timeout = 20
-        # this is set to True, to shut down the client
-        self._shutdown = False
         # and shutdown routine sets this to True to stop coroutines
         self._stop = False
         # this is set to True when asyncrun is finished
         self.stopped = False
 
     def shutdown(self):
-        self._shutdown = True
-
-    async def _checkshutdown(self):
-        "Monitors self._shutdown flag and shuts down the client"
-        while not self._shutdown:
-            await asyncio.sleep(0)
-        # now stop co-routines
         self._stop = True
-
 
     async def report(self, message):
         timestamp = datetime.now(tz=timezone.utc)
@@ -192,7 +182,7 @@ class IPyClient(collections.UserDict):
                     if count >= 10:
                         break
         finally:
-            self._shutdown = True
+            self._stop = True
 
 
     def _clear_connection(self):
@@ -239,7 +229,7 @@ class IPyClient(collections.UserDict):
                 await writer.wait_closed()
                 self._clear_connection()
         except KeyboardInterrupt:
-            self._shutdown = True
+            self._stop = True
         finally:
             self.connected = False
 
@@ -272,7 +262,7 @@ class IPyClient(collections.UserDict):
                     self.tx_timer = time.time()
                 self.idle_timer = time.time()
         except KeyboardInterrupt:
-            self._shutdown = True
+            self._stop = True
 
 
     async def _run_rx(self, reader):
@@ -296,7 +286,7 @@ class IPyClient(collections.UserDict):
             # catches StopAsyncIteration and stops this coroutine
             pass
         except KeyboardInterrupt:
-            self._shutdown = True
+            self._stop = True
 
 
     async def _datasource(self, reader):
@@ -354,7 +344,7 @@ class IPyClient(collections.UserDict):
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
                     except KeyboardInterrupt:
-                        self._shutdown = True
+                        self._stop = True
                         break
                     except ET.ParseError as e:
                         message = b''
@@ -366,9 +356,9 @@ class IPyClient(collections.UserDict):
                     message = b''
                     messagetagnumber = None
         except KeyboardInterrupt:
-            self._shutdown = True
+            self._stop = True
         except asyncio.CancelledError:
-            self._shutdown = True
+            self._stop = True
             raise
 
 
@@ -399,9 +389,9 @@ class IPyClient(collections.UserDict):
                     binarydata += data
                     # could put a max value here to stop this increasing indefinetly
         except KeyboardInterrupt:
-            self._shutdown = True
+            self._stop = True
         except asyncio.CancelledError:
-            self._shutdown = True
+            self._stop = True
             raise
 
 
@@ -451,7 +441,7 @@ class IPyClient(collections.UserDict):
                 # and an event has been created, call the user event handling function
                 await self.rxevent(event)
         finally:
-            self._shutdown = True
+            self._stop = True
 
 
     def snapshot(self):
@@ -486,7 +476,7 @@ class IPyClient(collections.UserDict):
             elif propertyvector.vectortype == "BLOBVector":
                 propertyvector.send_newBLOBVector(timestamp, members)
         except KeyboardInterrupt:
-            self._shutdown = True
+            self._stop = True
 
 
     async def _autosend_getProperties(self):
@@ -521,9 +511,9 @@ class IPyClient(collections.UserDict):
                             if count >= 10:
                                 break
         except KeyboardInterrupt:
-            self._shutdown = True
+            self._stop = True
         except asyncio.CancelledError:
-            self._shutdown = True
+            self._stop = True
             raise
 
 
@@ -566,7 +556,7 @@ class IPyClient(collections.UserDict):
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self._stop = False
-        await asyncio.gather(self._comms(), self._rxhandler(), self._autosend_getProperties(), self._checkshutdown(), return_exceptions=True)
+        await asyncio.gather(self._comms(), self._rxhandler(), self._autosend_getProperties(), return_exceptions=True)
         self.stopped = True
 
 

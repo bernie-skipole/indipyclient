@@ -94,7 +94,7 @@ class delProperty(Event):
         properties = device.data
         if self.vectorname:
             # does this vector already exist, if it does, disable it
-            if vector := properties.get(self.vectorname]:
+            if vector := properties.get(self.vectorname):
                 vector.enable = False
         else:
             # No vectorname given, disable all properties
@@ -414,7 +414,7 @@ class setVector(Event, UserDict):
         # This vector must already exist, properties is a dictionary of property name to propertyvector this device owns
         properties = device.data
         # if it exists, check enable status
-        if vector := properties.get(self.vectorname]:
+        if vector := properties.get(self.vectorname):
             if not vector.enable:
                 raise ParseException
         else:

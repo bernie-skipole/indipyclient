@@ -660,11 +660,6 @@ class ChooseVectorScreen:
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
     @property
-    def devices(self):
-        "Returns a list of enabled devices"
-        return [ device for device in self.client.values() if device.enable ]
-
-    @property
     def activegroup(self):
         "Return name of group currently active"
         return self.groupwin.active
@@ -673,7 +668,9 @@ class ChooseVectorScreen:
     def show(self):
         "Displays device"
 
-        if self.devicename not in self.devices:
+        devices = [ devicename for devicename, device in self.client.items() if device.enable ]
+
+        if self.devicename not in devices:
             widgets.drawmessage(self.messwin, f"{self.devicename} not found!", maxcols=self.maxcols)
             self.devices_btn.draw()
             self.messages_btn.draw()
@@ -886,6 +883,8 @@ class GroupButtons:
 
     def set_groups(self, groups):
         self.groups = groups.copy()
+        if not len(self.groups):
+            self.groups = ["default"]
         self.groupcols.clear()
         if self.groupfocus:
             if self.groupfocus not in self.groups:
