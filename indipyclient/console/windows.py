@@ -631,6 +631,7 @@ class ChooseVectorScreen:
 
         # messages window (1 line, full row, starting at 2,0)
         self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
+        self.lastmessage = ""
 
         # list areas of the screen, one of these areas as the current 'focus'
         # Groups being the horizontal line of group names associated with a device
@@ -696,7 +697,8 @@ class ChooseVectorScreen:
 
         self.device = self.client[self.devicename]
         if self.device.messages:
-            widgets.drawmessage(self.messwin, self.device.messages[0], maxcols=self.maxcols)
+            self.lastmessage = self.device.messages[0]
+            widgets.drawmessage(self.messwin, self.lastmessage, maxcols=self.maxcols)
 
 
         # get the groups this device contains, use a set to avoid duplicates
@@ -727,8 +729,28 @@ class ChooseVectorScreen:
 
 
     def update(self, event):
-        "currently this is the equivalent of calling show"
-        self.show()
+        "Change anything that has been updated"
+        if self.device.messages:
+            if self.device.messages[0] != self.lastmessage:
+                self.lastmessage = self.device.messages[0]
+                widgets.drawmessage(self.messwin, self.lastmessage, maxcols=self.maxcols)
+                self.messwin.noutrefresh()
+
+
+        # get the groups this device contains, use a set to avoid duplicates
+        groupset = {vector.group for vector in self.device.values() if vector.enable}
+        groups = sorted(list(groupset))
+        if self.groups != groups:
+            self.groups = groups
+            # populate a widget showing horizontal list of groups
+            self.groupwin.set_groups(self.groups)
+            self.groupwin.draw()
+            self.groupwin.noutrefresh()
+
+        # Draw the device vector widgets, as given by self.activegroup
+        self.vectorswin.draw(self.devicename, self.activegroup)
+        self.vectorswin.noutrefresh()
+        curses.doupdate()
 
 
     async def inputs(self):
