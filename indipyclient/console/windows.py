@@ -622,6 +622,9 @@ class ChooseVectorScreen:
         self.vectorname = None
         self.client = consoleclient.client
 
+        # if this is set to True, the input coroutine will stop
+        self._close = False
+
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
         self.titlewin.addstr(0, 0, "Device: " + self.devicename, curses.A_BOLD)
@@ -658,6 +661,14 @@ class ChooseVectorScreen:
 
         self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 5)
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
+
+
+    def close(self):
+        "Sets _close to True, which stops the input co-routine"
+        self._close = True
+        self.groupwin.close()
+        self.vectorswin.close()
+
 
     @property
     def activegroup(self):
@@ -715,10 +726,9 @@ class ChooseVectorScreen:
         curses.doupdate()
 
 
-
-
     def update(self, event):
-        pass
+        "currently this is the equivalent of calling show"
+        self.show()
 
 
     async def inputs(self):
@@ -726,7 +736,7 @@ class ChooseVectorScreen:
 
         try:
             self.stdscr.nodelay(True)
-            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
+            while (not self.consoleclient.stop) and (self.consoleclient.screen is self) and (not self._close):
                 await asyncio.sleep(0)
                 if self.focus not in self.screenparts:
                     # as default, start with focus on the Devices button
@@ -859,6 +869,12 @@ class GroupButtons:
         self.nextfocus = False
         self.prevfocus = False
 
+        # if this is set to True, the input coroutine will stop
+        self._close = False
+
+    def close(self):
+        "Sets _close to True, which stops the input co-routine"
+        self._close = True
 
     def noutrefresh(self):
         self.window.noutrefresh()
@@ -984,7 +1000,7 @@ class GroupButtons:
     async def input(self):
         "Get group button pressed, or next or previous"
         self.stdscr.nodelay(True)
-        while not self.consoleclient.stop:
+        while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
             key = self.stdscr.getch()
             if key == -1:
@@ -1144,6 +1160,9 @@ class VectorListWin:
         # this is True, if this widget is in focus
         self._focus = False
 
+        # if this is set to True, the input coroutine will stop
+        self._close = False
+
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
@@ -1167,6 +1186,9 @@ class VectorListWin:
         # start with vectorname None, a vector to view will be chosen by this screen
         self.vectorname = None
 
+    def close(self):
+        "Sets _close to True, which stops the input co-routine"
+        self._close = True
 
     @property
     def padbot(self):
@@ -1408,7 +1430,7 @@ class VectorListWin:
     async def input(self):
         "Get key pressed while this object has focus"
         self.stdscr.nodelay(True)
-        while not self.consoleclient.stop:
+        while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
             key = self.stdscr.getch()
             if key == -1:

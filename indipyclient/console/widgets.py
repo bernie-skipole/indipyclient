@@ -141,6 +141,8 @@ class BaseMember:
         self.linecount = 4
         self.name_btn = Button(window, self.name, 0, 1)
         self._focus = False
+        # if this is set to True, the input coroutine will stop
+        self._close = False
 
     def value(self):
         return self.vector[self.name]
@@ -174,12 +176,13 @@ class BaseMember:
 
     async def input(self):
         "This widget is in focus, and monitors inputs"
-        while not self.consoleclient.stop:
+        while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
             key = self.stdscr.getch()
             if key == -1:
                 continue
             return key
+        return -1
 
 
 #<!ATTLIST defSwitchVector
@@ -256,7 +259,7 @@ class SwitchMember(BaseMember):
 
     async def input(self):
         "This widget is in focus, and monitors inputs"
-        while not self.consoleclient.stop:
+        while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
             key = self.stdscr.getch()
             if key == -1:
@@ -342,3 +345,4 @@ class SwitchMember(BaseMember):
                 self.pad.noutrefresh()
                 curses.doupdate()
                 continue
+        return -1

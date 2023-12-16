@@ -29,6 +29,9 @@ class VectorScreen:
         self.device = self.client[self.devicename]
         self.vector = self.device[self.vectorname]
 
+        # if this is set to True, the input coroutine will stop
+        self._close = False
+
         # title window  (3 lines, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
         self.titlewin.addstr(0, 1, self.devicename)
@@ -60,6 +63,11 @@ class VectorScreen:
         self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 10)
         self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2)
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 11)
+
+    def close(self):
+        "Sets _close to True, which stops the input co-routine"
+        self._close = True
+        self.members.close()
 
 
     def show(self):
@@ -182,7 +190,7 @@ class VectorScreen:
 
         try:
             self.stdscr.nodelay(True)
-            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
+            while (not self.consoleclient.stop) and (not self._close):
                 await asyncio.sleep(0)
                 key = self.stdscr.getch()
 
@@ -250,6 +258,9 @@ class MembersWin:
         self.vector = vector
         self.vectorname = vector.name
 
+        # if this is set to True, the input coroutine will stop
+        self._close = False
+
         # pad lines depends on members, note this can be re-sized
         # using window.resize(nlines, ncols)
 
@@ -316,6 +327,12 @@ class MembersWin:
         # displaylines = (self.maxrows - 2) - 7  - 1
 
         self.displaylines = self.maxrows - 10
+
+    def close(self):
+        "Sets _close to True, which stops the input co-routine"
+        self._close = True
+        for widget in self.memberwidgets:
+            widget.close()
 
     def set_nofocus(self):
         self.focus = False
@@ -490,7 +507,7 @@ class MembersWin:
     async def input(self):
         "This window is in focus, and monitors inputs"
         self.stdscr.nodelay(True)
-        while not self.consoleclient.stop:
+        while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
             if self.vector.perm == "ro":
                 key = self.stdscr.getch()
