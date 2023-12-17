@@ -622,8 +622,8 @@ class ChooseVectorScreen:
         self.vectorname = None
         self.client = consoleclient.client
 
-        # if this is set to True, the input coroutine will stop
-        self._close = False
+        # if this is set to a string, the input coroutine will return it
+        self._close = ""
 
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
@@ -664,9 +664,9 @@ class ChooseVectorScreen:
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
 
-    def close(self):
-        "Sets _close to True, which stops the input co-routine"
-        self._close = True
+    def close(self, value):
+        "Sets _close, which is returned by the input co-routine"
+        self._close = value
         self.groupwin.close()
         self.vectorswin.close()
 
@@ -758,7 +758,7 @@ class ChooseVectorScreen:
 
         try:
             self.stdscr.nodelay(True)
-            while (not self.consoleclient.stop) and (self.consoleclient.screen is self) and (not self._close):
+            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
                 await asyncio.sleep(0)
                 if self.focus not in self.screenparts:
                     # as default, start with focus on the Devices button
@@ -782,6 +782,8 @@ class ChooseVectorScreen:
                     key = self.stdscr.getch()
 
                 if key == -1:
+                    if self._close:
+                        return self._close
                     continue
 
                 if key == 10:

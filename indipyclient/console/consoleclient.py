@@ -141,19 +141,15 @@ class ConsoleControl:
                 if isinstance(event, delProperty):
                     if event.vectorname is None:
                         # the whole device is disabled, show devicesscreen
-                        await self.screen.close()
-                        self.screen = windows.DevicesScreen(self.stdscr, self)
-                        self.screen.show()
+                        self.screen.close("Devices")
                         continue
                     if isinstance(self.screen, windows.ChooseVectorScreen):
                         # one vector has been disabled, update the ChooseVectorScreen
                         self.screen.update(event)
                         continue
                     if isinstance(self.screen, vector.VectorScreen) and (self.screen.vectorname == event.vectorname):
-                        # This vector has been disabled
-                        await self.screen.close()
-                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, devicename)
-                        self.screen.show()
+                        # This vector has been disabled, show ChooseVectorScreen
+                        self.screen.close("Vectors")
                         continue
                     continue
                 # so its not a delete property
