@@ -204,6 +204,9 @@ class DevicesScreen:
         self.consoleclient = consoleclient
         self.client = consoleclient.client
 
+        # if this is set to a string, the input coroutine will return it
+        self._close = ""
+
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
         self.titlewin.addstr(0, 0, "Devices", curses.A_BOLD)
@@ -252,6 +255,10 @@ class DevicesScreen:
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
         # devicename to button dictionary
         self.devices = {}
+
+    def close(self, value):
+        "Sets _close, which is returned by the input co-routine"
+        self._close = value
 
     def devicenumber(self):
         "Returns the number of enabled devices"
@@ -475,6 +482,8 @@ class DevicesScreen:
                 await asyncio.sleep(0)
                 key = self.stdscr.getch()
                 if key == -1:
+                    if self._close:
+                        return self._close
                     continue
                 # which button has focus
                 btnlist = list(self.devices.keys())

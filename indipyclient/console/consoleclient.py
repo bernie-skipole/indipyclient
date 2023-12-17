@@ -3,6 +3,12 @@ import asyncio, sys
 
 import curses
 
+import traceback
+#        except Exception:
+#            traceback.print_exc(file=sys.stderr)
+#            raise
+
+
 from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message)
@@ -118,10 +124,8 @@ class ConsoleControl:
                         self.screen.showunconnected()
                     else:
                         # when not connected, show messages screen
-                        self.screen = windows.MessagesScreen(self.stdscr, self)
-                        self.screen.show()
-                if self.stop:
-                    break
+                        self.screen.close("Messages")
+                    continue
                 # update the screen if an event is received
                 try:
                     event = self.eventque.pop()
@@ -165,6 +169,7 @@ class ConsoleControl:
             self._shutdown = True
             raise
         except Exception:
+            traceback.print_exc(file=sys.stderr)
             self._shutdown = True
         finally:
             self.updatescreenstopped = True

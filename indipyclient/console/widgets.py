@@ -144,6 +144,10 @@ class BaseMember:
         # if this is set to True, the input coroutine will stop
         self._close = False
 
+    def close(self):
+        "Sets _close to True, which stops the input co-routine"
+        self._close = True
+
     def value(self):
         return self.vector[self.name]
 

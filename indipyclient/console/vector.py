@@ -190,7 +190,7 @@ class VectorScreen:
 
         try:
             self.stdscr.nodelay(True)
-            while self.consoleclient.stop:
+            while not self.consoleclient.stop:
                 await asyncio.sleep(0)
                 key = self.stdscr.getch()
 
