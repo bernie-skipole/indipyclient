@@ -350,3 +350,41 @@ class SwitchMember(BaseMember):
                 curses.doupdate()
                 continue
         return -1
+
+
+# <!ATTLIST defLightVector
+# device %nameValue; #REQUIRED    name of Device
+# name %nameValue; #REQUIRED      name of Property
+# label %labelValue; #IMPLIED     GUI label, use name by default
+# group %groupTag; #IMPLIED       Property group membership, blank by default
+# state %propertyState; #REQUIRED current state of Property
+# timestamp %timeValue #IMPLIED   moment when these data were valid
+# message %textValue #IMPLIED     commentary
+
+class LightMember(BaseMember):
+
+    def __init__(self, stdscr, consoleclient, window, pad, vector, name):
+        super().__init__(stdscr, consoleclient, window, pad, vector, name)
+        self.linecount = 3
+
+    def update(self, event):
+        "An event affecting this widget has occurred"
+        self.draw()
+
+    def draw(self, startline=None):
+        super().draw(startline)
+        # draw the light value
+        lowervalue = self.value().lower()
+        if lowervalue == "idle":
+            text = "  Idle  "
+        elif lowervalue == "ok":
+            text = "  OK    "
+        elif lowervalue == "busy":
+            text = "  Busy  "
+        elif lowervalue == "alert":
+            text = "  Alert "
+        else:
+            return
+        self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
+        # draw the label
+        self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )

@@ -285,6 +285,8 @@ class MembersWin:
             for name in self.membernames:
                 if self.vector.vectortype == "SwitchVector":
                     self.memberwidgets.append(widgets.SwitchMember(self.stdscr, self.consoleclient, self.window, self, self.vector, name))
+                elif self.vector.vectortype == "LightVector":
+                    self.memberwidgets.append(widgets.LightMember(self.stdscr, self.consoleclient, self.window, self, self.vector, name))
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
