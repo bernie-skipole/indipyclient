@@ -112,17 +112,6 @@ def draw_timestamp_state(consoleclient, window, vector, maxcols=None):
     window.addstr(0, maxcols - 20, text, consoleclient.color(state))
 
 
-#Define one member of a number vector
-#<!ELEMENT defNumber %numberValue >
-#<!ATTLIST defNumber
-#name %nameValue; #REQUIRED
-#label %labelValue; #IMPLIED
-#format %numberFormat; #REQUIRED
-#min %numberValue; #REQUIRED
-#max %numberValue; #REQUIRED
-#step %numberValue; #REQUIRED
-
-
 class BaseMember:
 
     def __init__(self, stdscr, consoleclient, window, pad, vector, name):
@@ -187,19 +176,6 @@ class BaseMember:
                 continue
             return key
         return -1
-
-
-#<!ATTLIST defSwitchVector
-# device %nameValue;        #REQUIRED name of Device
-# name %nameValue;          #REQUIRED name of Property
-# label %labelValue;        #IMPLIED  GUI label, use name by default
-# group %groupTag;          #IMPLIED  Property group membership, blank by default
-# state %propertyState;     #REQUIRED current state of Property
-# perm %propertyPerm;       #REQUIRED ostensible Client controlability
-# rule %switchRule;         #REQUIRED hint for GUI presentation
-# timeout %numberValue;     #IMPLIED worse-case time, 0 default, N/A for ro
-# timestamp %timeValue      #IMPLIED moment when these data were valid
-# message %textValue        #IMPLIED commentary
 
 
 class SwitchMember(BaseMember):
@@ -352,15 +328,6 @@ class SwitchMember(BaseMember):
         return -1
 
 
-# <!ATTLIST defLightVector
-# device %nameValue; #REQUIRED    name of Device
-# name %nameValue; #REQUIRED      name of Property
-# label %labelValue; #IMPLIED     GUI label, use name by default
-# group %groupTag; #IMPLIED       Property group membership, blank by default
-# state %propertyState; #REQUIRED current state of Property
-# timestamp %timeValue #IMPLIED   moment when these data were valid
-# message %textValue #IMPLIED     commentary
-
 class LightMember(BaseMember):
 
     def __init__(self, stdscr, consoleclient, window, pad, vector, name):
@@ -386,5 +353,46 @@ class LightMember(BaseMember):
         else:
             return
         self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
+        # draw the label
+        self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
+
+
+#   <!ATTLIST defNumberVector
+#   device %nameValue; #REQUIRED        name of Device
+#   name %nameValue; #REQUIRED          name of Property
+#   label %labelValue; #IMPLIED         GUI label, use name by default
+#   group %groupTag; #IMPLIED           Property group membership, blank by default
+#   state %propertyState; #REQUIRED     current state of Property
+#   perm %propertyPerm; #REQUIRED       ostensible Client controlability
+#   timeout %numberValue; #IMPLIED      worse-case time to affect, 0 default, N/A for ro
+#   timestamp %timeValue #IMPLIED       moment when these data were valid
+#   message %textValue #IMPLIED         commentary
+
+#   Define one member of a number vector
+#   <!ATTLIST defNumber
+#   name %nameValue; #REQUIRED          name of this number element
+#   label %labelValue; #IMPLIED         GUI label, or use name by default
+#   format %numberFormat; #REQUIRED     printf-style format for GUI display
+#   min %numberValue; #REQUIRED         minimal value
+#   max %numberValue; #REQUIRED         maximum value, ignore if min == max
+#   step %numberValue; #REQUIRED        allowed increments, ignore if 0
+
+
+class NumberMember(BaseMember):
+
+    def __init__(self, stdscr, consoleclient, window, pad, vector, name):
+        super().__init__(stdscr, consoleclient, window, pad, vector, name)
+        self.linecount = 3
+
+    def update(self, event):
+        "An event affecting this widget has occurred"
+        self.draw()
+
+    def draw(self, startline=None):
+        super().draw(startline)
+        # draw the number value
+        text = self.vector.getformattedvalue(self.name)
+
+        self.window.addstr(self.startline+1, self.maxcols-20, text)
         # draw the label
         self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
