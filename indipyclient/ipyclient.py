@@ -2,10 +2,6 @@
 
 import os, sys, collections, threading, asyncio, pathlib, time
 
-# useful for showing exceptions
-# import traceback
-# self.report(traceback.format_exc())
-
 from time import sleep
 
 from datetime import datetime, timezone

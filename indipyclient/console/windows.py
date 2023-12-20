@@ -1185,7 +1185,10 @@ class VectorListWin:
         self.window = curses.newpad(self.padlines, self.maxcols)
         self.consoleclient = consoleclient
         self.client = consoleclient.client
-        self.padtop = 0        # vector index number of top vector being displayed
+
+        # vector index number of top vector being displayed
+        self.topvectindex = 0
+
         self.groupname = None
         self.devicename = None
         self.device = None
@@ -1224,9 +1227,9 @@ class VectorListWin:
         self._close = True
 
     @property
-    def padbot(self):
-        "vector index number of bottom vector being displayed"
-        return self.padtop + self.displaylines//2
+    def botvectindex(self):
+        """vector index number of bottom vector being displayed"""
+        return min(self.topvectindex + self.displaylines//2, self.lastvectorindex)
 
 
     @property
@@ -1275,7 +1278,7 @@ class VectorListWin:
             # no change
             return
         self._focus = True
-        if self.padtop:
+        if self.topvectindex:
             # give top button focus
             self.topmore_btn.show = True
             self.topmore_btn.focus = True
@@ -1356,7 +1359,7 @@ class VectorListWin:
         self.topmore_btn.show = False
         self.topmore_btn.draw()
 
-        self.padtop = 0
+        self.topvectindex = 0
 
         try:
 
@@ -1393,7 +1396,7 @@ class VectorListWin:
                 line += 2
 
 
-            if self.padbot >= self.lastvectorindex:
+            if self.botvectindex >= self.lastvectorindex:
                 self.botmore_btn.show = False
             else:
                 self.botmore_btn.show = True
@@ -1413,7 +1416,7 @@ class VectorListWin:
         # the p arguments refer to the upper left corner of the pad region to be displayed and the
         # s arguments define a clipping box on the screen within which the pad region is to be displayed.
 
-        coords = (self.padtop*2, 0, 8, 1, self.displaylines + 8, self.maxcols-2)
+        coords = (self.topvectindex*2, 0, 8, 1, self.displaylines + 8, self.maxcols-2)
                   # pad row, pad col, win start row, win start col, win end row, win end col
 
         self.topmorewin.noutrefresh()
@@ -1423,18 +1426,18 @@ class VectorListWin:
 
 
     def upline(self):
-        if not self.padtop:
+        if not self.topvectindex:
             # already at top
             return
-        self.padtop -= 1
-        if not self.padtop:
+        self.topvectindex -= 1
+        if not self.topvectindex:
             # at the top vectors
             self.topmore_btn.show = False
             self.topmore_btn.draw()
             btn = self.vector_btns[0]
             btn.focus = True
             btn.draw()
-        if (not self.botmore_btn.show) and (self.padbot < self.lastvectorindex):
+        if (not self.botmore_btn.show) and (self.botvectindex < self.lastvectorindex):
             self.botmore_btn.show = True
             self.botmore_btn.draw()
         self.noutrefresh()
@@ -1442,14 +1445,14 @@ class VectorListWin:
 
 
     def downline(self):
-        if self.padbot >= self.lastvectorindex:
+        if self.botvectindex >= self.lastvectorindex:
             # already at the bottom
             return
-        self.padtop += 1
+        self.topvectindex += 1
         if not self.topmore_btn.show:
             self.topmore_btn.show = True
             self.topmore_btn.draw()
-        if self.padbot >= self.lastvectorindex:
+        if self.botvectindex >= self.lastvectorindex:
             self.botmore_btn.show = False
             self.botmore_btn.draw()
             btn = self.vector_btns[-1]
@@ -1495,7 +1498,7 @@ class VectorListWin:
                 elif self.topmore_btn.focus:
                     # set focus on top vector
                     self.topmore_btn.focus = False
-                    btn = self.vector_btns[self.padtop]
+                    btn = self.vector_btns[self.topvectindex]
                     btn.focus = True
                     self.topmore_btn.draw()
                     btn.draw()
@@ -1508,7 +1511,7 @@ class VectorListWin:
                         if btn.focus:
                             btnindex = index
                             break
-                    if btnindex >= self.padbot:
+                    if btnindex >= self.botvectindex:
                         if not self.botmore_btn.show:
                             # At the last vector
                             self.focus = False
@@ -1533,7 +1536,7 @@ class VectorListWin:
                         if btn.focus:
                             btnindex = index
                             break
-                    if btnindex >= self.padbot:
+                    if btnindex >= self.botvectindex:
                         if self.botmore_btn.show:
                             self.set_bot_focus()
                         else:
@@ -1557,7 +1560,7 @@ class VectorListWin:
                 elif self.botmore_btn.focus:
                     # set focus on bottom vector
                     self.botmore_btn.focus = False
-                    btn = self.vector_btns[self.padbot]
+                    btn = self.vector_btns[self.botvectindex]
                     btn.focus = True
                     self.botmore_btn.draw()
                     btn.draw()
@@ -1574,7 +1577,7 @@ class VectorListWin:
                         # At the top vector
                         self.focus = False
                         return key
-                    if btnindex == self.padtop:
+                    if btnindex == self.topvectindex:
                         self.vector_btns[btnindex].focus = False
                         self.vector_btns[btnindex-1].focus = True
                         self.vector_btns[btnindex].draw()
@@ -1598,7 +1601,7 @@ class VectorListWin:
                         # At the top vector
                         self.focus = False
                         return key
-                    if btnindex == self.padtop:
+                    if btnindex == self.topvectindex:
                         self.set_top_focus()
                     else:
                         self.vector_btns[btnindex].focus = False
