@@ -322,11 +322,15 @@ class MembersWin:
         # width = self.maxcols -x - 2
         self.submitwin = self.stdscr.subwin(1, self.maxcols - botmorewincols - 3, self.maxrows - 3, botmorewincols + 1)
         self.submit_btn = widgets.Button(self.submitwin, "Submit", 0, 0)
+        self.cancel_btn = widgets.Button(self.submitwin, "Cancel", 0, 10)
         if self.vector.perm == 'ro':
             self.submit_btn.show = False
+            self.cancel_btn.show = False
         else:
             self.submit_btn.show = True
+            self.cancel_btn.show = True
         self.submit_btn.focus = False
+        self.cancel_btn.focus = False
 
         # top more btn on 7th line ( coords 0 to 6 )
         # bot more btn on line (self.maxrows - 3) + 1
@@ -351,9 +355,11 @@ class MembersWin:
         self.topmore_btn.focus = False
         self.botmore_btn.focus = False
         self.submit_btn.focus = False
+        self.cancel_btn.focus = False
         self.topmore_btn.draw()
         self.botmore_btn.draw()
         self.submit_btn.draw()
+        self.cancel_btn.draw()
         self.topmorewin.noutrefresh()
         self.botmorewin.noutrefresh()
         self.submitwin.noutrefresh()
@@ -364,7 +370,9 @@ class MembersWin:
         self.botmore_btn.draw()
         self.botmorewin.noutrefresh()
         self.submit_btn.focus = False
+        self.cancel_btn.focus = False
         self.submit_btn.draw()
+        self.cancel_btn.draw()
         self.submitwin.noutrefresh()
 
 
@@ -462,6 +470,7 @@ class MembersWin:
         self.botmore_btn.draw()
 
         self.submit_btn.draw()
+        self.cancel_btn.draw()
 
 
     def noutrefresh(self):
