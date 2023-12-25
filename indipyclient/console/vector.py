@@ -322,7 +322,7 @@ class MembersWin:
         # width = self.maxcols -x - 2
         self.submitwin = self.stdscr.subwin(1, self.maxcols - botmorewincols - 3, self.maxrows - 3, botmorewincols + 1)
         self.submit_btn = widgets.Button(self.submitwin, "Submit", 0, 0)
-        self.cancel_btn = widgets.Button(self.submitwin, "Cancel", 0, 10)
+        self.cancel_btn = widgets.Button(self.submitwin, "Cancel", 0, 12)
         if self.vector.perm == 'ro':
             self.submit_btn.show = False
             self.cancel_btn.show = False
@@ -398,13 +398,13 @@ class MembersWin:
         self.topmore_btn.draw()
         self.topmorewin.noutrefresh()
 
-        if self.submit_btn.show:
-            self.submit_btn.focus = True
-            self.submit_btn.draw()
+        if self.cancel_btn.show:
+            self.cancel_btn.focus = True
+            self.cancel_btn.draw()
             self.submitwin.noutrefresh()
             return
 
-        # no submit button, so either bottom widget is set in focus
+        # no submit/cancel button, so either bottom widget is set in focus
         # or bottom more button is set in focus
 
         botindex = self.widgetindex_bottom_displayed()
@@ -593,14 +593,23 @@ class MembersWin:
                         time.sleep(0.3)        # blocking, to avoid screen being changed while this time elapses
                         self.submitwin.clear()
                         self.submit_btn.draw()
+                        self.cancel_btn.draw()
                         self.submitwin.noutrefresh()
                         curses.doupdate()
                         continue
 
 
             if key in (10, 32, 9, 261, 338, 258):   # go to next button
-                if self.submit_btn.focus:
+                if self.cancel_btn.focus:
                     return key
+                if self.submit_btn.focus:
+                    self.submit_btn.focus = False
+                    self.cancel_btn.focus = True
+                    self.submit_btn.draw()
+                    self.cancel_btn.draw()
+                    self.submitwin.noutrefresh()
+                    curses.doupdate()
+                    continue
                 if self.botmore_btn.focus:
                     if self.submit_btn.show:
                         self.botmore_btn.focus = False
@@ -682,6 +691,14 @@ class MembersWin:
             if key in (353, 260, 339, 259):   # go to prev button
                 if self.topmore_btn.focus:
                     return key
+                if self.cancel_btn.focus:
+                    self.cancel_btn.focus = False
+                    self.submit_btn.focus = True
+                    self.cancel_btn.draw()
+                    self.submit_btn.draw()
+                    self.submitwin.noutrefresh()
+                    curses.doupdate()
+                    continue
                 # get the bottom widget being displayed
                 bottomwidgetindex = self.widgetindex_bottom_displayed()
                 if self.submit_btn.focus:
