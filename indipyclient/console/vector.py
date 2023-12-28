@@ -805,5 +805,10 @@ def submitvector(vector, memberwidgets):
             return False
         vector.send_newSwitchVector(members=members)
         return True
+    elif vector.vectortype == "NumberVector":
+        members = {member.name:member.newvalue() for member in memberwidgets}
+        # members is a dictionary of membername : member value (number string)
+        vector.send_newNumberVector(members=members)
+        return True
     # other vector types tested here
     return False

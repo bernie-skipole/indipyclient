@@ -114,13 +114,13 @@ def draw_timestamp_state(consoleclient, window, vector, maxcols=None):
 
 class BaseMember:
 
-    def __init__(self, stdscr, consoleclient, window, pad, vector, name):
+    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
 
         self.stdscr = stdscr
         self.consoleclient = consoleclient
         self.client = consoleclient.client
         self.window = window
-        self.pad = pad
+        self.memberswin = memberswin
         self.vector = vector
         self.name = name
         self.maxrows, self.maxcols = self.window.getmaxyx()
@@ -184,8 +184,8 @@ class BaseMember:
 
 class SwitchMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, pad, vector, name):
-        super().__init__(stdscr, consoleclient, window, pad, vector, name)
+    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
+        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
         # create  ON, OFF buttons
         self.on = Button(window, 'ON', 0, 0)
         self.on.bold = True if self.value() == "On" else False
@@ -275,11 +275,9 @@ class SwitchMember(BaseMember):
                     self.on.focus = True
                     self.name_btn.draw()
                     self.on.draw()
-                else:
-                    # ignore any other key
-                    continue
-                self.pad.noutrefresh()
-                curses.doupdate()
+                    self.memberswin.widgetsrefresh()
+                    curses.doupdate()
+                # ignore any other key
                 continue
             elif self.on.focus:
                 if key == 10:                  # 10 return
@@ -309,7 +307,7 @@ class SwitchMember(BaseMember):
                     self.off.draw()
                 else:
                     continue
-                self.pad.noutrefresh()
+                self.memberswin.widgetsrefresh()
                 curses.doupdate()
                 continue
             elif self.off.focus:
@@ -343,7 +341,7 @@ class SwitchMember(BaseMember):
                     self.on.draw()
                 else:
                     continue
-                self.pad.noutrefresh()
+                self.memberswin.widgetsrefresh()
                 curses.doupdate()
                 continue
         return -1
@@ -351,8 +349,8 @@ class SwitchMember(BaseMember):
 
 class LightMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, pad, vector, name):
-        super().__init__(stdscr, consoleclient, window, pad, vector, name)
+    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
+        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
         self.linecount = 3
 
     def update(self, event):
@@ -401,13 +399,32 @@ class LightMember(BaseMember):
 
 class NumberMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, pad, vector, name):
-        super().__init__(stdscr, consoleclient, window, pad, vector, name)
+    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
+        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
         self.linecount = 3
+        if self.vector.perm == "ro":
+            self.linecount = 3
+        else:
+            self.linecount = 4
+        # the newvalue to be edited and sent
+        self._newvalue = self.vector.getformattedvalue(self.name)
+
+    def newvalue(self):
+        return self._newvalue.strip()
 
     def update(self, event):
         "An event affecting this widget has occurred"
         self.draw()
+
+    def reset(self):
+        "Reset the widget removing any value updates, called by cancel"
+        if self.vector.perm == "ro":
+            return
+        self._newvalue = self.vector.getformattedvalue(self.name)
+        # the length of the editable number field is 16
+        textnewvalue = f"{self._newvalue.strip():<16}"
+        # draw the value to be edited
+        self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
 
     def draw(self, startline=None):
         super().draw(startline)
@@ -417,3 +434,62 @@ class NumberMember(BaseMember):
         self.window.addstr(self.startline+1, self.maxcols-20, text)
         # draw the label
         self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
+        if self.vector.perm == "ro":
+            return
+
+        # the length of the editable number field is 16
+        textnewvalue = f"{self._newvalue.strip():<16}"
+
+        # draw the value to be edited
+        self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
+
+
+    async def input(self):
+        "This widget is in focus, and monitors inputs"
+        if self.vector.perm == "ro":
+            return -1
+        while (not self.consoleclient.stop) and (not self._close):
+            await asyncio.sleep(0)
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if self.name_btn.focus:
+                if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                    # go to next or previous member widget
+                    return key
+                if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+                    # text input here
+                    try:
+                        await self.numberinput()
+                    except:
+                        self.reset()
+                    return 9
+                # ignore any other key
+
+
+    async def numberinput(self):
+        "Input a number value, set it into self._newvalue as a string"
+        # highlight editable field has focus
+        self.name_btn.focus = False
+        self.name_btn.draw()
+        # set brackets of editable field in bold
+        self.window.addstr( self.startline+2, self.maxcols-21, "[", curses.A_BOLD )
+        self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
+        self.memberswin.widgetsrefresh()
+        # set cursor visible
+        self.window.move(self.startline+2, self.maxcols-20)
+        curses.curs_set(1)
+        curses.echo()
+        curses.doupdate()
+        while (not self.consoleclient.stop) and (not self._close):
+            await asyncio.sleep(0)
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if key == 10:
+                curses.curs_set(0)
+                curses.noecho()
+                return
+
+            ############ change this to input number routine ###########
+            #self._newvalue = self.window.getstr(self.startline+2, self.maxcols-20, 16).decode(encoding='utf-8')
