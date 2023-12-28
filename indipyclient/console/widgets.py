@@ -140,6 +140,10 @@ class BaseMember:
     def value(self):
         return self.vector[self.name]
 
+    def reset(self):
+        "Reset the widget removing any value updates, called by cancel"
+        pass
+
     @property
     def focus(self):
         return self._focus
@@ -187,6 +191,7 @@ class SwitchMember(BaseMember):
         self.on.bold = True if self.value() == "On" else False
         self.on.show = False
         self.off = Button(window, 'OFF', 0, 0)
+        self.off.bold = not self.on.bold
         self.off.show = False
         self.submit = Button(window, 'Submit', 0, 0)
         self.submit.show = False
@@ -195,6 +200,22 @@ class SwitchMember(BaseMember):
     def update(self, event):
         "An event affecting this widget has occurred"
         self.draw()
+
+    def reset(self):
+        "Reset the widget removing any value updates, called by cancel"
+        if self.vector.perm == "ro":
+            return
+        # Draw the on/off buttons
+        self.on.bold = True if self.value() == "On" else False
+        self.on.row = self.startline+1
+        self.on.col = self.maxcols-15
+        self.on.show = True
+        self.on.draw()
+        self.off.bold = not self.on.bold
+        self.off.row = self.startline+1
+        self.off.col = self.maxcols-10
+        self.off.show = True
+        self.off.draw()
 
     def draw(self, startline=None):
         super().draw(startline)

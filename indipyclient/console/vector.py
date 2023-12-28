@@ -474,7 +474,15 @@ class MembersWin:
 
 
     def noutrefresh(self):
+        "Refresh this objects entire window, including widgets and top and bottom buttons"
+        self.topmorewin.noutrefresh()
+        self.widgetsrefresh()
+        self.botmorewin.noutrefresh()
+        self.submitwin.noutrefresh()
 
+
+    def widgetsrefresh(self):
+        "Refreshes the pad window holding the widgets"
         # The refresh() and noutrefresh() methods of a pad require 6 arguments
         # to specify the part of the pad to be displayed and the location on
         # the screen to be used for the display. The arguments are
@@ -484,12 +492,8 @@ class MembersWin:
 
         coords = (self.topline, 0, 7, 1, self.maxrows - 4, self.maxcols-2)
                   # pad row, pad col, win start row, win start col, win end row, win end col
-
-        self.topmorewin.noutrefresh()
         self.window.overwrite(self.stdscr, *coords)
         self.window.noutrefresh(*coords)
-        self.botmorewin.noutrefresh()
-        self.submitwin.noutrefresh()
 
 
     def widgetindex_in_focus(self):
@@ -597,8 +601,13 @@ class MembersWin:
                         self.submitwin.noutrefresh()
                         curses.doupdate()
                         continue
-
-
+                elif self.cancel_btn.focus:
+                    # Cancel chosen, reset all widgets, removing any value changes
+                    for memberwidget in self.memberwidgets:
+                        memberwidget.reset()
+                    self.widgetsrefresh()
+                    curses.doupdate()
+                    continue
             if key in (10, 32, 9, 261, 338, 258):   # go to next button
                 if self.cancel_btn.focus:
                     return key
