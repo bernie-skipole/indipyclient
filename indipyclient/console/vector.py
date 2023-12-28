@@ -34,8 +34,8 @@ class VectorScreen:
 
         # title window  (3 lines, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
-        self.titlewin.addstr(0, 1, self.devicename)
-        self.titlewin.addstr(1, 1, self.vectorname + " : " + self.vector.group)
+        self.titlewin.addstr(0, 1, "Device: " + self.devicename)
+        self.titlewin.addstr(1, 1, "Vector: " + self.vectorname + " : Group: " + self.vector.group)
         self.titlewin.addstr(2, 1, self.vector.label, curses.A_BOLD)
 
         # messages window (1 line, full row, starting at 3,0)
@@ -100,8 +100,8 @@ class VectorScreen:
     def update(self, event):
         "An event affecting this vector has occurred, re-draw the screen"
         self.titlewin.clear()
-        self.titlewin.addstr(0, 1, self.devicename)
-        self.titlewin.addstr(1, 1, self.vectorname + " : " + self.vector.group)
+        self.titlewin.addstr(0, 1, "Device: " + self.devicename)
+        self.titlewin.addstr(1, 1, "Vector: " + self.vectorname + " : Group: " + self.vector.group)
         self.titlewin.addstr(2, 1, self.vector.label, curses.A_BOLD)
 
         self.messwin.clear()
