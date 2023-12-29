@@ -1,6 +1,8 @@
 
 import asyncio, curses, sys
 
+from curses import ascii
+
 import traceback
 #        except Exception:
 #            traceback.print_exc(file=sys.stderr)
@@ -449,10 +451,10 @@ class NumberMember(BaseMember):
                     return key
                 if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
                     # text input here
-                    try:
-                        await self.numberinput()
-                    except:
-                        self.reset()
+                    #try:
+                    await self.numberinput()
+                    #except:
+                    #    self.reset()
                     return 9
                 # ignore any other key
 
@@ -469,9 +471,9 @@ class NumberMember(BaseMember):
         curses.doupdate()
         # set cursor visible
         curses.curs_set(1)
-        # pad starts at self.stdscr row 7, col 1, put curse at end of text
-        self.stdscr.move(7 + self.startline+2, 1+self.maxcols-20 + len(self.newvalue()))
-        self.stdscr.refresh()
+        # pad starts at self.stdscr row 7, col 1
+                                                  # row             startcol          endcol            start text
+        editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-3, self.newvalue())
 
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
@@ -481,3 +483,45 @@ class NumberMember(BaseMember):
             if key == 10:
                 curses.curs_set(0)
                 return
+            value = editstring.getnumber(key)
+            if value != self._newvalue:
+                self._newvalue = value
+                self.window.addstr( self.startline+2, self.maxcols-20, self._newvalue )
+                self.memberswin.widgetsrefresh()
+                curses.doupdate()
+
+
+class EditString():
+
+    def __init__(self, stdscr, row, startcol, endcol, text):
+        "Class to input text"
+        self.stdscr = stdscr
+        self.row = row
+        self.startcol = startcol
+        self.endcol = endcol
+        self.text = text
+        # put curser at end of text
+        self.curspos = startcol + len(text)
+        self.stdscr.move(row, self.curspos)
+        self.stdscr.refresh()
+
+    def getstring(self, key):
+        "called with each keypress, returns new text"
+        return self.text
+
+    def getnumber(self, key):
+        "called with each keypress, returns new number string"
+        if ascii.isdigit(key):
+            ch = chr(key)
+            self.text += ch
+            self.curspos += 1
+            self.stdscr.move(self.row, self.curspos)
+            self.stdscr.refresh()
+        if ascii.isprint(key):
+            ch = chr(key)
+            if ch in (".", " ", ":", "-", "+"):
+                self.text += ch
+                self.curspos += 1
+                self.stdscr.move(self.row, self.curspos)
+                self.stdscr.refresh()
+        return self.text
