@@ -466,11 +466,13 @@ class NumberMember(BaseMember):
         self.window.addstr( self.startline+2, self.maxcols-21, "[", curses.A_BOLD )
         self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
         self.memberswin.widgetsrefresh()
-        # set cursor visible
-        self.window.move(self.startline+2, self.maxcols-20)
-        curses.curs_set(1)
-        curses.echo()
         curses.doupdate()
+        # set cursor visible
+        curses.curs_set(1)
+        # pad starts at self.stdscr row 7, col 1, put curse at end of text
+        self.stdscr.move(7 + self.startline+2, 1+self.maxcols-20 + len(self.newvalue()))
+        self.stdscr.refresh()
+
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
             key = self.stdscr.getch()
@@ -478,8 +480,4 @@ class NumberMember(BaseMember):
                 continue
             if key == 10:
                 curses.curs_set(0)
-                curses.noecho()
                 return
-
-            ############ change this to input number routine ###########
-            #self._newvalue = self.window.getstr(self.startline+2, self.maxcols-20, 16).decode(encoding='utf-8')
