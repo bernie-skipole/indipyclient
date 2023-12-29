@@ -423,8 +423,10 @@ class MembersWin:
 
     def update(self, event):
         "An event affecting this vector has occurred, re-draw the screen"
+        # inmplement any updates the widgets may need
         for widget in self.memberwidgets:
             widget.update(event)
+        # redraw entire screen
         self.draw()
 
     def draw(self):

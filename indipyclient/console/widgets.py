@@ -197,10 +197,6 @@ class SwitchMember(BaseMember):
         self.submit.show = False
         self.linecount = 3
 
-    def update(self, event):
-        "An event affecting this widget has occurred"
-        self.draw()
-
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
@@ -353,9 +349,6 @@ class LightMember(BaseMember):
         super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
         self.linecount = 3
 
-    def update(self, event):
-        "An event affecting this widget has occurred"
-        self.draw()
 
     def draw(self, startline=None):
         super().draw(startline)
@@ -412,9 +405,6 @@ class NumberMember(BaseMember):
     def newvalue(self):
         return self._newvalue.strip()
 
-    def update(self, event):
-        "An event affecting this widget has occurred"
-        self.draw()
 
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
