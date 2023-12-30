@@ -484,11 +484,11 @@ class NumberMember(BaseMember):
                 curses.curs_set(0)
                 return
             value = editstring.getnumber(key)
-            if value != self._newvalue:
-                self._newvalue = value
-                self.window.addstr( self.startline+2, self.maxcols-20, self._newvalue )
-                self.memberswin.widgetsrefresh()
-                curses.doupdate()
+            self._newvalue = value.strip()
+            self.window.addstr( self.startline+2, self.maxcols-20, value )
+            self.memberswin.widgetsrefresh()
+            editstring.movecurs()
+            curses.doupdate()
 
 
 class EditString():
@@ -499,10 +499,19 @@ class EditString():
         self.row = row
         self.startcol = startcol
         self.endcol = endcol
-        self.text = text
+        self.text = f"{text.strip():<16}"
         # put curser at end of text
-        self.curspos = startcol + len(text)
-        self.stdscr.move(row, self.curspos)
+        self.stringpos = len(text)
+        self.movecurs()
+
+    def insertch(self, ch):
+        self.text = self.text[:self.stringpos] + ch + self.text[self.stringpos:-1]
+
+    def delch(self):
+        self.text = self.text[:self.stringpos-1] + self.text[self.stringpos:] + " "
+
+    def movecurs(self):
+        self.stdscr.move(self.row, self.startcol+self.stringpos)
         self.stdscr.refresh()
 
     def getstring(self, key):
@@ -513,15 +522,17 @@ class EditString():
         "called with each keypress, returns new number string"
         if ascii.isdigit(key):
             ch = chr(key)
-            self.text += ch
-            self.curspos += 1
-            self.stdscr.move(self.row, self.curspos)
-            self.stdscr.refresh()
+            self.insertch(ch)
+            self.stringpos += 1
         if ascii.isprint(key):
             ch = chr(key)
-            if ch in (".", " ", ":", "-", "+"):
-                self.text += ch
-                self.curspos += 1
-                self.stdscr.move(self.row, self.curspos)
-                self.stdscr.refresh()
+            if ch in (".", " ", ":", ";", "-", "+"):
+                self.insertch(ch)
+                self.stringpos += 1
+        if key>255:
+            # control character
+            if (key == curses.KEY_DC) or (key == curses.KEY_BACKSPACE) and self.stringpos:
+                # delete character (self.stringpos cannot be zero)
+                self.delch()
+                self.stringpos -= 1
         return self.text
