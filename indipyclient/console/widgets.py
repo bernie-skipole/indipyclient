@@ -405,7 +405,10 @@ class NumberMember(BaseMember):
         self._newvalue = self.vector.getformattedvalue(self.name)
 
     def newvalue(self):
-        return self._newvalue.strip()
+        value = self._newvalue.strip()
+        if len(value) > 16:
+            value = value[:16]
+        return value
 
 
     def reset(self):
@@ -413,16 +416,16 @@ class NumberMember(BaseMember):
         if self.vector.perm == "ro":
             return
         self._newvalue = self.vector.getformattedvalue(self.name)
-        # the length of the editable number field is 16
-        textnewvalue = f"{self._newvalue.strip():<16}"
+        textnewvalue = self.newvalue().ljust(16)
         # draw the value to be edited
         self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
 
     def draw(self, startline=None):
         super().draw(startline)
         # draw the number value
-        text = self.vector.getformattedvalue(self.name)
-
+        text = self.vector.getformattedvalue(self.name).strip()
+        if len(text) > 16:
+            text = text[:16]
         self.window.addstr(self.startline+1, self.maxcols-20, text)
         # draw the label
         self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
@@ -430,8 +433,7 @@ class NumberMember(BaseMember):
             return
 
         # the length of the editable number field is 16
-        textnewvalue = f"{self._newvalue.strip():<16}"
-
+        textnewvalue = self.newvalue().ljust(16)
         # draw the value to be edited
         self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
 
@@ -473,7 +475,7 @@ class NumberMember(BaseMember):
         curses.curs_set(1)
         # pad starts at self.stdscr row 7, col 1
                                                   # row             startcol          endcol            start text
-        editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-3, self.newvalue())
+        editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
 
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
@@ -499,16 +501,32 @@ class EditString():
         self.row = row
         self.startcol = startcol
         self.endcol = endcol
-        self.text = f"{text.strip():<16}"
+        self.length = endcol - startcol + 1
+        self.text = text.strip()
+        if len(self.text) > self.length:
+            self.text = self.text[:self.length]
         # put curser at end of text
-        self.stringpos = len(text)
+        self.stringpos = len(self.text)
+
+        # pad text with right hand spaces
+        self.text = self.text.ljust(self.length)
         self.movecurs()
 
     def insertch(self, ch):
+        "Insert a charcter at stringpos"
+        if self.stringpos >= self.length:
+            # stringpos must be less than the length
+            return
         self.text = self.text[:self.stringpos] + ch + self.text[self.stringpos:-1]
+        self.stringpos += 1
 
     def delch(self):
+        "delete character at stringpos-1"
+        if not self.stringpos:
+            # stringpos must be greater than zero
+            return
         self.text = self.text[:self.stringpos-1] + self.text[self.stringpos:] + " "
+        self.stringpos -= 1
 
     def movecurs(self):
         self.stdscr.move(self.row, self.startcol+self.stringpos)
@@ -516,23 +534,33 @@ class EditString():
 
     def getstring(self, key):
         "called with each keypress, returns new text"
+        ####### to do ########
         return self.text
 
     def getnumber(self, key):
         "called with each keypress, returns new number string"
         if ascii.isdigit(key):
+            if self.stringpos >= self.length:
+                # at max length, return
+                return self.text
             ch = chr(key)
             self.insertch(ch)
-            self.stringpos += 1
-        if ascii.isprint(key):
+        elif ascii.isprint(key):
+            if self.stringpos >= self.length:
+                # at max length, return
+                return self.text
             ch = chr(key)
             if ch in (".", " ", ":", ";", "-", "+"):
                 self.insertch(ch)
-                self.stringpos += 1
-        if key>255:
+        elif key>255:
             # control character
-            if (key == curses.KEY_DC) or (key == curses.KEY_BACKSPACE) and self.stringpos:
+            if ((key == curses.KEY_DC) or (key == curses.KEY_BACKSPACE)) and self.stringpos:
                 # delete character (self.stringpos cannot be zero)
                 self.delch()
+            elif (key == curses.KEY_LEFT) and self.stringpos:
+                # move cursor left (self.stringpos cannot be zero)
                 self.stringpos -= 1
+            elif (key == curses.KEY_RIGHT) and (self.stringpos < self.length):
+                # move cursor right
+                self.stringpos += 1
         return self.text
