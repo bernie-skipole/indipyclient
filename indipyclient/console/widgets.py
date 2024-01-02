@@ -125,6 +125,9 @@ class BaseMember:
         self.memberswin = memberswin
         self.vector = vector
         self.name = name
+        membersdict = self.vector.members()
+        self.member = membersdict[name]
+        # self.member is a propertymember
         self.maxrows, self.maxcols = self.window.getmaxyx()
         self.startline = 0
         # linecount is the number of lines this widget takes up,
@@ -415,7 +418,7 @@ class NumberMember(BaseMember):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
             return
-        self._newvalue = self.vector.getformattedvalue(self.name)
+        self._newvalue = self.member.getformattedvalue()
         textnewvalue = self.newvalue().ljust(16)
         # draw the value to be edited
         self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
@@ -423,7 +426,7 @@ class NumberMember(BaseMember):
     def draw(self, startline=None):
         super().draw(startline)
         # draw the number value
-        text = self.vector.getformattedvalue(self.name).strip()
+        text = self.member.getformattedvalue().strip()
         if len(text) > 16:
             text = text[:16]
         self.window.addstr(self.startline+1, self.maxcols-20, text)
@@ -453,10 +456,7 @@ class NumberMember(BaseMember):
                     return key
                 if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
                     # text input here
-                    #try:
                     await self.numberinput()
-                    #except:
-                    #    self.reset()
                     return 9
                 # ignore any other key
 
@@ -483,14 +483,34 @@ class NumberMember(BaseMember):
             if key == -1:
                 continue
             if key == 10:
-                curses.curs_set(0)
-                return
+                if not self.checknumber():
+                    editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
+                    continue
+                else:
+                    # newvalue is correct
+                    curses.curs_set(0)
+                    return
             value = editstring.getnumber(key)
             self._newvalue = value.strip()
             self.window.addstr( self.startline+2, self.maxcols-20, value )
             self.memberswin.widgetsrefresh()
             editstring.movecurs()
             curses.doupdate()
+
+    def checknumber(self):
+        "Return True if number ok"
+        # self._newvalue is the new value input
+        try:
+            newfloat = self.member.getfloat(self._newvalue)
+        except (ValueError, TypeError):
+            self._newvalue = self.vector.getformattedvalue(self.name)
+            # draw the value to be edited
+            self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
+            self.memberswin.widgetsrefresh()
+            curses.doupdate()
+            return False
+        # check min max and step
+        return True
 
 
 class EditString():
@@ -513,7 +533,7 @@ class EditString():
         self.movecurs()
 
     def insertch(self, ch):
-        "Insert a charcter at stringpos"
+        "Insert a character at stringpos"
         if self.stringpos >= self.length:
             # stringpos must be less than the length
             return

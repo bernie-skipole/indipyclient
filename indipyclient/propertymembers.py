@@ -127,9 +127,15 @@ class ParentNumberMember(Member):
 
 
     def getfloatvalue(self):
-        """The INDI spec allows a number of different number formats, this returns a float.
+        """The INDI spec allows a number of different number formats, this method returns
+           this members value as a float.
            If an error occurs while parsing the number, a TypeError exception is raised."""
-        value = self._membervalue
+        return self.getfloat(self._membervalue)
+
+    def getfloat(self, value):
+        """The INDI spec allows a number of different number formats, given a number,
+           this returns a float.
+           If an error occurs while parsing the number, a TypeError exception is raised."""
         try:
             if isinstance(value, float):
                 return value
@@ -177,8 +183,13 @@ class ParentNumberMember(Member):
 
 
     def getformattedvalue(self):
-        """This returns a formatted string"""
-        value = self.getfloatvalue()
+        """This method returns this members value as a float."""
+        return self.getformattedstring(self._membervalue)
+
+
+    def getformattedstring(self, value):
+        """Given a number this returns a formatted string"""
+        value = self.getfloat(value)
         if (not self.format.startswith("%")) or (not self.format.endswith("m")):
             return self.format % value
         # sexagesimal format
