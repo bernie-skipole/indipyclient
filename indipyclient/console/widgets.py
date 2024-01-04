@@ -135,7 +135,7 @@ class BaseMember:
         # linecount is the number of lines this widget takes up,
         # including an end empty line
         self.linecount = 4
-        self.name_btn = Button(window, self.name, 0, 1)
+        self.name_btn = Button(window, self.name, 0, 0)
         self._focus = False
         # if this is set to True, the input coroutine will stop
         self._close = False
@@ -175,7 +175,7 @@ class BaseMember:
     def draw(self, startline=None):
         if not startline is None:
             self.startline = startline
-        self.name_btn.row = self.startline
+        self.name_btn.row = self.startline+1
         self.name_btn.draw()
 
     async def input(self):
@@ -227,7 +227,7 @@ class SwitchMember(BaseMember):
         # draw the On or Off value
         self.window.addstr( self.startline+1, self.maxcols-20, self.value(), curses.A_BOLD )
         # draw the label
-        self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
+        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
         #self.window.addstr( self.endline, 1, "----")
         if self.vector.perm == "ro":
             return
@@ -377,7 +377,7 @@ class LightMember(BaseMember):
             return
         self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
         # draw the label
-        self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
+        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
 
 
 #   <!ATTLIST defNumberVector
@@ -437,7 +437,7 @@ class NumberMember(BaseMember):
             text = text[:16]
         self.window.addstr(self.startline+1, self.maxcols-20, text)
         # draw the label
-        self.window.addstr( self.startline+1, 1, self.vector.memberlabel(self.name) )
+        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
         if self.vector.perm == "ro":
             return
 
