@@ -1,6 +1,8 @@
 
 import asyncio, curses, sys
 
+from decimal import Decimal
+
 from curses import ascii
 
 import traceback
@@ -180,6 +182,8 @@ class BaseMember:
         "This widget is in focus, and monitors inputs"
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
+            if not self.vector.enable:
+                return
             key = self.stdscr.getch()
             if key == -1:
                 continue
@@ -263,6 +267,8 @@ class SwitchMember(BaseMember):
         "This widget is in focus, and monitors inputs"
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
+            if not self.vector.enable:
+                return
             key = self.stdscr.getch()
             if key == -1:
                 continue
@@ -447,6 +453,8 @@ class NumberMember(BaseMember):
             return -1
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
+            if not self.vector.enable:
+                return
             key = self.stdscr.getch()
             if key == -1:
                 continue
@@ -457,6 +465,8 @@ class NumberMember(BaseMember):
                 if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
                     # text input here
                     await self.numberinput()
+                    if not self.vector.enable:
+                        return
                     return 9
                 # ignore any other key
 
@@ -479,17 +489,22 @@ class NumberMember(BaseMember):
 
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
+            if not self.vector.enable:
+                return
             key = self.stdscr.getch()
             if key == -1:
                 continue
             if key == 10:
+                # a number self._newvalue is being submitted
                 if not self.checknumber():
+                    # number not valid, start again by creating a new instance of EditString and self._newvalue reset
                     editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
                     continue
                 else:
-                    # newvalue is correct
+                    # self._newvalue is correct, return with this value to be submitted
                     curses.curs_set(0)
                     return
+            # key is to be inserted into the editable field, and self._newvalue updated
             value = editstring.getnumber(key)
             self._newvalue = value.strip()
             self.window.addstr( self.startline+2, self.maxcols-20, value )
@@ -498,18 +513,50 @@ class NumberMember(BaseMember):
             curses.doupdate()
 
     def checknumber(self):
-        "Return True if number ok"
+        "Return True if self._newvalue is ok"
         # self._newvalue is the new value input
         try:
             newfloat = self.member.getfloat(self._newvalue)
         except (ValueError, TypeError):
-            self._newvalue = self.vector.getformattedvalue(self.name)
+            # reset self._newvalue
+            self._newvalue = self.member.getformattedvalue()
             # draw the value to be edited
             self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
             self.memberswin.widgetsrefresh()
             curses.doupdate()
             return False
-        # check min max and step
+        # check step, and round newfloat to nearest step value
+        stepvalue = self.member.getfloat(self.member.step)
+        minvalue = self.member.getfloat(self.member.min)
+        if stepvalue:
+            stepvalue = Decimal(str(stepvalue))
+            difference = newfloat - minvalue
+            newfloat = minvalue + float(int(Decimal(str(difference)) / stepvalue) * stepvalue)
+        # check not less than minimum
+        if newfloat < minvalue:
+            # reset self._newvalue to be the minimum, and accept this
+            self._newvalue = self.member.getformattedstring(minvalue)
+            # draw the value to be edited
+            self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
+            self.memberswin.widgetsrefresh()
+            curses.doupdate()
+            return True
+        if self.member.max != self.member.min:
+            maxvalue = self.member.getfloat(self.member.max)
+            if newfloat > maxvalue:
+                # reset self._newvalue to be the maximum, and accept this
+                self._newvalue = self.member.getformattedstring(maxvalue)
+                # draw the value to be edited
+                self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
+                self.memberswin.widgetsrefresh()
+                curses.doupdate()
+                return True
+        # reset self._newvalue to the correct format, and accept this
+        self._newvalue = self.member.getformattedstring(newfloat)
+        # draw the value to be edited
+        self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
+        self.memberswin.widgetsrefresh()
+        curses.doupdate()
         return True
 
 

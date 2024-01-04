@@ -192,6 +192,11 @@ class VectorScreen:
             self.stdscr.nodelay(True)
             while not self.consoleclient.stop:
                 await asyncio.sleep(0)
+
+                # check this vector has not been deleted
+                if not self.vector.enable:
+                    return "Vectors"
+
                 key = self.stdscr.getch()
 
                 if key == -1:
@@ -207,6 +212,8 @@ class VectorScreen:
                 if self.members.focus:
                     # focus has been given to the members window which monitors its own inputs
                     key = await self.members.input()
+                    if not self.vector.enable:
+                        return "Vectors"
                     if key == 10 and self.members.submit_btn.focus:
                         # The vector has been submitted, draw vector state
                         widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector, maxcols=self.maxcols)
@@ -231,8 +238,6 @@ class VectorScreen:
                         self.quit_btn.draw()
                         self.buttwin.noutrefresh()
                         curses.doupdate()
-
-
 
         except asyncio.CancelledError:
             raise
@@ -530,6 +535,8 @@ class MembersWin:
         self.stdscr.nodelay(True)
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
+            if not self.vector.enable:
+                return
             if self.vector.perm == "ro":
                 key = self.stdscr.getch()
             else:
@@ -538,6 +545,8 @@ class MembersWin:
                     if widget.focus:
                         # a widget is in focus, and writeable the widget monitors its own input
                         key = await widget.input()
+                        if not self.vector.enable:
+                            return
                         break
                 else:
                     # no widget is in focus
