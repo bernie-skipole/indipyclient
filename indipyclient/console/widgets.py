@@ -168,10 +168,6 @@ class BaseMember:
         "self.endline is the empty line after the vector"
         return self.startline + self.linecount - 1
 
-    def update(self, event):
-        "An event affecting this widget has occurred"
-        pass
-
     def draw(self, startline=None):
         if not startline is None:
             self.startline = startline

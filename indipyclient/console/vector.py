@@ -106,9 +106,11 @@ class VectorScreen:
 
         self.messwin.clear()
         self.tstatewin.clear()
-        self.members.update(event)
         self.buttwin.clear()
+        # self.members does not need a clear() call, as its window is cleared in its call method
+
         self.show()
+        # calling self.show in turn calls button and members draw and noutrefresh methods
 
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -428,13 +430,6 @@ class MembersWin:
             self.botmore_btn.draw()
             self.botmorewin.noutrefresh()
 
-    def update(self, event):
-        "An event affecting this vector has occurred, re-draw the screen"
-        # inmplement any updates the widgets may need
-        for widget in self.memberwidgets:
-            widget.update(event)
-        # redraw entire screen
-        self.draw()
 
     def draw(self):
         self.window.clear()
