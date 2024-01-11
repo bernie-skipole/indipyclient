@@ -667,15 +667,8 @@ class TextMember(BaseMember):
             if key == -1:
                 continue
             if key == 10:
-                # aself._newvalue is being submitted
-                if not self.checktext():
-                    # text not valid, start again by creating a new instance of EditString and self._newvalue reset
-                    editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-34, 1+self.maxcols-5, self.newvalue())
-                    continue
-                else:
-                    # self._newvalue is correct, return with this value to be submitted
-                    curses.curs_set(0)
-                    return
+                curses.curs_set(0)
+                return
             # key is to be inserted into the editable field, and self._newvalue updated
             value = editstring.gettext(key)
             self._newvalue = value.strip()
@@ -683,17 +676,6 @@ class TextMember(BaseMember):
             self.memberswin.widgetsrefresh()
             editstring.movecurs()
             curses.doupdate()
-
-    def checktext(self):
-        "Return True if self._newvalue is ok"
-        return True
-        # reset self._newvalue to the correct format, and accept this
-        self._newvalue = self.member.membervalue.strip()
-        # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-34, self.newvalue().ljust(16) )
-        self.memberswin.widgetsrefresh()
-        curses.doupdate()
-        return True
 
 
 class EditString():

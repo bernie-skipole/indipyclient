@@ -213,15 +213,14 @@ class VectorScreen:
 
                 if self.members.focus:
                     # focus has been given to the members window which monitors its own inputs
-                    key = await self.members.input()
+                    result = await self.members.input()
                     if not self.vector.enable:
                         return "Vectors"
-                    if key == 10 and self.members.submit_btn.focus:
-                        # The vector has been submitted, draw vector state
+                    if result == "submitted":
+                        self.vector.state = 'Busy'
+                        # The vector has been submitted, draw vector state which is now busy
                         widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector, maxcols=self.maxcols)
                         self.tstatewin.noutrefresh()
-                    if key in (10, 32, 9, 261, 338, 258):   # go to next button
-                        self.members.set_nofocus()
                         self.vectors_btn.focus = True
                         self.buttwin.clear()
                         self.vectors_btn.draw()
@@ -230,8 +229,18 @@ class VectorScreen:
                         self.quit_btn.draw()
                         self.buttwin.noutrefresh()
                         curses.doupdate()
-                    if key in (353, 260, 339, 259):   # go to prev button
-                        self.members.set_nofocus()
+                    elif result == "next":   # go to next button
+                        self.members.set_nofocus() # removes focus and calls draw and noutrefresh on memberswin
+                        self.vectors_btn.focus = True
+                        self.buttwin.clear()
+                        self.vectors_btn.draw()
+                        self.devices_btn.draw()
+                        self.messages_btn.draw()
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                        curses.doupdate()
+                    elif result == "previous":   # go to prev button
+                        self.members.set_nofocus() # removes focus and calls draw and noutrefresh on memberswin
                         self.quit_btn.focus = True
                         self.buttwin.clear()
                         self.vectors_btn.draw()
@@ -586,8 +595,10 @@ class MembersWin:
                     continue
                 elif self.submit_btn.focus:
                     if submitvector(self.vector, self.memberwidgets):
-                        # submitted ok condition
-                        self.submit_btn.ok()
+                        # vector has been submitted, remove focus from this window
+                        self.focus = False
+                        self.submit_btn.focus = False
+                        self.submit_btn.ok()   # draw submit button in green with ok
                         self.submitwin.noutrefresh()
                         curses.doupdate()
                         time.sleep(0.3)      # blocking, to avoid screen being changed while this time elapses
@@ -595,8 +606,7 @@ class MembersWin:
                         self.submit_btn.draw()
                         self.submitwin.noutrefresh()
                         # curses.doupdate() - not needed, called by vector window on submission
-                        self.vector.state = 'Busy'
-                        return key
+                        return "submitted"
                     else:
                         # error condition
                         self.submit_btn.alert()
@@ -616,9 +626,10 @@ class MembersWin:
                     self.widgetsrefresh()
                     curses.doupdate()
                     continue
+
             if key in (10, 32, 9, 261, 338, 258):   # go to next button
                 if self.cancel_btn.focus:
-                    return key
+                    return "next"
                 if self.submit_btn.focus:
                     self.submit_btn.focus = False
                     self.cancel_btn.focus = True
@@ -638,7 +649,7 @@ class MembersWin:
                         curses.doupdate()
                         continue
                     else:
-                        return key
+                        return "next"
                 # get the top widget being displayed
                 topwidgetindex = self.widgetindex_top_displayed()
                 if self.topmore_btn.focus:
@@ -666,7 +677,7 @@ class MembersWin:
                         else:
                             # go on to the vector button by returning from this members window
                             self.noutrefresh()
-                            return key
+                            return "next"
                     if self.memberwidgets[widgetindex+1].endline > self.topline + self.displaylines - 1:
                         # next widget is still not displayed
                         if key == 9:
@@ -705,6 +716,7 @@ class MembersWin:
                     self.noutrefresh()
                     curses.doupdate()
                     continue
+
             if key in (353, 260, 339, 259):   # go to prev button
                 if self.topmore_btn.focus:
                     return key
@@ -754,7 +766,7 @@ class MembersWin:
                         self.topline = 0
                         # First widget, so go on to the quit button by returning from this members window
                         self.noutrefresh()
-                        return key
+                        return "previous"
                     if (not self.topline) and (widgetindex == 1):
                         # topline is zero, and set first widget in focus
                         widget.focus = False
