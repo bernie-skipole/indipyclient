@@ -99,6 +99,7 @@ class VectorScreen:
 
     def update(self, event):
         "An event affecting this vector has occurred, re-draw the screen"
+
         self.titlewin.clear()
         self.titlewin.addstr(0, 1, "Device: " + self.devicename)
         self.titlewin.addstr(1, 1, "Vector: " + self.vectorname + " : Group: " + self.vector.group)
@@ -457,6 +458,8 @@ class MembersWin:
             self.topline = 0
 
         # draw the member widgets
+
+        print(len(self.memberwidgets), file=sys.stderr)
 
         try:
             line = 0

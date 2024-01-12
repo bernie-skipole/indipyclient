@@ -136,7 +136,7 @@ class PropertyVector(Vector):
             snapvector.perm = self.perm
         if hasattr(self, 'timeout'):
             snapvector.timeout = self.timeout
-        for membername, member in self.data:
+        for membername, member in self.data.items():
             snapvector.data[membername] = member._snapshot()
         return snapvector
 
@@ -202,7 +202,14 @@ class SwitchVector(PropertyVector):
             self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
-            self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
+            if membername in self.data:
+                # update existing member
+                if event.memberlabels[membername]:
+                    self.data[membername].label = event.memberlabels[membername]
+                self.data[membername].membervalue = membervalue
+            else:
+                # create new member
+                self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
         self.enable = True
 
     def _newSwitchVector(self, timestamp=None, members={}):
@@ -299,7 +306,14 @@ class LightVector(PropertyVector):
             self.message = event.message
         # create  members
         for membername, membervalue in event.items():
-            self.data[membername] = LightMember(membername, event.memberlabels[membername], membervalue)
+            if membername in self.data:
+                # update existing member
+                if event.memberlabels[membername]:
+                    self.data[membername].label = event.memberlabels[membername]
+                self.data[membername].membervalue = membervalue
+            else:
+                # create new member
+                self.data[membername] = LightMember(membername, event.memberlabels[membername], membervalue)
         self.enable = True
 
     def _snapshot(self):
@@ -350,7 +364,14 @@ class TextVector(PropertyVector):
             self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
-            self.data[membername] = TextMember(membername, event.memberlabels[membername], membervalue)
+            if membername in self.data:
+                # update existing member
+                if event.memberlabels[membername]:
+                    self.data[membername].label = event.memberlabels[membername]
+                self.data[membername].membervalue = membervalue
+            else:
+                # create new member
+                self.data[membername] = TextMember(membername, event.memberlabels[membername], membervalue)
         self.enable = True
 
 
@@ -446,7 +467,19 @@ class NumberVector(PropertyVector):
             self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
-            self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
+            if membername in self.data:
+                # update existing member
+                if event.memberlabels[membername]:
+                    member = self.data[membername]
+                    member.label = event.memberlabels[membername][0]
+                    member.format = event.memberlabels[membername][1]
+                    member.min = event.memberlabels[membername][2]
+                    member.max = event.memberlabels[membername][3]
+                    member.step = event.memberlabels[membername][4]
+                self.data[membername].membervalue = membervalue
+            else:
+                # create new member
+                self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
         self.enable = True
 
 
@@ -544,5 +577,10 @@ class BLOBVector(PropertyVector):
             self.timeout = event.timeout
         # create  members
         for membername, label in event.memberlabels.items():
-            self.data[membername] = BLOBMember(membername, label)
+            if membername in self.data:
+                # update existing member
+                self.data[membername].label = label
+            else:
+                # create new member
+                self.data[membername] = BLOBMember(membername, label)
         self.enable = True

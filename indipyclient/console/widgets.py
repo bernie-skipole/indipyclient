@@ -198,8 +198,6 @@ class SwitchMember(BaseMember):
         self.off = Button(window, 'OFF', 0, 0)
         self.off.bold = not self.on.bold
         self.off.show = False
-        self.submit = Button(window, 'Submit', 0, 0)
-        self.submit.show = False
         self.linecount = 3
 
     def reset(self):
@@ -220,11 +218,10 @@ class SwitchMember(BaseMember):
 
     def draw(self, startline=None):
         super().draw(startline)
-        # draw the On or Off value
-        self.window.addstr( self.startline+1, self.maxcols-20, self.value(), curses.A_BOLD )
         # draw the label
         self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
-        #self.window.addstr( self.endline, 1, "----")
+        # draw the On or Off value
+        self.window.addstr( self.startline+1, self.maxcols-20, self.value(), curses.A_BOLD )
         if self.vector.perm == "ro":
             return
         # Draw the on/off buttons
@@ -371,9 +368,11 @@ class LightMember(BaseMember):
             text = "  Alert "
         else:
             return
-        self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
         # draw the label
         self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
+        # draw the value
+        self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
+
 
 
 #   <!ATTLIST defNumberVector
@@ -431,12 +430,13 @@ class NumberMember(BaseMember):
         text = self.member.getformattedvalue().strip()
         if len(text) > 16:
             text = text[:16]
-        self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
+
         # draw the label
         self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
+        # draw the value
+        self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
         if self.vector.perm == "ro":
             return
-
         # the length of the editable number field is 16
         textnewvalue = self.newvalue().ljust(16)
         # draw the value to be edited
@@ -591,7 +591,6 @@ class TextMember(BaseMember):
             value = value[:30]
         return value
 
-
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
@@ -603,13 +602,17 @@ class TextMember(BaseMember):
 
     def draw(self, startline=None):
         super().draw(startline)
+
         # draw the text
         text = self.member.membervalue.strip()
         if len(text) > 30:
             text = text[:30]
-        self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
+
         # draw the label
         self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
+        # draw the value
+        self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
+
         if self.vector.perm == "ro":
             return
 

@@ -143,7 +143,7 @@ class defSwitchVector(defVector):
             raise ParseException
         if self.rule not in ('OneOfMany', 'AtMostOne', 'AnyOfMany'):
             raise ParseException
-        self.timeout = root.get("timeout", "0")
+        self.timeout = root.get("timeout")
         # create object dictionary of member name to value
         # and another dictionary of self.memberlabels with key member name and value being label
         self.memberlabels = {}
@@ -196,7 +196,7 @@ class defTextVector(defVector):
             raise ParseException
         if self.perm not in ('ro', 'wo', 'rw'):
             raise ParseException
-        self.timeout = root.get("timeout", "0")
+        self.timeout = root.get("timeout")
         # create object dictionary of member name to value
         # and another dictionary of self.memberlabels with key member name and value being label
         self.memberlabels = {}
@@ -245,7 +245,7 @@ class defNumberVector(defVector):
             raise ParseException
         if self.perm not in ('ro', 'wo', 'rw'):
             raise ParseException
-        self.timeout = root.get("timeout", "0")
+        self.timeout = root.get("timeout")
         # create object dictionary of member name to value
         # and another dictionary of self.memberlabels with key member name and
         # value being a tuple of (label, format, min, max, step)
@@ -369,7 +369,7 @@ class defBLOBVector(Event):
             raise ParseException
         if self.perm not in ('ro', 'wo', 'rw'):
             raise ParseException
-        self.timeout = root.get("timeout", "0")
+        self.timeout = root.get("timeout")
         # create a dictionary of self.memberlabels with key member name and value being label
         self.memberlabels = {}
         for member in root:
@@ -437,7 +437,7 @@ class setSwitchVector(setVector):
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
-        self.timeout = root.get("timeout", "0")
+        self.timeout = root.get("timeout")
         # create a dictionary of member name to value
         for member in root:
             if member.tag == "oneSwitch":
@@ -468,7 +468,7 @@ class setTextVector(setVector):
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
-        self.timeout = root.get("timeout", "0")
+        self.timeout = root.get("timeout")
         # create a dictionary of member name to value
         for member in root:
             if member.tag == "oneText":
@@ -494,7 +494,7 @@ class setNumberVector(setVector):
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
-        self.timeout = root.get("timeout", "0")
+        self.timeout = root.get("timeout")
         # create a dictionary of member name to value
         for member in root:
             if member.tag == "oneNumber":
@@ -546,7 +546,7 @@ class setBLOBVector(setVector):
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
-        self.timeout = root.get("timeout", "0")
+        self.timeout = root.get("timeout")
         # create a dictionary of member name to value
         # and dictionary sizeformat
         # with key member name and value being a tuple of size, format
