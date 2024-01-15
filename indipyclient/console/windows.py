@@ -34,11 +34,16 @@ class MessagesScreen:
         self.messwin = self.stdscr.subwin(8, self.maxcols-4, 4, 3)
 
         # info window
-        self.infowin = self.stdscr.subwin(4, 60, self.maxrows-6, self.maxcols//2 - 29)
+        self.infowin = self.stdscr.subwin(6, 60, self.maxrows-8, self.maxcols//2 - 29)
         self.infowin.addstr(0, 14, "All Timestamps are UTC")
         self.infowin.addstr(1, 0, "Once connected, choose 'Devices' and press Enter. Then use")
         self.infowin.addstr(2, 0, "Tab/Shift-Tab to move between fields, Enter to select, and")
         self.infowin.addstr(3, 0, "Arrow/Page keys to show further fields where necessary.")
+        self.infowin.addstr(5, 5, "Enable/Disable BLOB's:")
+
+        self.enable_btn = widgets.Button(self.infowin, "Enable", 5, self.maxcols//2 - 6)
+        self.disable_btn = widgets.Button(self.infowin, "Disable", 5, self.maxcols//2 + 4)
+        self.disable_btn.bold = True
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
@@ -65,6 +70,8 @@ class MessagesScreen:
         # does not keep repeating
         self.disconnectionflag = True
         self.titlewin.addstr(2, 0, "Not Connected")
+        self.enable_btn.focus = False
+        self.disable_btn.focus = False
         self.devices_btn.focus = False
         self.quit_btn.focus = True
         self.buttwin.clear()
@@ -77,6 +84,9 @@ class MessagesScreen:
 
     def show(self):
         "Displays title, info string and list of messages on a start screen"
+        self.enable_btn.focus = False
+        self.disable_btn.focus = False
+
         if self.connected:
             self.disconnectionflag = False
             self.titlewin.addstr(2, 0, "Connected    ")
@@ -101,6 +111,9 @@ class MessagesScreen:
                 self.messwin.addstr(count, 0, message)
 
         # draw buttons
+        self.enable_btn.draw()
+        self.disable_btn.draw()
+
         self.buttwin.clear()
         self.devices_btn.draw()
         self.quit_btn.draw()
