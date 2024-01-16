@@ -41,6 +41,16 @@ class ConsoleControl:
         curses.curs_set(0)
         self.stdscr.keypad(True)
 
+        if curses.LINES < 24 or curses.COLS < 80:
+            curses.nocbreak()
+            self.stdscr.keypad(False)
+            curses.curs_set(1)
+            curses.echo()
+            curses.endwin()
+            print("Terminal too small! Try 80 columns x 24 rows")
+            sys.exit(1)
+
+
         # Idle, OK, Busy or Alert.
         # gray, green, yellow and red
 
@@ -61,14 +71,6 @@ class ConsoleControl:
         self.updatescreenstopped = False
         self.getinputstopped = False
 
-        if curses.LINES < 9 or curses.COLS < 40:
-            curses.nocbreak()
-            self.stdscr.keypad(False)
-            curses.curs_set(1)
-            curses.echo()
-            curses.endwin()
-            print("Terminal too small!")
-            sys.exit(1)
 
 
     def color(self, state):

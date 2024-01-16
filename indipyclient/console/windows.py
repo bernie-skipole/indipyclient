@@ -33,16 +33,18 @@ class MessagesScreen:
         # messages window (8 lines, full row - 4, starting at 4,3)
         self.messwin = self.stdscr.subwin(8, self.maxcols-4, 4, 3)
 
-        # info window
-        self.infowin = self.stdscr.subwin(6, 60, self.maxrows-8, self.maxcols//2 - 29)
+        
+ 
+        # info window 6 lines, width self.maxcols//2 + 26  (will fit in 80 col screen, but will also expand)
+        self.infowin = self.stdscr.subwin(6, self.maxcols//2 + 26, self.maxrows-8, self.maxcols//2 - 29)
         self.infowin.addstr(0, 14, "All Timestamps are UTC")
         self.infowin.addstr(1, 0, "Once connected, choose 'Devices' and press Enter. Then use")
         self.infowin.addstr(2, 0, "Tab/Shift-Tab to move between fields, Enter to select, and")
         self.infowin.addstr(3, 0, "Arrow/Page keys to show further fields where necessary.")
         self.infowin.addstr(5, 5, "Enable/Disable BLOB's:")
 
-        self.enable_btn = widgets.Button(self.infowin, "Enable", 5, self.maxcols//2 - 6)
-        self.disable_btn = widgets.Button(self.infowin, "Disable", 5, self.maxcols//2 + 4)
+        self.enable_btn = widgets.Button(self.infowin, "Enable", 5, 30)
+        self.disable_btn = widgets.Button(self.infowin, "Disable", 5, 40)
         self.disable_btn.bold = True
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
