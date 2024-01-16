@@ -35,8 +35,8 @@ class MessagesScreen:
 
         
  
-        # info window 6 lines, width self.maxcols//2 + 26  (will fit in 80 col screen, but will also expand)
-        self.infowin = self.stdscr.subwin(6, self.maxcols//2 + 26, self.maxrows-8, self.maxcols//2 - 29)
+        # info window 6 lines, width 60
+        self.infowin = self.stdscr.subwin(6, 60, self.maxrows-8, self.maxcols//2 - 29)
         self.infowin.addstr(0, 14, "All Timestamps are UTC")
         self.infowin.addstr(1, 0, "Once connected, choose 'Devices' and press Enter. Then use")
         self.infowin.addstr(2, 0, "Tab/Shift-Tab to move between fields, Enter to select, and")
