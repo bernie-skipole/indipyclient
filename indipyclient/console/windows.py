@@ -73,13 +73,17 @@ class MessagesScreen:
         self.disconnectionflag = True
         self.titlewin.addstr(2, 0, "Not Connected")
         self.enable_btn.focus = False
+        self.enable_btn.bold = False
         self.disable_btn.focus = False
+        self.disable_btn.bold = True
         self.devices_btn.focus = False
         self.quit_btn.focus = True
-        self.buttwin.clear()
+        self.enable_btn.draw()
+        self.disable_btn.draw()
         self.devices_btn.draw()
         self.quit_btn.draw()
         self.titlewin.noutrefresh()
+        self.infowin.noutrefresh()
         self.buttwin.noutrefresh()
         curses.doupdate()
 
@@ -97,6 +101,8 @@ class MessagesScreen:
         else:
             self.disconnectionflag = True
             self.titlewin.addstr(2, 0, "Not Connected")
+            self.enable_btn.bold = False
+            self.disable_btn.bold = True
             self.devices_btn.focus = False
             self.quit_btn.focus = True
 
@@ -116,7 +122,6 @@ class MessagesScreen:
         self.enable_btn.draw()
         self.disable_btn.draw()
 
-        self.buttwin.clear()
         self.devices_btn.draw()
         self.quit_btn.draw()
 
@@ -168,39 +173,106 @@ class MessagesScreen:
                     continue
                 if not self.connected:
                     # only accept quit
+                    self.enable_btn.focus = False
+                    self.disable_btn.focus = False
+                    self.enable_btn.bold = False
+                    self.disable_btn.bold = True
                     self.devices_btn.focus = False
                     self.quit_btn.focus = True
-                    self.buttwin.clear()
+                    self.enable_btn.draw()
+                    self.disable_btn.draw()
                     self.devices_btn.draw()
                     self.quit_btn.draw()
                     self.buttwin.noutrefresh()
+                    self.infowin.noutrefresh()
                     curses.doupdate()
                     if key == 10 or chr(key) == "q" or chr(key) == "Q":
                         return "Quit"
                     continue
 
-                if key in (32, 9, 261, 338, 258, 353, 260, 339, 259):
-                    # go to the other button
+                if key in (32, 9, 261, 338, 258):
+                    # go to next button
                     if self.devices_btn.focus:
                         self.devices_btn.focus = False
                         self.quit_btn.focus = True
-                    else:
+                        self.devices_btn.draw()
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                    elif self.quit_btn.focus:
+                        self.quit_btn.focus = False
+                        self.buttwin.clear()
+                        self.devices_btn.draw()
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                        self.enable_btn.focus = True
+                        self.enable_btn.draw()
+                        self.infowin.noutrefresh()
+                    elif self.enable_btn.focus:
+                        self.enable_btn.focus = False
+                        self.disable_btn.focus = True
+                        self.enable_btn.draw()
+                        self.disable_btn.draw()
+                        self.infowin.noutrefresh()
+                    elif self.disable_btn.focus:
+                        self.disable_btn.focus = False
+                        self.disable_btn.draw()
+                        self.infowin.noutrefresh()
+                        self.devices_btn.focus = True
+                        self.devices_btn.draw()
+                        self.buttwin.noutrefresh()
+                    curses.doupdate()
+
+                elif key in (353, 260, 339, 259):
+                    # go to the previous button
+                    if self.quit_btn.focus:
                         self.quit_btn.focus = False
                         self.devices_btn.focus = True
-                    self.buttwin.clear()
-                    self.devices_btn.draw()
-                    self.quit_btn.draw()
-                    self.buttwin.noutrefresh()
+                        self.buttwin.clear()
+                        self.devices_btn.draw()
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                    elif self.devices_btn.focus:
+                        self.devices_btn.focus = False
+                        self.devices_btn.draw()
+                        self.buttwin.noutrefresh()
+                        self.disable_btn.focus = True
+                        self.disable_btn.draw()
+                        self.infowin.noutrefresh()
+                    elif self.disable_btn.focus:
+                        self.disable_btn.focus = False
+                        self.disable_btn.draw()
+                        self.infowin.noutrefresh()
+                        self.enable_btn.focus = True
+                        self.enable_btn.draw()
+                        self.infowin.noutrefresh()
+                    elif self.enable_btn.focus:
+                        self.enable_btn.focus = False
+                        self.enable_btn.draw()
+                        self.infowin.noutrefresh()
+                        self.quit_btn.focus = True
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
                     curses.doupdate()
-                if chr(key) == "q" or chr(key) == "Q":
-                    return "Quit"
-                if chr(key) == "d" or chr(key) == "D":
-                    return "Devices"
-                if key == 10:
+
+                elif key == 10:
                     if self.devices_btn.focus:
                         return "Devices"
-                    else:
+                    elif self.quit_btn.focus:
                         return "Quit"
+                    elif self.enable_btn.focus:
+                        self.enable_btn.bold = True
+                        self.disable_btn.bold = False
+                        self.enable_btn.draw()
+                        self.disable_btn.draw()
+                        self.infowin.noutrefresh()
+                        curses.doupdate()
+                    elif self.disable_btn.focus:
+                        self.enable_btn.bold = False
+                        self.disable_btn.bold = True
+                        self.enable_btn.draw()
+                        self.disable_btn.draw()
+                        self.infowin.noutrefresh()
+                        curses.doupdate()
         except asyncio.CancelledError:
             raise
         except Exception:
