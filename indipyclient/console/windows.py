@@ -32,8 +32,6 @@ class MessagesScreen:
 
         # messages window (8 lines, full row - 4, starting at 4,3)
         self.messwin = self.stdscr.subwin(8, self.maxcols-4, 4, 3)
-
-        
  
         # info window 6 lines, width 60
         self.infowin = self.stdscr.subwin(6, 60, self.maxrows-8, self.maxcols//2 - 29)
@@ -45,7 +43,12 @@ class MessagesScreen:
 
         self.enable_btn = widgets.Button(self.infowin, "Enable", 5, 30)
         self.disable_btn = widgets.Button(self.infowin, "Disable", 5, 40)
-        self.disable_btn.bold = True
+        if self.consoleclient.blobenabled:
+            self.enable_btn.bold = True
+            self.disable_btn.bold = False
+        else:
+            self.enable_btn.bold = False
+            self.disable_btn.bold = True
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
@@ -73,9 +76,7 @@ class MessagesScreen:
         self.disconnectionflag = True
         self.titlewin.addstr(2, 0, "Not Connected")
         self.enable_btn.focus = False
-        self.enable_btn.bold = False
         self.disable_btn.focus = False
-        self.disable_btn.bold = True
         self.devices_btn.focus = False
         self.quit_btn.focus = True
         self.enable_btn.draw()
@@ -93,6 +94,13 @@ class MessagesScreen:
         self.enable_btn.focus = False
         self.disable_btn.focus = False
 
+        if self.consoleclient.blobenabled:
+            self.enable_btn.bold = True
+            self.disable_btn.bold = False
+        else:
+            self.enable_btn.bold = False
+            self.disable_btn.bold = True
+
         if self.connected:
             self.disconnectionflag = False
             self.titlewin.addstr(2, 0, "Connected    ")
@@ -101,8 +109,6 @@ class MessagesScreen:
         else:
             self.disconnectionflag = True
             self.titlewin.addstr(2, 0, "Not Connected")
-            self.enable_btn.bold = False
-            self.disable_btn.bold = True
             self.devices_btn.focus = False
             self.quit_btn.focus = True
 
@@ -121,12 +127,10 @@ class MessagesScreen:
         # draw buttons
         self.enable_btn.draw()
         self.disable_btn.draw()
-
         self.devices_btn.draw()
         self.quit_btn.draw()
 
         # refresh these sub-windows and update physical screen
-
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.infowin.noutrefresh()
@@ -175,8 +179,6 @@ class MessagesScreen:
                     # only accept quit
                     self.enable_btn.focus = False
                     self.disable_btn.focus = False
-                    self.enable_btn.bold = False
-                    self.disable_btn.bold = True
                     self.devices_btn.focus = False
                     self.quit_btn.focus = True
                     self.enable_btn.draw()
@@ -200,8 +202,6 @@ class MessagesScreen:
                         self.buttwin.noutrefresh()
                     elif self.quit_btn.focus:
                         self.quit_btn.focus = False
-                        self.buttwin.clear()
-                        self.devices_btn.draw()
                         self.quit_btn.draw()
                         self.buttwin.noutrefresh()
                         self.enable_btn.focus = True
@@ -227,7 +227,6 @@ class MessagesScreen:
                     if self.quit_btn.focus:
                         self.quit_btn.focus = False
                         self.devices_btn.focus = True
-                        self.buttwin.clear()
                         self.devices_btn.draw()
                         self.quit_btn.draw()
                         self.buttwin.noutrefresh()
@@ -241,7 +240,6 @@ class MessagesScreen:
                     elif self.disable_btn.focus:
                         self.disable_btn.focus = False
                         self.disable_btn.draw()
-                        self.infowin.noutrefresh()
                         self.enable_btn.focus = True
                         self.enable_btn.draw()
                         self.infowin.noutrefresh()
@@ -262,11 +260,13 @@ class MessagesScreen:
                     elif self.enable_btn.focus:
                         self.enable_btn.bold = True
                         self.disable_btn.bold = False
+                        self.consoleclient.blobenabled = True  # this should go to new screen, to check input/folder
                         self.enable_btn.draw()
                         self.disable_btn.draw()
                         self.infowin.noutrefresh()
                         curses.doupdate()
                     elif self.disable_btn.focus:
+                        self.consoleclient.blobenabled = False
                         self.enable_btn.bold = False
                         self.disable_btn.bold = True
                         self.enable_btn.draw()

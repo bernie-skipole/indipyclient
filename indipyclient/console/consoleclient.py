@@ -18,7 +18,8 @@ from . import windows, vector
 
 class ConsoleClient(IPyClient):
 
-    """This is a console client"""
+    """Overrides IPyClient to add any event to an 'eventque'
+       This object """
 
     async def rxevent(self, event):
         """Add event to a queue"""
@@ -27,8 +28,13 @@ class ConsoleClient(IPyClient):
 
 class ConsoleControl:
 
-    def __init__(self, client):
+    def __init__(self, client, blobfolder=None):
         self.client = client
+        self.blobfolder = blobfolder
+        if self.blobfolder:
+            self.blobenabled = True
+        else:
+            self.blobenabled = False
 
         # this is populated with events as they are received
         self.eventque = client.clientdata['eventque']
