@@ -41,8 +41,8 @@ class MessagesScreen:
         self.infowin.addstr(3, 0, "Arrow/Page keys to show further fields where necessary.")
         self.infowin.addstr(5, 5, "Enable/Disable BLOB's:")
 
-        self.enable_btn = widgets.Button(self.infowin, "Enable", 5, 30)
-        self.disable_btn = widgets.Button(self.infowin, "Disable", 5, 40)
+        self.enable_btn = widgets.Button(self.infowin, "Enabled", 5, 30)
+        self.disable_btn = widgets.Button(self.infowin, "Disabled", 5, 40)
         if self.consoleclient.blobenabled:
             self.enable_btn.bold = True
             self.disable_btn.bold = False
