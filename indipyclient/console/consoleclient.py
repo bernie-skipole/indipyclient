@@ -18,17 +18,16 @@ from . import windows, vector
 
 class ConsoleClient(IPyClient):
 
-    """Overrides IPyClient to add any event to an 'eventque'
-       This object """
+    "Overrides IPyClient to add any event to an 'eventque'"
 
     async def rxevent(self, event):
-        """Add event to a queue"""
+        """Add event to eventque"""
         self.clientdata['eventque'].appendleft(event)
 
 
 class ConsoleControl:
 
-    def __init__(self, client, blobfolder=None):
+    def __init__(self, client, eventque, blobfolder=None):
         self.client = client
         self.blobfolder = blobfolder
         if self.blobfolder:
@@ -37,7 +36,7 @@ class ConsoleControl:
             self.blobenabled = False
 
         # this is populated with events as they are received
-        self.eventque = client.clientdata['eventque']
+        self.eventque = eventque
 
         # set up screen
         self.stdscr = curses.initscr()
@@ -122,7 +121,7 @@ class ConsoleControl:
 
 
     async def updatescreen(self):
-        "Update while input is changing, ie new messages or devices"
+        "Update while events are being received"
         try:
             while not self.stop:
                 await asyncio.sleep(0)
@@ -144,6 +143,9 @@ class ConsoleControl:
                     self.screen.update(event)
                     continue
                 if isinstance(self.screen, windows.DevicesScreen):
+                    self.screen.update(event)
+                    continue
+                if isinstance(self.screen, windows.EnableBLOBsScreen):
                     self.screen.update(event)
                     continue
                 if event.devicename != self.screen.devicename:
@@ -172,7 +174,6 @@ class ConsoleControl:
                     # The event refers to this vector
                     self.screen.update(event)
 
-
         except asyncio.CancelledError:
             self._shutdown = True
             raise
@@ -192,6 +193,23 @@ class ConsoleControl:
                     if result == "Quit":
                         self._shutdown = True
                         break
+                    if result == "Devices":
+                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
+                    if result == "EnableBLOBs":
+                        self.screen = windows.EnableBLOBsScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
+                if isinstance(self.screen, windows.EnableBLOBsScreen):
+                    result = await self.screen.inputs()
+                    if result == "Quit":
+                        self._shutdown = True
+                        break
+                    if result == "Messages":
+                        self.screen = windows.MessagesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
                     if result == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
@@ -246,8 +264,6 @@ class ConsoleControl:
                         self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
                         self.screen.show()
                         continue
-
-
 
         except asyncio.CancelledError:
             self._shutdown = True

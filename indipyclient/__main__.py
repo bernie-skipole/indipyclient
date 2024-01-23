@@ -49,8 +49,10 @@ def main():
     else:
         blobfolder = None
 
+    # On receiving an event, the client appends it into eventque
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
-    control = ConsoleControl(client, blobfolder=blobfolder)
+    # control, monitors eventque and acts on the events
+    control = ConsoleControl(client, eventque=eventque, blobfolder=blobfolder)
 
     with open('err.txt', 'w') as f:
         with contextlib.redirect_stderr(f):

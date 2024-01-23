@@ -258,13 +258,14 @@ class MessagesScreen:
                     elif self.quit_btn.focus:
                         return "Quit"
                     elif self.enable_btn.focus:
-                        self.enable_btn.bold = True
-                        self.disable_btn.bold = False
-                        self.consoleclient.blobenabled = True  # this should go to new screen, to check input/folder
-                        self.enable_btn.draw()
-                        self.disable_btn.draw()
-                        self.infowin.noutrefresh()
-                        curses.doupdate()
+                        return "EnableBLOBs"
+                        #self.enable_btn.bold = True
+                        #self.disable_btn.bold = False
+                        #self.consoleclient.blobenabled = True  # this should go to new screen, to check input/folder
+                        #self.enable_btn.draw()
+                        #self.disable_btn.draw()
+                        #self.infowin.noutrefresh()
+                        #curses.doupdate()
                     elif self.disable_btn.focus:
                         self.consoleclient.blobenabled = False
                         self.enable_btn.bold = False
@@ -278,6 +279,164 @@ class MessagesScreen:
         except Exception:
             traceback.print_exc(file=sys.stderr)
             return "Quit"
+
+
+
+
+class EnableBLOBsScreen:
+
+    def __init__(self, stdscr, consoleclient):
+        self.stdscr = stdscr
+        self.stdscr.clear()
+
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+
+        self.consoleclient = consoleclient
+        self.client = consoleclient.client
+
+        # if this is set to a string, the input coroutine will return it
+        self._close = ""
+
+        self.focus = None
+
+        # title window  (1 line, full row, starting at 0,0)
+        self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
+        self.titlewin.addstr(0, 0, "BLOBs Folder", curses.A_BOLD)
+
+        # messages window (1 line, full row, starting at 2,0)
+        self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
+
+        # status window (1 line, full row-4, starting at 4,4)
+        self.statwin = self.stdscr.subwin(1, self.maxcols-4, 4, 4)
+
+        # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
+        self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
+
+        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 10)
+        self.devices_btn.focus = False
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
+        self.quit_btn.focus = True
+
+    def close(self, value):
+        "Sets _close, which is returned by the input co-routine"
+        self._close = value
+
+
+    def show(self):
+        "Displays the screen with list of devices"
+
+        # draw the message
+        if self.client.messages:
+            self.messwin.clear()
+            widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
+
+        # draw status
+        if self.consoleclient.blobenabled:
+            self.statwin.addstr(0, 0, "BLOBs are enabled  ")
+        else:
+            self.statwin.addstr(0, 0, "BLOBs are disabled ")
+
+        # draw messages and quit buttons
+        self.drawbuttons()
+
+        # refresh these sub-windows and update physical screen
+
+        self.titlewin.noutrefresh()
+        self.messwin.noutrefresh()
+        self.statwin.noutrefresh()
+        self.buttwin.noutrefresh()
+        curses.doupdate()
+
+
+    def drawbuttons(self):
+        self.buttwin.clear()
+
+        # If this window controls are in focus, these buttons are not
+        if self.focus:
+            self.messages_btn.focus = False
+            self.quit_btn.focus = False
+        elif not self.quit_btn.focus:
+            self.messages_btn.focus = True
+        elif not self.messages_btn.focus:
+            self.quit_btn.focus = True
+
+        self.messages_btn.draw()
+        self.quit_btn.draw()
+
+
+    def update(self, event):
+        "Only update if global message has changed"
+        if isinstance(event, events.Message):
+            widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
+            self.messwin.noutrefresh()
+            curses.doupdate()
+
+
+    async def inputs(self):
+        "Gets inputs from the screen"
+        try:
+            self.stdscr.nodelay(True)
+            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
+                await asyncio.sleep(0)
+                key = self.stdscr.getch()
+                if key == -1:
+                    if self._close:
+                        return self._close
+                    continue
+                # which button has focus
+                if key == 10:
+                    if self.quit_btn.focus:
+                        widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
+                        self.messwin.noutrefresh()
+                        curses.doupdate()
+                        return "Quit"
+                    if self.messages_btn.focus:
+                        return "Messages"
+
+
+                if chr(key) == "q" or chr(key) == "Q":
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
+                    self.messwin.noutrefresh()
+                    curses.doupdate()
+                    return "Quit"
+
+                if chr(key) == "m" or chr(key) == "M":
+                    return "Messages"
+
+                if key in (32, 9, 261, 338, 258):
+                    # go to the next button
+                    if self.quit_btn.focus:
+                        self.quit_btn.focus = False
+                        self.messages_btn.focus = True
+                    elif self.messages_btn.focus:
+                        self.messages_btn.focus = False
+                        self.quit_btn.focus = True
+
+                elif key in (353, 260, 339, 259):
+                    # go to previous button
+                    if self.quit_btn.focus:
+                        self.quit_btn.focus = False
+                        self.messages_btn.focus = True
+                    elif self.messages_btn.focus:
+                        self.messages_btn.focus = False
+                        self.quit_btn.focus = True
+                else:
+                    # button not recognised
+                    continue
+
+                # draw devices and buttons
+                self.drawdevices()
+                self.drawbuttons()
+                self.devwinrefresh()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
+
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            traceback.print_exc(file=sys.stderr)
+            return "Quit"
+
 
 
 class DevicesScreen:
