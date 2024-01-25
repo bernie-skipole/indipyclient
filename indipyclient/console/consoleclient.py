@@ -269,6 +269,7 @@ class ConsoleControl:
             self._shutdown = True
             raise
         except Exception:
+            traceback.print_exc(file=sys.stderr)
             self._shutdown = True
         finally:
             self.getinputstopped = True

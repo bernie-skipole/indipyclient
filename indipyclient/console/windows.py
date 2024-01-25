@@ -32,7 +32,7 @@ class MessagesScreen:
 
         # messages window (8 lines, full row - 4, starting at 4,3)
         self.messwin = self.stdscr.subwin(8, self.maxcols-4, 4, 3)
- 
+
         # info window 6 lines, width 60
         self.infowin = self.stdscr.subwin(6, 60, self.maxrows-8, self.maxcols//2 - 29)
         self.infowin.addstr(0, 14, "All Timestamps are UTC")
@@ -297,7 +297,9 @@ class EnableBLOBsScreen:
         # if this is set to a string, the input coroutine will return it
         self._close = ""
 
-        self.focus = None
+        # focus is True if BLOB Folder or enable/disable buttons
+        # are in focus
+        self.focus = False
 
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
@@ -312,10 +314,12 @@ class EnableBLOBsScreen:
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
 
-        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 10)
-        self.devices_btn.focus = False
-        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
-        self.quit_btn.focus = True
+        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 15)
+        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 5)
+        self.messages_btn.focus = True
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
+
+
 
     def close(self, value):
         "Sets _close, which is returned by the input co-routine"
@@ -340,7 +344,6 @@ class EnableBLOBsScreen:
         self.drawbuttons()
 
         # refresh these sub-windows and update physical screen
-
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.statwin.noutrefresh()
@@ -355,12 +358,10 @@ class EnableBLOBsScreen:
         if self.focus:
             self.messages_btn.focus = False
             self.quit_btn.focus = False
-        elif not self.quit_btn.focus:
-            self.messages_btn.focus = True
-        elif not self.messages_btn.focus:
-            self.quit_btn.focus = True
+            self.devices_btn.focus = False
 
         self.messages_btn.draw()
+        self.devices_btn.draw()
         self.quit_btn.draw()
 
 
@@ -392,25 +393,23 @@ class EnableBLOBsScreen:
                         return "Quit"
                     if self.messages_btn.focus:
                         return "Messages"
-
-
-                if chr(key) == "q" or chr(key) == "Q":
-                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
-                    self.messwin.noutrefresh()
-                    curses.doupdate()
-                    return "Quit"
-
-                if chr(key) == "m" or chr(key) == "M":
-                    return "Messages"
+                    if self.devices_btn.focus:
+                        if self.client.connected:
+                            return "Devices"
+                        else:
+                            return "Messages"
 
                 if key in (32, 9, 261, 338, 258):
                     # go to the next button
                     if self.quit_btn.focus:
                         self.quit_btn.focus = False
-                        self.messages_btn.focus = True
+                        self.devices_btn.focus = True
                     elif self.messages_btn.focus:
                         self.messages_btn.focus = False
                         self.quit_btn.focus = True
+                    elif self.devices_btn.focus:
+                        self.devices_btn.focus = False
+                        self.messages_btn.focus = True
 
                 elif key in (353, 260, 339, 259):
                     # go to previous button
@@ -419,15 +418,16 @@ class EnableBLOBsScreen:
                         self.messages_btn.focus = True
                     elif self.messages_btn.focus:
                         self.messages_btn.focus = False
+                        self.devices_btn.focus = True
+                    elif self.devices_btn.focus:
+                        self.devices_btn.focus = False
                         self.quit_btn.focus = True
                 else:
                     # button not recognised
                     continue
 
-                # draw devices and buttons
-                self.drawdevices()
+                # draw buttons
                 self.drawbuttons()
-                self.devwinrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
 
@@ -436,7 +436,6 @@ class EnableBLOBsScreen:
         except Exception:
             traceback.print_exc(file=sys.stderr)
             return "Quit"
-
 
 
 class DevicesScreen:
@@ -767,15 +766,6 @@ class DevicesScreen:
                     # If not Quit or Messages, return the device in focus
                     return self.focus
 
-                if chr(key) == "q" or chr(key) == "Q":
-                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
-                    self.messwin.noutrefresh()
-                    curses.doupdate()
-                    return "Quit"
-
-                if chr(key) == "m" or chr(key) == "M":
-                    return "Messages"
-
                 if key in (32, 9, 261, 338, 258):
                     # go to the next button
                     if self.quit_btn.focus:
@@ -1049,15 +1039,6 @@ class ChooseVectorScreen:
                         curses.doupdate()
                     # return the focus value of whichever item was in focus when enter was pressed
                     return self.focus
-                if chr(key) == "q" or chr(key) == "Q":
-                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
-                    self.messwin.noutrefresh()
-                    curses.doupdate()
-                    return "Quit"
-                if chr(key) == "m" or chr(key) == "M":
-                    return "Messages"
-                if chr(key) == "d" or chr(key) == "D":
-                    return "Devices"
 
                 if key in (32, 9, 261, 338, 258):
                     # go to the next widget
@@ -1318,8 +1299,7 @@ class GroupButtons:
                 # set a change of the active group
                 self.active = self.groupfocus
                 return 10
-            if chr(key) in ("q", "Q", "m", "M", "d", "D"):
-                return key
+
             if key in (32, 9, 261):   # space, tab, right arrow
                 if self.prevfocus:
                     # remove focus from prev button
@@ -1734,8 +1714,7 @@ class VectorListWin:
                         continue
                     self.vectorname = self.vectors[btnindex].name
                     return 10
-            if chr(key) in ("q", "Q", "m", "M", "d", "D"):
-                return key
+
             elif key in (32, 9, 261, 338, 258):
                 # go to the next
                 if self.botmore_btn.focus:
