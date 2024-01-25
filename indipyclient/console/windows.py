@@ -362,14 +362,8 @@ class EnableBLOBsScreen:
         else:
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
 
-        if self.pathfocus:
-            self.pathwin.addstr(8, 0, "[", curses.A_BOLD)
-            self.pathwin.addstr(8, 1, self.blobfoldertext())
-            self.pathwin.addstr(8, self.maxcols-7, "]", curses.A_BOLD)
-        else:
-            self.pathwin.addstr(8, 0, "[" + self.blobfoldertext() + "]")
-
-
+        # draw the path
+        self.drawpath()
         # draw submit, device, messages and quit buttons
         self.drawbuttons()
 
@@ -381,8 +375,18 @@ class EnableBLOBsScreen:
         curses.doupdate()
 
 
-    def drawbuttons(self):
+    def drawpath(self):
+        "Draws the path, together with its focus state"
+        if self.pathfocus:
+            self.pathwin.addstr(8, 0, "[", curses.A_BOLD)
+            self.pathwin.addstr(8, 1, self.blobfoldertext())
+            self.pathwin.addstr(8, self.maxcols-9, "]", curses.A_BOLD)
+        else:
+            self.pathwin.addstr(8, 0, "[" + self.blobfoldertext() + "]")
 
+
+    def drawbuttons(self):
+        "Draws the buttons, together with their focus state"
         # If this window controls are in focus, these buttons are not
         if self.pathfocus:
             self.submit_btn.focus = False
@@ -415,7 +419,7 @@ class EnableBLOBsScreen:
                     if self._close:
                         return self._close
                     continue
-                # which button has focus
+
                 if key == 10:
                     if self.quit_btn.focus:
                         widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
@@ -436,7 +440,11 @@ class EnableBLOBsScreen:
 
                 elif key in (32, 9, 261, 338, 258):
                     # go to the next button
-                    if self.submit_btn.focus:
+                    if self.pathfocus:
+                        self.pathfocus = False
+                        self.submit_btn.focus = True
+                        self.drawpath()
+                    elif self.submit_btn.focus:
                         self.submit_btn.focus = False
                         self.devices_btn.focus = True
                     elif self.devices_btn.focus:
@@ -447,7 +455,8 @@ class EnableBLOBsScreen:
                         self.quit_btn.focus = True
                     elif self.quit_btn.focus:
                         self.quit_btn.focus = False
-                        self.submit_btn.focus = True
+                        self.pathfocus = True
+                        self.drawpath()
 
                 elif key in (353, 260, 339, 259):
                     # go to previous button
@@ -462,8 +471,12 @@ class EnableBLOBsScreen:
                         self.submit_btn.focus = True
                     elif self.submit_btn.focus:
                         self.submit_btn.focus = False
+                        self.pathfocus = True
+                        self.drawpath()
+                    elif self.pathfocus:
+                        self.pathfocus = False
                         self.quit_btn.focus = True
-
+                        self.drawpath()
                 else:
                     # button not recognised
                     continue
