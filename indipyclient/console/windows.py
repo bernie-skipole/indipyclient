@@ -309,17 +309,17 @@ class EnableBLOBsScreen:
         self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
 
         # status window (10 lines, full row-4, starting at 4,4)
-        self.statwin = self.stdscr.subwin(10, self.maxcols-4, 4, 4)
+        self.statwin = self.stdscr.subwin(11, self.maxcols-4, 4, 4)
 
         messagerow = self.maxcols//2 - 30
 
         self.statwin.addstr(2, messagerow, "The INDI spec allows BLOB's to be received, by device or")
         self.statwin.addstr(3, messagerow, "by device and property. This client is a simplification")
         self.statwin.addstr(4, messagerow, "and enables or disables all received BLOB's.")
-        self.statwin.addstr(5, messagerow, "To enable BLOB's ensure the path below is to a valid")
+        self.statwin.addstr(5, messagerow, "To enable BLOB's ensure the path below is set to a valid")
         self.statwin.addstr(6, messagerow, "folder where BLOBs will be put, and press submit.")
 
-
+        self.submit_btn = widgets.Button(self.statwin, "Submit", 10, self.maxcols//2 - 3)
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
@@ -330,14 +330,26 @@ class EnableBLOBsScreen:
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
 
+    def blobfoldertext(self):
+        "Return the blobfolder path, padded to the required width"
+        length = self.maxcols-10
+        if self.consoleclient.blobfolder is None:
+            return " "*length
+        bf = self.consoleclient.blobfolder.strip()
+        if not bf:
+            return " "*length
+        if len(bf) > length:
+            bf = bf[:length]
+        else:
+            bf = bf.ljust(length)
+        return bf
 
     def close(self, value):
         "Sets _close, which is returned by the input co-routine"
         self._close = value
 
-
     def show(self):
-        "Displays the screen with list of devices"
+        "Displays the screen"
 
         # draw the message
         if self.client.messages:
@@ -350,7 +362,10 @@ class EnableBLOBsScreen:
         else:
             self.statwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
 
-        # draw messages and quit buttons
+        self.statwin.addstr(8, 0, "[" + self.blobfoldertext() + "]")
+        self.submit_btn.draw()
+
+        # draw device, messages and quit buttons
         self.drawbuttons()
 
         # refresh these sub-windows and update physical screen
