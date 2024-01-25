@@ -28,7 +28,7 @@ class MessagesScreen:
 
         # title window  (3 lines, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
-        self.titlewin.addstr(0, 0, "indipyclient console", curses.A_BOLD)
+        self.titlewin.addstr(0, 0, "Messages", curses.A_BOLD)
 
         # messages window (8 lines, full row - 4, starting at 4,3)
         self.messwin = self.stdscr.subwin(8, self.maxcols-4, 4, 3)
@@ -308,8 +308,18 @@ class EnableBLOBsScreen:
         # messages window (1 line, full row, starting at 2,0)
         self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
 
-        # status window (1 line, full row-4, starting at 4,4)
-        self.statwin = self.stdscr.subwin(1, self.maxcols-4, 4, 4)
+        # status window (10 lines, full row-4, starting at 4,4)
+        self.statwin = self.stdscr.subwin(10, self.maxcols-4, 4, 4)
+
+        messagerow = self.maxcols//2 - 30
+
+        self.statwin.addstr(2, messagerow, "The INDI spec allows BLOB's to be received, by device or")
+        self.statwin.addstr(3, messagerow, "by device and property. This client is a simplification")
+        self.statwin.addstr(4, messagerow, "and enables or disables all received BLOB's.")
+        self.statwin.addstr(5, messagerow, "To enable BLOB's ensure the path below is to a valid")
+        self.statwin.addstr(6, messagerow, "folder where BLOBs will be put, and press submit.")
+
+
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
@@ -336,9 +346,9 @@ class EnableBLOBsScreen:
 
         # draw status
         if self.consoleclient.blobenabled:
-            self.statwin.addstr(0, 0, "BLOBs are enabled  ")
+            self.statwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
         else:
-            self.statwin.addstr(0, 0, "BLOBs are disabled ")
+            self.statwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
 
         # draw messages and quit buttons
         self.drawbuttons()
