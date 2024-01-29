@@ -259,15 +259,10 @@ class MessagesScreen:
                         return "Quit"
                     elif self.enable_btn.focus:
                         return "EnableBLOBs"
-                        #self.enable_btn.bold = True
-                        #self.disable_btn.bold = False
-                        #self.consoleclient.blobenabled = True  # this should go to new screen, to check input/folder
-                        #self.enable_btn.draw()
-                        #self.disable_btn.draw()
-                        #self.infowin.noutrefresh()
-                        #curses.doupdate()
                     elif self.disable_btn.focus:
                         self.consoleclient.blobenabled = False
+                        await self.client.report("Warning! BLOBs disabled")
+                        self.consoleclient.send_disableBLOB()
                         self.enable_btn.bold = False
                         self.disable_btn.bold = True
                         self.enable_btn.draw()
@@ -440,15 +435,26 @@ class EnableBLOBsScreen:
                         else:
                             return "Messages"
                     elif self.submit_btn.focus:
-                        ##################################### check and set enable
-                        blobfolder = os.path.abspath(os.path.expanduser(self._newpath))
-                        if os.path.isdir(blobfolder):
-                            self.consoleclient.blobfolder = blobfolder
-                            self._newpath = blobfolder
-                            self.drawpath()
-                            await self.client.report("BLOB folder is set")
+                        if self._newpath:
+                            blobfolder = os.path.abspath(os.path.expanduser(self._newpath))
+                            if os.path.isdir(blobfolder):
+                                self.consoleclient.blobfolder = blobfolder
+                                self._newpath = blobfolder
+                                self.drawpath()
+                                self.consoleclient.blobenabled = True
+                                self.consoleclient.send_enableBLOB()
+                                self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
+                                await self.client.report("BLOB folder is set")
+                            else:
+                                self.consoleclient.blobenabled = False
+                                self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
+                                await self.client.report("Warning! BLOB folder is invalid")
+                                self.consoleclient.send_disableBLOB()
                         else:
+                            self.consoleclient.blobenabled = False
+                            self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
                             await self.client.report("Warning! BLOB folder is invalid")
+                            self.consoleclient.send_disableBLOB()
                         self.submit_btn.focus = False
                         self.messages_btn.focus = True
 

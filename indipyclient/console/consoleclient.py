@@ -275,6 +275,23 @@ class ConsoleControl:
             self.getinputstopped = True
 
 
+    def send_enableBLOB(self):
+        "Sends Also to enable blobs for all devices"
+        if not self.blobenabled:
+            return
+        for devicename,device in self.client.items():
+            if device.enable:
+                self.client.send_enableBLOB('Also', devicename)
+
+    def send_disableBLOB(self):
+        "Sends Never to disable blobs for all devices"
+        if self.blobenabled:
+            return
+        for devicename,device in self.client.items():
+            if device.enable:
+                self.client.send_enableBLOB('Never', devicename)
+
+
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self.stop = False
