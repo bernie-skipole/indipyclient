@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys
+import asyncio, curses, sys, os
 
 import traceback
 #        except Exception:
@@ -304,7 +304,7 @@ class EnableBLOBsScreen:
         # messages window (1 line, full row, starting at 2,0)
         self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
 
-        # status window (10 lines, full row-4, starting at 4,4)
+        # path window (10 lines, full row-4, starting at 4,4)
         self.pathwin = self.stdscr.subwin(11, self.maxcols-4, 4, 4)
 
         messagerow = self.maxcols//2 - 30
@@ -410,11 +410,17 @@ class EnableBLOBsScreen:
 
     async def inputs(self):
         "Gets inputs from the screen"
+
         try:
             self.stdscr.nodelay(True)
             while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
                 await asyncio.sleep(0)
-                key = self.stdscr.getch()
+                if self.pathfocus:
+                    # text input here
+                    await self.textinput()
+                    key = 9
+                else:
+                    key = self.stdscr.getch()
                 if key == -1:
                     if self._close:
                         return self._close
@@ -435,6 +441,14 @@ class EnableBLOBsScreen:
                             return "Messages"
                     elif self.submit_btn.focus:
                         ##################################### check and set enable
+                        blobfolder = os.path.abspath(os.path.expanduser(self._newpath))
+                        if os.path.isdir(blobfolder):
+                            self.consoleclient.blobfolder = blobfolder
+                            self._newpath = blobfolder
+                            self.drawpath()
+                            await self.client.report("BLOB folder is set")
+                        else:
+                            await self.client.report("Warning! BLOB folder is invalid")
                         self.submit_btn.focus = False
                         self.messages_btn.focus = True
 
@@ -492,6 +506,40 @@ class EnableBLOBsScreen:
         except Exception:
             traceback.print_exc(file=sys.stderr)
             return "Quit"
+
+
+    def drawpath(self):
+        "Draws the path, together with its focus state"
+        if self.pathfocus:
+            self.pathwin.addstr(8, 0, "[", curses.A_BOLD)
+            self.pathwin.addstr(8, 1, self.blobfoldertext())
+            self.pathwin.addstr(8, self.maxcols-9, "]", curses.A_BOLD)
+        else:
+            self.pathwin.addstr(8, 0, "[" + self.blobfoldertext() + "]")
+
+
+    async def textinput(self):
+        "Input text, set it into self._newvalue"
+        # set cursor visible
+        curses.curs_set(1)
+                                                  # row startcol  endcol      start text
+        editstring = widgets.EditString(self.stdscr, 12, 5, self.maxcols-6, self.blobfoldertext())
+
+        while (not self.consoleclient.stop) and (not self._close):
+            await asyncio.sleep(0)
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if key == 10:
+                curses.curs_set(0)
+                return
+            # key is to be inserted into the editable field, and self._newpath updated
+            value = editstring.gettext(key)
+            self._newpath = value.strip()
+            self.pathwin.addstr( 8, 1, value )
+            self.pathwin.noutrefresh()
+            editstring.movecurs()
+            curses.doupdate()
 
 
 class DevicesScreen:
