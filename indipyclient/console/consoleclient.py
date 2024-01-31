@@ -133,12 +133,20 @@ class ConsoleControl:
                         # when not connected, show messages screen
                         self.screen.close("Messages")
                     continue
-                # update the screen if an event is received
+                # act when an event is received
                 try:
                     event = self.eventque.pop()
                 except IndexError:
                     # no event received, so do not update screen
                     continue
+                # If the event is defBLOBVector then send update depending
+                # on self.blobenabled status
+                if isinstance(event, defBLOBVector):
+                    if event.devicename:
+                        if self.blobenabled:
+                            self.client.send_enableBLOB('Also', event.devicename)
+                        else:
+                            self.client.send_enableBLOB('Never', event.devicename)
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
                     continue

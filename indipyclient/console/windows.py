@@ -447,9 +447,9 @@ class EnableBLOBsScreen:
                                 await self.client.report("BLOB folder is set")
                             else:
                                 self.consoleclient.blobenabled = False
+                                self.consoleclient.send_disableBLOB()
                                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
                                 await self.client.report("Warning! BLOB folder is invalid")
-                                self.consoleclient.send_disableBLOB()
                         else:
                             self.consoleclient.blobenabled = False
                             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
