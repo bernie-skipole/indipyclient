@@ -76,6 +76,10 @@ class ConsoleControl:
         self.updatescreenstopped = False
         self.getinputstopped = False
 
+        # list of known device names, this is needed to send
+        # BLOB's enabled
+        self.devicenames = []
+
 
 
     def color(self, state):
@@ -128,7 +132,9 @@ class ConsoleControl:
                 if not self.connected:
                     if isinstance(self.screen, windows.MessagesScreen):
                         # set disconnected status and focus on the quit button
-                        self.screen.showunconnected()
+                        if not self.screen.disconnectionflag:
+                            self.devicenames.clear()
+                            self.screen.showunconnected() # sets disconnectionflag
                     else:
                         # when not connected, show messages screen
                         self.screen.close("Messages")
@@ -139,14 +145,18 @@ class ConsoleControl:
                 except IndexError:
                     # no event received, so do not update screen
                     continue
-                # If the event is defBLOBVector then send update depending
-                # on self.blobenabled status
-                if isinstance(event, defBLOBVector):
-                    if event.devicename:
-                        if self.blobenabled:
-                            self.client.send_enableBLOB('Also', event.devicename)
-                        else:
-                            self.client.send_enableBLOB('Never', event.devicename)
+                if hasattr(event, 'devicename'):
+                    # if this is a new device, update it with BLOB status
+                    if event.devicename and (event.devicename not in self.devicenames):
+                        if event.devicename in self.client:
+                            device = self.client[event.devicename]
+                            if device.enable:
+                                # new devicename
+                                self.devicenames.append(event.devicename)
+                                if self.blobenabled:
+                                    self.client.send_enableBLOB('Also', event.devicename)
+                                else:
+                                    self.client.send_enableBLOB('Never', event.devicename)
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
                     continue
@@ -162,7 +172,10 @@ class ConsoleControl:
                     continue
                 if isinstance(event, delProperty):
                     if event.vectorname is None:
-                        # the whole device is disabled, show devicesscreen
+                        # the whole device is disabled,
+                        if event.devicename and (event.devicename in self.devicenames):
+                            self.devicenames.remove(event.devicename)
+                        # show devicesscreen
                         self.screen.close("Devices")
                         continue
                     if isinstance(self.screen, windows.ChooseVectorScreen):
