@@ -308,6 +308,8 @@ class MembersWin:
                     self.memberwidgets.append(widgets.NumberMember(self.stdscr, self.consoleclient, self.window, self, self.vector, name))
                 elif self.vector.vectortype == "TextVector":
                     self.memberwidgets.append(widgets.TextMember(self.stdscr, self.consoleclient, self.window, self, self.vector, name))
+                elif self.vector.vectortype == "BLOBVector":
+                    self.memberwidgets.append(widgets.BLOBMember(self.stdscr, self.consoleclient, self.window, self, self.vector, name))
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -838,5 +840,5 @@ def submitvector(vector, memberwidgets):
         # members is a dictionary of membername : member value (new text string)
         vector.send_newTextVector(members=members)
         return True
-    # other vector types tested here
+    # have to add BLOBVector here #############################################################
     return False

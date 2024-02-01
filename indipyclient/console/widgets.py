@@ -768,3 +768,17 @@ class EditString():
                 # move cursor right
                 self.stringpos += 1
         return self.text
+
+
+
+class BLOBMember(BaseMember):
+
+    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
+        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
+        self.linecount = 3
+        if self.vector.perm == "ro":
+            self.linecount = 3
+        else:
+            self.linecount = 4
+        # the newvalue to be edited and sent
+        self._newvalue = self.vector[self.name]
