@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys, os
+import asyncio, curses, sys, os, pathlib
 
 import traceback
 #        except Exception:
@@ -315,7 +315,7 @@ class EnableBLOBsScreen:
         if self.consoleclient.blobfolder is None:
             self._newpath = ''
         else:
-            self._newpath = self.consoleclient.blobfolder
+            self._newpath = str(self.consoleclient.blobfolder)
 
         self.submit_btn = widgets.Button(self.pathwin, "Submit", 10, self.maxcols//2 - 3)
 
@@ -436,10 +436,10 @@ class EnableBLOBsScreen:
                             return "Messages"
                     elif self.submit_btn.focus:
                         if self._newpath:
-                            blobfolder = os.path.abspath(os.path.expanduser(self._newpath))
-                            if os.path.isdir(blobfolder):
+                            blobfolder = pathlib.Path(self._newpath).expanduser().resolve()
+                            if blobfolder.is_dir():
                                 self.consoleclient.blobfolder = blobfolder
-                                self._newpath = blobfolder
+                                self._newpath = str(blobfolder)
                                 self.drawpath()
                                 self.consoleclient.blobenabled = True
                                 self.consoleclient.send_enableBLOB()
