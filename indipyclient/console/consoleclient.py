@@ -3,6 +3,8 @@ import asyncio, sys
 
 import curses
 
+from base64 import standard_b64decode
+
 import traceback
 #        except Exception:
 #            traceback.print_exc(file=sys.stderr)
@@ -160,7 +162,23 @@ class ConsoleControl:
                 ##########
                 # If the event is a received BLOB, save it to the BLOB Folder
                 if isinstance(event, setBLOBVector):
-
+                    # make filename from timestamp, and change colon in the timestamp to _ for safer name
+                    members = event.vector.members()
+                    timestampstring = event.timestamp.isoformat(sep='T').replace(":", "_")
+                    for membername, member in members.items():
+                        filename =  membername + "_" + timestampstring + member.blobformat
+                        counter = 0
+                        while True:
+                            filepath = self.blobfolder / filename
+                            if filepath.exists():
+                                # append a digit to the filename
+                                counter += 1
+                                filename = membername + "_" + timestampstring + "_" + str(counter) + member.blobformat
+                            else:
+                                # filepath does not exist, so a new file with this filepath can be created
+                                break
+                        filepath.write_bytes(standard_b64decode(member.membervalue))
+                ############
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
                     continue

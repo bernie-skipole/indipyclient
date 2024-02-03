@@ -43,10 +43,15 @@ def main():
 
     if args.BLOBfolder:
         # blobfolder = os.path.abspath(os.path.expanduser(args.BLOBfolder))
-        blobfolder = pathlib.Path(args.BLOBfolder).expanduser().resolve()
-        if not blobfolder.is_dir():
+        try:
+            blobfolder = pathlib.Path(args.BLOBfolder).expanduser().resolve()
+        except Exception:
             print("Error: If given, the BLOBfolder should be an existing directory")
             return 1
+        else:
+            if not blobfolder.is_dir():
+                print("Error: If given, the BLOBfolder should be an existing directory")
+                return 1
     else:
         blobfolder = None
 
