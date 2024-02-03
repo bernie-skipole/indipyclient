@@ -6,7 +6,7 @@ python3 -m indipyclient
 """
 
 
-import os, sys, argparse, asyncio, collections, contextlib
+import os, sys, argparse, asyncio, collections, contextlib, pathlib
 
 
 from . import version
@@ -42,8 +42,9 @@ def main():
     eventque = collections.deque(maxlen=4)
 
     if args.BLOBfolder:
-        blobfolder = os.path.abspath(os.path.expanduser(args.BLOBfolder))
-        if not os.path.isdir(blobfolder):
+        # blobfolder = os.path.abspath(os.path.expanduser(args.BLOBfolder))
+        blobfolder = pathlib.Path(args.BLOBfolder).expanduser().resolve()
+        if not blobfolder.is_dir():
             print("Error: If given, the BLOBfolder should be an existing directory")
             return 1
     else:
@@ -64,5 +65,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-

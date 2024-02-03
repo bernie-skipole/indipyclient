@@ -157,6 +157,10 @@ class ConsoleControl:
                                     self.client.send_enableBLOB('Also', event.devicename)
                                 else:
                                     self.client.send_enableBLOB('Never', event.devicename)
+                ##########
+                # If the event is a received BLOB, save it to the BLOB Folder
+                if isinstance(event, setBLOBVector):
+
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
                     continue

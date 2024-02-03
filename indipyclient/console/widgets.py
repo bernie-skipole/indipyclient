@@ -577,11 +577,9 @@ class TextMember(BaseMember):
 
     def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
         super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
-        self.linecount = 3
+        self.linecount = 4
         if self.vector.perm == "ro":
             self.linecount = 3
-        else:
-            self.linecount = 4
         # the newvalue to be edited and sent
         self._newvalue = self.vector[self.name]
 
@@ -776,9 +774,102 @@ class BLOBMember(BaseMember):
     def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
         super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
         self.linecount = 3
-        if self.vector.perm == "ro":
-            self.linecount = 3
-        else:
+        if self.vector.perm == "rw":
             self.linecount = 4
         # the newvalue to be edited and sent
         self._newvalue = self.vector[self.name]
+
+    def newvalue(self):
+        value = self._newvalue.strip()
+        if len(value) > 30:
+            value = value[:30]
+        return value
+
+    def reset(self):
+        "Reset the widget removing any value updates, called by cancel"
+        if self.vector.perm == "ro":
+            return
+        self._newvalue = self.member.membervalue
+        textnewvalue = self.newvalue().ljust(30)
+        # draw the value to be edited
+        self.window.addstr( self.startline+2, self.maxcols-35, "[" + textnewvalue+ "]" )
+
+    def draw(self, startline=None):
+        super().draw(startline)
+
+        # draw the text
+        text = self.member.membervalue.strip()
+        if len(text) > 30:
+            text = text[:30]
+
+        # draw the label
+        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
+        # draw the value
+        self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
+
+        if self.vector.perm == "ro":
+            return
+
+        # the length of the editable text field is 30
+        textnewvalue = self.newvalue().ljust(30)
+        # draw the value to be edited
+        self.window.addstr( self.startline+2, self.maxcols-35, "[" + textnewvalue+ "]" )
+
+
+    async def input(self):
+        "This widget is in focus, and monitors inputs"
+        if self.vector.perm == "ro":
+            return -1
+        while (not self.consoleclient.stop) and (not self._close):
+            await asyncio.sleep(0)
+            if not self.vector.enable:
+                return
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if self.name_btn.focus:
+                if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                    # go to next or previous member widget
+                    return key
+                if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+                    # text input here
+                    await self.textinput()
+                    if not self.vector.enable:
+                        return
+                    return 9
+                # ignore any other key
+
+
+    async def textinput(self):
+        "Input text, set it into self._newvalue"
+        # highlight editable field has focus
+        self.name_btn.focus = False
+        self.name_btn.draw()
+        # set brackets of editable field in bold
+        self.window.addstr( self.startline+2, self.maxcols-35, "[", curses.A_BOLD )
+        self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
+        self.memberswin.widgetsrefresh()
+        curses.doupdate()
+        # set cursor visible
+        curses.curs_set(1)
+        # pad starts at self.stdscr row 7, col 1
+                                                  # row             startcol          endcol            start text
+        editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-34, 1+self.maxcols-5, self.newvalue())
+
+        while (not self.consoleclient.stop) and (not self._close):
+            await asyncio.sleep(0)
+            if not self.vector.enable:
+                return
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if key == 10:
+                curses.curs_set(0)
+                return
+            # key is to be inserted into the editable field, and self._newvalue updated
+            value = editstring.gettext(key)
+            self._newvalue = value.strip()
+            self.window.addstr( self.startline+2, self.maxcols-34, value )
+            self.memberswin.widgetsrefresh()
+            editstring.movecurs()
+            curses.doupdate()
