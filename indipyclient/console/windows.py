@@ -1693,10 +1693,11 @@ class VectorListWin:
         vectornames = [vector.name for vector in self.device.values() if vector.group == self.groupname and vector.enable]
         vectornames.sort()
 
-        currentnames = [vector.name for vector in self.vectors]
-        if vectornames != currentnames:
-            # A change has occurred
-            nochange = False
+        if nochange:
+            currentnames = [vector.name for vector in self.vectors]
+            if vectornames != currentnames:
+                # A change has occurred
+                nochange = False
 
         if nochange:
             # Check if any vector state has changed
