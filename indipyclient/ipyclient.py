@@ -170,7 +170,8 @@ class IPyClient(collections.UserDict):
                 else:
                     await self.report(f"Connection failed, re-trying...")
 
-                # wait five seconds before re-trying
+                # wait five seconds before re-trying, but keep checking
+                # that self._stop has not been set
                 count = 0
                 while not self._stop:
                     await asyncio.sleep(0.5)
@@ -210,7 +211,7 @@ class IPyClient(collections.UserDict):
         try:
             while self.connected and (not self._stop):
                 await asyncio.sleep(0)
-                if not self.tx_timer is None:
+                if self.tx_timer:
                     # data has been sent, waiting for reply
                     telapsed = time.time() - self.tx_timer
                     if telapsed > self.respond_timeout:
@@ -253,8 +254,9 @@ class IPyClient(collections.UserDict):
                     writer.write(binarydata)
                     await writer.drain()
 
-                # data has been transmitted set timers going
-                if self.tx_timer is None:
+                # data has been transmitted set timers going, do not set timer
+                # for enableBLOB as no answer is expected for that
+                if (self.tx_timer is None) and (txdata.tag != "enableBLOB"):
                     self.tx_timer = time.time()
                 self.idle_timer = time.time()
         except KeyboardInterrupt:
@@ -479,33 +481,30 @@ class IPyClient(collections.UserDict):
         """Sends a getProperties every five seconds if no devices have been learnt
            or every self.idle_timeout seconds if nothing has been transmitted or received"""
         try:
+            count = 0
             while (not self._stop):
-                await asyncio.sleep(0)
-                if self.connected:
+                # wait an initial half second for a new connection to settle down
+                await asyncio.sleep(0.5)
+                if not self.connected:
+                    count = 0
+                else:
                     # so the connection is up, check devices exist
-                    if len(self):
+                    if len(self.data):
                         # connection is up and devices exist, if nothing has been
                         # sent or received for self.idle_timeout seconds, send a getProperties
-                        count = 0
-                        while (not self._stop) and self.connected:
-                            # elapsed time since activity
-                            await asyncio.sleep(0)
-                            telapsed = time.time() - self.idle_timer
-                            if telapsed > self.idle_timeout:
-                                self.send_getProperties()
-                                #self.report("getProperties sent")
-                                break
+                        telapsed = time.time() - self.idle_timer
+                        if telapsed > self.idle_timeout:
+                            self.send_getProperties()
+                            # await self.report("getProperties sent")
                     else:
-                        # no devices, so send a getProperties every five seconds
-                        self.send_getProperties()
-                        #self.report("getProperties sent")
-                        # wait five seconds for a response
-                        count = 0
-                        while (not self._stop) and self.connected:
-                            await asyncio.sleep(0.5)
-                            count +=1
-                            if count >= 10:
-                                break
+                        # no devices
+                        # then send a getProperties, every five seconds, when count is zero
+                        if not count:
+                            self.send_getProperties()
+                            await self.report("getProperties sent")
+                        count += 1
+                        if count >= 10:
+                            count = 0
         except KeyboardInterrupt:
             self._stop = True
         except asyncio.CancelledError:

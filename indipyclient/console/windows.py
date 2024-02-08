@@ -1559,6 +1559,9 @@ class VectorListWin:
         # list of vectors associated with this group
         self.vectors = []
 
+        # list of vector states, recorded to check if any changes have occurred
+        self.vectorstates = []
+
         # list of vector buttons
         self.vector_btns = []
 
@@ -1687,13 +1690,30 @@ class VectorListWin:
         self.device = self.client[devicename]
         self.groupname = groupname
 
-        vectorlist = [vector for vector in self.device.values() if vector.group == self.groupname and vector.enable]
-        sortedlist = sorted(vectorlist, key=lambda x: x.name)
-        if nochange and (self.vectors == sortedlist):
-            # no change
+        vectornames = [vector.name for vector in self.device.values() if vector.group == self.groupname and vector.enable]
+        vectornames.sort()
+
+        currentnames = [vector.name for vector in self.vectors]
+        if vectornames != currentnames:
+            # A change has occurred
+            nochange = False
+
+        if nochange:
+            # Check if any vector state has changed
+            newstates = [vector.state.lower() for vector in self.vectors]
+            if self.vectorstates != newstates:
+                # A change has occurred
+                nochange = False
+
+        if nochange:
+            # no change, therefore do not draw
             return
 
-        self.vectors = sortedlist
+        # A change to the vectors listed, or to a vector state has occurred
+        # proceed to draw the screen
+
+        self.vectors = [self.device[name] for name in vectornames]
+        self.vectorstates = [vector.state.lower() for vector in self.vectors]
 
         self.window.clear()
         self.topmorewin.clear()
