@@ -768,6 +768,27 @@ class EditString():
         return self.text
 
 
+# Define a property that holds one or more Binary Large Objects, BLOBs.
+# <!ELEMENT defBLOBVector (defBLOB+) >
+# <!ATTLIST defBLOBVector
+# device %nameValue; #REQUIRED       name of Device
+# name %nameValue; #REQUIRED         name of Property
+# label %labelValue; #IMPLIED        GUI label, use name by default
+# group %groupTag; #IMPLIED          Property group membership, blank by default
+# state %propertyState; #REQUIRED    current state of Property
+# perm %propertyPerm; #REQUIRED      ostensible Client controlability
+# timeout %numberValue; #IMPLIED     worse-case time to affect, 0 default, N/A for ro
+# timestamp %timeValue #IMPLIED      moment when these data were valid
+# message %textValue #IMPLIED        commentary
+
+# Define one member of a BLOB vector. Unlike other defXXX elements, this does not contain an
+# initial value for the BLOB.
+# <!ELEMENT defBLOB EMPTY >
+# <!ATTLIST defBLOB
+# name %nameValue; #REQUIRED          name of this BLOB element
+# label %labelValue; #IMPLIED         GUI label, or use name by default
+
+
 
 class BLOBMember(BaseMember):
 
@@ -776,10 +797,19 @@ class BLOBMember(BaseMember):
         self.linecount = 3
         if self.vector.perm == "rw":
             self.linecount = 4
-        # the newvalue to be edited and sent
-        self._newvalue = self.vector[self.name]
+        # the filename to be edited and sent
+        self._newvalue = self.filename()
+
+    def filename(self):
+        nametuple = (self.vector.devicename, self.vector.name, self.name)
+        if nametuple in self.consoleclient.BLOBfiles:
+            return self.consoleclient.BLOBfiles[nametuple].name
+        else:
+            return ""
 
     def newvalue(self):
+        if not self._newvalue:
+            return ""
         value = self._newvalue.strip()
         if len(value) > 30:
             value = value[:30]
@@ -789,8 +819,11 @@ class BLOBMember(BaseMember):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
             return
-        self._newvalue = self.member.membervalue
-        textnewvalue = self.newvalue().ljust(30)
+        self._newvalue = self.filename()
+        if not self._newvalue:
+            textnewvalue = " "*30
+        else:
+            textnewvalue = self.newvalue().ljust(30)
         # draw the value to be edited
         self.window.addstr( self.startline+2, self.maxcols-35, "[" + textnewvalue+ "]" )
 
@@ -798,9 +831,13 @@ class BLOBMember(BaseMember):
         super().draw(startline)
 
         # draw the text
-        text = self.member.membervalue.strip()
-        if len(text) > 30:
-            text = text[:30]
+        text = self.filename()
+        if not text:
+            text = " "*30
+        else:
+            text = text.strip()
+            if len(text) > 30:
+                text = text[:30]
 
         # draw the label
         self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
