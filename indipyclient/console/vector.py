@@ -840,5 +840,9 @@ def submitvector(vector, memberwidgets):
         # members is a dictionary of membername : member value (new text string)
         vector.send_newTextVector(members=members)
         return True
-    # have to add BLOBVector here #############################################################
+    elif vector.vectortype == "BLOBVector":
+        members = {member.name:member.newvalue() for member in memberwidgets}
+        # members is a dictionary of membername : member value (new filepath)
+        vector.send_newBLOBVector(members=members)
+        return True
     return False

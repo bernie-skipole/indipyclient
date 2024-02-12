@@ -602,14 +602,15 @@ class TextMember(BaseMember):
         super().draw(startline)
 
         # draw the text
-        text = self.member.membervalue.strip()
-        if len(text) > 30:
-            text = text[:30]
+        if self.vector.perm != "wo":
+            text = self.member.membervalue.strip()
+            if len(text) > 30:
+                text = text[:30]
+            # draw the value
+            self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
 
         # draw the label
         self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
-        # draw the value
-        self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
 
         if self.vector.perm == "ro":
             return
@@ -798,7 +799,8 @@ class BLOBMember(BaseMember):
         if self.vector.perm == "rw":
             self.linecount = 4
         # the filename to be edited and sent
-        self._newvalue = self.filename()
+        self._newvalue = ""
+
 
     def filename(self):
         nametuple = (self.vector.devicename, self.vector.name, self.name)
@@ -830,19 +832,20 @@ class BLOBMember(BaseMember):
     def draw(self, startline=None):
         super().draw(startline)
 
-        # draw the text
-        text = self.filename()
-        if not text:
-            text = " "*30
-        else:
-            text = text.strip()
-            if len(text) > 30:
-                text = text[:30]
+        # draw the received file
+        if self.vector.perm != "wo":
+            rxfile = self.filename()
+            if not rxfile:
+                rxfile = " "*30
+            else:
+                rxfile = rxfile.strip()
+                if len(rxfile) > 30:
+                    rxfile = rxfile[:30]
+            # draw the value
+            self.window.addstr(self.startline+1, self.maxcols-34, rxfile, curses.A_BOLD)
 
         # draw the label
         self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
-        # draw the value
-        self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
 
         if self.vector.perm == "ro":
             return

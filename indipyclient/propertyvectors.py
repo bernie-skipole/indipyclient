@@ -584,3 +584,39 @@ class BLOBVector(PropertyVector):
                 # create new member
                 self.data[membername] = BLOBMember(membername, label)
         self.enable = True
+
+
+    def _newBLOBVector(self, timestamp=None, members={}):
+        "Creates the xmldata for sending a newBLOBVector"
+        if not self.enable:
+            return
+        if timestamp is None:
+            timestamp = datetime.now(tz=timezone.utc)
+        if not isinstance(timestamp, datetime):
+            # invalid timestamp given
+            return
+        if not (timestamp.tzinfo is None):
+            if timestamp.tzinfo == timezone.utc:
+                timestamp = timestamp.replace(tzinfo = None)
+            else:
+                # invalid timestamp
+                return
+        # timestamp has no tzinfo so isoformat does not include timezone info
+        self.state = 'Busy'
+        xmldata = ET.Element('newBLOBVector')
+        xmldata.set("device", self.devicename)
+        xmldata.set("name", self.name)
+        xmldata.set("timestamp", timestamp.isoformat(sep='T'))
+        # set member values to send
+        for membername, blobmember in self.data.items():
+            if membername in members:
+                xmldata.append(blobmember.oneblob(members[membername]))
+        return xmldata
+
+    def send_newBLOBVector(self, timestamp=None, members={}):
+        """Transmits the vector (newBLOBVector) with new BLOB members
+           This method will transmit the vector and change the vector state to busy."""
+        xmldata = self._newBLOBVector(timestamp, members)
+        if xmldata is None:
+            return
+        self._client.send(xmldata)
