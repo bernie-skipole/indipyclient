@@ -821,7 +821,7 @@ class BLOBMember(BaseMember):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
             return
-        self._newvalue = self.filename()
+        self._newvalue = ""
         if not self._newvalue:
             textnewvalue = " "*30
         else:

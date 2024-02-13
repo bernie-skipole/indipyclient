@@ -307,8 +307,15 @@ class NumberMember(ParentNumberMember):
         return snapmember
 
 
+class ParentBLOBMember(Member):
 
-class BLOBMember(PropertyMember):
+    def __init__(self, name, label=None, blobsize=0, blobformat='', membervalue=None):
+        super().__init__(name, label, membervalue)
+        self.blobsize = blobsize
+        self.blobformat = blobformat
+
+
+class BLOBMember(ParentBLOBMember):
     """Contains a 'binary large object' such as an image.
 
        blobsize is the size of the BLOB before any compression, if left at
@@ -336,20 +343,21 @@ class BLOBMember(PropertyMember):
         self._membervalue = value
 
 
-    def oneblob(self):
+    def oneblob(self, newvalue, newsize, newformat):
         """Returns xml of a oneBLOB"""
         xmldata = ET.Element('oneBLOB')
         xmldata.set("name", self.name)
-        xmldata.set("format", self.blobformat)
+        xmldata.set("format", newformat)
+        xmldata.set("size", str(newsize))
         # the value set in the xmldata object should be a bytes object
-        if isinstance(self._membervalue, bytes):
-            xmldata.text = self._membervalue
-        elif hasattr(self._membervalue, "read") and callable(self._membervalue.read):
+        if isinstance(newvalue, bytes):
+            xmldata.text = newvalue
+        elif hasattr(newvalue, "read") and callable(newvalue.read):
             # a file-like object
             # set seek(0) so is read from start of file
-            self._membervalue.seek(0)
-            bytescontent = self._membervalue.read()
-            self._membervalue.close()
+            newvalue.seek(0)
+            bytescontent = newvalue.read()
+            newvalue.close()
             if not isinstance(bytescontent, bytes):
                 raise ParseException("The read BLOB is not a bytes object")
             if bytescontent == b"":
@@ -358,15 +366,16 @@ class BLOBMember(PropertyMember):
         else:
             # could be a path to a file
             try:
-                with open(self._membervalue, "rb") as fp:
+                with open(newvalue, "rb") as fp:
                     bytescontent = fp.read()
             except:
                 raise ParseException("Unable to read the given file")
             if bytescontent == b"":
                 raise ParseException("The read BLOB value is empty")
             xmldata.text = bytescontent
-        if self.blobsize:
-            xmldata.set("size", str(self.blobsize))
-        else:
-            xmldata.set("size", str(len(bytescontent)))
         return xmldata
+
+
+    def _snapshot(self):
+        snapmember = ParentBLOBMember(self.name, self.label, self.blobsize, self.blobformat, self._membervalue)
+        return snapmember

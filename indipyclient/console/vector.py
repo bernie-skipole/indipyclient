@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys, time
+import asyncio, curses, sys, time, pathlib
 
 import traceback
 #        except Exception:
@@ -841,8 +841,12 @@ def submitvector(vector, memberwidgets):
         vector.send_newTextVector(members=members)
         return True
     elif vector.vectortype == "BLOBVector":
-        members = {member.name:member.newvalue() for member in memberwidgets}
-        # members is a dictionary of membername : member value (new filepath)
+        members = {}
+        # members is a dictionary of membername : member value , blob size, blob format
+        for member in memberwidgets:
+            filepath = member.newvalue()
+            blobformat = pathlib.Path(filepath).suffix
+            members[member.name] = (filepath, 0, blobformat)
         vector.send_newBLOBVector(members=members)
         return True
     return False

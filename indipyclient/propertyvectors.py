@@ -121,8 +121,9 @@ class PropertyVector(Vector):
         if hasattr(event, 'timeout') and event.timeout:
             self.timeout = event.timeout
         for membername, membervalue in event.items():
-            member = self.data[membername]
-            member.membervalue = membervalue
+            if membername in self.data:
+                member = self.data[membername]
+                member.membervalue = membervalue
 
 
     def _snapshot(self):
@@ -514,7 +515,7 @@ class NumberVector(PropertyVector):
 
     def send_newNumberVector(self, timestamp=None, members={}):
         """Transmits the vector (newNumberVector) with new number members
-           togther with any unchanged numbers.
+           together with any unchanged numbers.
            (The spec requires number vectors to be sent with all members)
            This method will transmit the vector and change the vector state to busy."""
         xmldata = self._newNumberVector(timestamp, members)
@@ -536,10 +537,8 @@ class BLOBVector(PropertyVector):
         for membername, label in event.memberlabels.items():
             self.data[membername] = BLOBMember(membername, label)
 
-
-
     def set_blobsize(self, membername, blobsize):
-        """Sets the size attribute in the blob member. If the default of zero is used,
+        """Sets the blobsize attribute in the blob member. If the default of zero is used,
            the size will be set to the number of bytes in the BLOB. The INDI standard
            specifies the size should be that of the BLOB before any compression,
            therefore if you are sending a compressed file, you should set the blobsize
@@ -550,6 +549,13 @@ class BLOBVector(PropertyVector):
         if not member:
             return
         member.blobsize = blobsize
+
+    def set_blobformat(self, membername, blobformat):
+        """Sets the blobformat attribute in the blob member."""
+        member = self.data.get[membername]
+        if not member:
+            return
+        member.blobformat = blobformat
 
     @property
     def perm(self):
@@ -586,6 +592,20 @@ class BLOBVector(PropertyVector):
         self.enable = True
 
 
+    def _setvector(self, event):
+        "Updates this vector with new values after a setBLOBvector has been received"
+        if not self.enable:
+            # this property does not exist
+            return
+        super()._setvector(event)
+        # set each members size and format
+        # using event.sizeformat[membername] = (membersize, memberformat)
+        for membername in event.keys():
+            membersize, memberformat = event.sizeformat[membername]
+            self.set_blobsize(membername, membersize)
+            self.set_blobformat(membername, memberformat)
+
+
     def _newBLOBVector(self, timestamp=None, members={}):
         "Creates the xmldata for sending a newBLOBVector"
         if not self.enable:
@@ -610,12 +630,14 @@ class BLOBVector(PropertyVector):
         # set member values to send
         for membername, blobmember in self.data.items():
             if membername in members:
-                xmldata.append(blobmember.oneblob(members[membername]))
+                # expand (value, blobsize, blobformat) to required arguments
+                xmldata.append(blobmember.oneblob(*members[membername]))
         return xmldata
 
     def send_newBLOBVector(self, timestamp=None, members={}):
         """Transmits the vector (newBLOBVector) with new BLOB members
-           This method will transmit the vector and change the vector state to busy."""
+           This method will transmit the vector and change the vector state to busy.
+           members dictionary should be {membername:(value, blobsize, blobformat)}"""
         xmldata = self._newBLOBVector(timestamp, members)
         if xmldata is None:
             return
