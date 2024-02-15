@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys, os, pathlib
+import asyncio, curses, sys, os, pathlib, textwrap
 
 import traceback
 #        except Exception:
@@ -118,11 +118,12 @@ class MessagesScreen:
         lastmessagenumber = len(messages) - 1
         mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
         for count, message in enumerate(mlist):
+            displaytext = textwrap.shorten(message, width=self.maxcols-10, placeholder="...")
             if count == lastmessagenumber:
                 # highlight the last, current message
-                self.messwin.addstr(count, 0, message, curses.A_BOLD)
+                self.messwin.addstr(count, 0, displaytext, curses.A_BOLD)
             else:
-                self.messwin.addstr(count, 0, message)
+                self.messwin.addstr(count, 0, displaytext)
 
         # draw buttons
         self.enable_btn.draw()
@@ -147,11 +148,12 @@ class MessagesScreen:
         lastmessagenumber = len(messages) - 1
         mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
         for count, message in enumerate(mlist):
+            displaytext = textwrap.shorten(message, width=self.maxcols-10, placeholder="...")
             if count == lastmessagenumber:
                 # highlight the last, current message
-                self.messwin.addstr(count, 0, message, curses.A_BOLD)
+                self.messwin.addstr(count, 0, displaytext, curses.A_BOLD)
             else:
-                self.messwin.addstr(count, 0, message)
+                self.messwin.addstr(count, 0, displaytext)
 
         # check if connected or not
         if self.connected:
@@ -335,7 +337,7 @@ class EnableBLOBsScreen:
         if not bf:
             return " "*length
         if len(bf) > length:
-            bf = bf[:length]
+            bf = textwrap.shorten(bf, width=length, placeholder="...")
         else:
             bf = bf.ljust(length)
         return bf

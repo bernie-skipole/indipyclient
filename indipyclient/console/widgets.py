@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys
+import asyncio, curses, sys, textwrap
 
 from decimal import Decimal
 
@@ -72,20 +72,19 @@ class Button:
 
 
 
-def drawmessage(window, message, bold = False, maxcols=None):
+def drawmessage(window, message, bold=False, maxcols=None):
     """Shows message, message is either a text string, or a tuple of (timestamp, message text)"""
     window.clear()
     if not maxcols:
         maxcols = curses.COLS
-    if isinstance(message, str):
-        rxmessage = "    " + message
-    else:
-        rxmessage = "    " + message[0].isoformat(sep='T')[11:21] + "  " + message[1]
+    maxcols = maxcols - 5
+    if not isinstance(message, str):
+        message = message[0].isoformat(sep='T')[11:21] + "  " + message[1]
 
-    if len(rxmessage) > maxcols:
-        messagetoshow = rxmessage[:maxcols-1]
+    if len(message) > maxcols:
+        messagetoshow = "    " + textwrap.shorten(message, width=maxcols, placeholder="...")
     else:
-        messagetoshow = rxmessage + " "*(maxcols - len(rxmessage) - 1)
+        messagetoshow = "    " + message.ljust(maxcols)
 
     if bold:
         window.addstr(0, 0, messagetoshow, curses.A_BOLD)
