@@ -94,7 +94,8 @@ class delProperty(Event):
         properties = device.data
         if self.vectorname:
             # does this vector already exist, if it does, disable it
-            if vector := properties.get(self.vectorname):
+            if self.vectorname in properties:
+                vector = properties[self.vectorname]
                 vector.enable = False
         else:
             # No vectorname given, disable all properties
@@ -411,10 +412,9 @@ class setVector(Event, UserDict):
         self.vectorname = root.get("name")
         if self.vectorname is None:
             raise ParseException
-        # This vector must already exist, properties is a dictionary of property name to propertyvector this device owns
-        properties = device.data
-        # if it exists, check enable status
-        if vector := properties.get(self.vectorname):
+        # This vector must already exist, and be enabled
+        if self.vectorname in self.device:
+            vector = self.device[self.vectorname]
             if not vector.enable:
                 raise ParseException
         else:
@@ -564,7 +564,7 @@ class setBLOBVector(setVector):
                     raise ParseException
                 try:
                     self.data[membername] = standard_b64decode(member.text.encode('ascii'))
-                    memberize = int(member.get("size"))
+                    memberize = int(membersize)
                 except:
                     raise ParseException
                 self.sizeformat[membername] = (membersize, memberformat)
@@ -572,7 +572,6 @@ class setBLOBVector(setVector):
                 raise ParseException
         if not self.data:
             raise ParseException
-        properties = device.data
-        self.vector = properties[self.vectorname]
+        self.vector = device[self.vectorname]
         # set changed values into self.vector
         self.vector._setvector(self)

@@ -545,15 +545,17 @@ class BLOBVector(PropertyVector):
            prior to compression with this method."""
         if not isinstance(blobsize, int):
             return
-        member = self.data.get[membername]
-        if not member:
+        if membername in self.data:
+            member = self.data[membername]
+        else:
             return
         member.blobsize = blobsize
 
     def set_blobformat(self, membername, blobformat):
         """Sets the blobformat attribute in the blob member."""
-        member = self.data.get[membername]
-        if not member:
+        if membername in self.data:
+            member = self.data[membername]
+        else:
             return
         member.blobformat = blobformat
 

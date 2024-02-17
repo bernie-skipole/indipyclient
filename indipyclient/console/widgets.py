@@ -14,14 +14,20 @@ import traceback
 
 class Button:
 
-    def __init__(self, window, btntext, row, col):
+    def __init__(self, window, btntext, row, col, btnlen=None):
         self.window = window
-        self.btntext = btntext
         self.row = row
         self.col = col
         self._focus = False
         self._show = True
         self.bold = False
+        if btnlen:
+            # btlen includes the two [ ] brackets
+            self.btntext = textwrap.shorten(btntext, width=btnlen-2, placeholder="...")
+        else:
+            # no btnlen given
+            self.btntext = btntext
+        self.btnlen = len(self.btntext) + 2
 
     @property
     def show(self):
@@ -49,7 +55,7 @@ class Button:
 
     def draw(self):
         if not self._show:
-            self.window.addstr( self.row, self.col, " "*len(self.btntext) + "  ")
+            self.window.addstr( self.row, self.col, " "*self.btnlen)
             return
         if self._focus:
             self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_REVERSE)
@@ -134,7 +140,9 @@ class BaseMember:
         # linecount is the number of lines this widget takes up,
         # including an end empty line
         self.linecount = 4
-        self.name_btn = Button(window, self.name, 0, 0)
+        # set a button on the left at, 0,0 with length self.maxcols//2-10
+        # that is, for a widow of 80, this gives a button of 30
+        self.name_btn = Button(window, self.name, 0, 0, self.maxcols//2-10)
         self._focus = False
         # if this is set to True, the input coroutine will stop
         self._close = False
@@ -170,6 +178,8 @@ class BaseMember:
     def draw(self, startline=None):
         if not startline is None:
             self.startline = startline
+        displaylabel = textwrap.shorten(self.vector.memberlabel(self.name), width=self.maxcols-5, placeholder="...")
+        self.window.addstr( self.startline, 1, displaylabel, curses.A_BOLD )
         self.name_btn.row = self.startline+1
         self.name_btn.draw()
 
@@ -217,8 +227,6 @@ class SwitchMember(BaseMember):
 
     def draw(self, startline=None):
         super().draw(startline)
-        # draw the label
-        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
         # draw the On or Off value
         self.window.addstr( self.startline+1, self.maxcols-20, self.value(), curses.A_BOLD )
         if self.vector.perm == "ro":
@@ -367,8 +375,6 @@ class LightMember(BaseMember):
             text = "  Alert "
         else:
             return
-        # draw the label
-        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
         # draw the value
         self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
 
@@ -429,9 +435,6 @@ class NumberMember(BaseMember):
         text = self.member.getformattedvalue().strip()
         if len(text) > 16:
             text = text[:16]
-
-        # draw the label
-        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
         # draw the value
         self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
         if self.vector.perm == "ro":
@@ -607,9 +610,6 @@ class TextMember(BaseMember):
                 text = text[:30]
             # draw the value
             self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
-
-        # draw the label
-        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
 
         if self.vector.perm == "ro":
             return
@@ -833,18 +833,15 @@ class BLOBMember(BaseMember):
 
         # draw the received file
         if self.vector.perm != "wo":
+            # Set the length of the received filename to fit on the screen
+            rxfilenamelength = self.maxcols//2 - 2
             rxfile = self.filename()
             if not rxfile:
-                rxfile = " "*30
+                rxfile = " "*rxfilenamelength
             else:
-                rxfile = rxfile.strip()
-                if len(rxfile) > 30:
-                    rxfile = rxfile[:30]
+                rxfile = textwrap.shorten(rxfile, width=rxfilenamelength, placeholder="...")
             # draw the value
-            self.window.addstr(self.startline+1, self.maxcols-34, rxfile, curses.A_BOLD)
-
-        # draw the label
-        self.window.addstr( self.startline, 1, self.vector.memberlabel(self.name), curses.A_BOLD )
+            self.window.addstr(self.startline+1, self.maxcols//2, rxfile, curses.A_BOLD)
 
         if self.vector.perm == "ro":
             return

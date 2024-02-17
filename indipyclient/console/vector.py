@@ -460,9 +460,6 @@ class MembersWin:
             self.topline = 0
 
         # draw the member widgets
-
-        print(len(self.memberwidgets), file=sys.stderr)
-
         try:
             line = 0
             for memberwidget in self.memberwidgets:
