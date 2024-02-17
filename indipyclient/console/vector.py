@@ -842,7 +842,7 @@ def submitvector(vector, memberwidgets):
         # members is a dictionary of membername : member value , blob size, blob format
         for member in memberwidgets:
             filepath = member.newvalue()
-            blobformat = pathlib.Path(filepath).suffix
+            blobformat = ''.join(pathlib.Path(filepath).suffixes)
             members[member.name] = (filepath, 0, blobformat)
         vector.send_newBLOBVector(members=members)
         return True
