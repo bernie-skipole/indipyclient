@@ -142,7 +142,7 @@ class BaseMember:
         self.linecount = 4
         # set a button on the left at, 0,0 with length self.maxcols//2-10
         # that is, for a widow of 80, this gives a button of 30
-        self.name_btn = Button(window, self.name, 0, 0, self.maxcols//2-10)
+        self.name_btn = Button(window, self.name, 0, 1, self.maxcols//2-10)
         self._focus = False
         # if this is set to True, the input coroutine will stop
         self._close = False
@@ -794,14 +794,20 @@ class BLOBMember(BaseMember):
 
     def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
         super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
-        self.linecount = 3
-        if self.vector.perm == "rw":
-            self.linecount = 4
+        self.linecount = 4
+        if self.vector.perm == "ro":
+            self.linecount = 3
         # the filename to be edited and sent
         self._newvalue = ""
+        # length of editable field, start with nominal 40
+        self.fieldlength = 40
+        if self.vector.perm != "ro":
+            # set a button on the right
+            self.send_btn = Button(window, "Send", 0, self.maxcols-9, 6)
 
 
     def filename(self):
+        "Returns filename of last file received and saved"
         nametuple = (self.vector.devicename, self.vector.name, self.name)
         if nametuple in self.consoleclient.BLOBfiles:
             return self.consoleclient.BLOBfiles[nametuple].name
@@ -812,8 +818,9 @@ class BLOBMember(BaseMember):
         if not self._newvalue:
             return ""
         value = self._newvalue.strip()
-        if len(value) > 30:
-            value = value[:30]
+        textlength = self.fieldlength - 2  # for the [] brackets
+        if len(value) > textlength:
+            value = value[:textlength]
         return value
 
     def reset(self):
@@ -821,12 +828,13 @@ class BLOBMember(BaseMember):
         if self.vector.perm == "ro":
             return
         self._newvalue = ""
+        textlength = self.fieldlength - 2  # for the [] brackets
         if not self._newvalue:
-            textnewvalue = " "*30
+            textnewvalue = " "*textlength
         else:
-            textnewvalue = self.newvalue().ljust(30)
+            textnewvalue = self.newvalue().ljust(textlength)
         # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-35, "[" + textnewvalue+ "]" )
+        self.window.addstr( self.startline+2, 20, "[" + textnewvalue+ "]" )
 
     def draw(self, startline=None):
         super().draw(startline)
@@ -846,10 +854,20 @@ class BLOBMember(BaseMember):
         if self.vector.perm == "ro":
             return
 
-        # the length of the editable text field is 30
-        textnewvalue = self.newvalue().ljust(30)
-        # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-35, "[" + textnewvalue+ "]" )
+        # Draw the editable field
+        self.window.addstr( self.startline+2, 1, "Filepath to send:" )  # 18 characters from start from start
+
+        # draw field 20 from start to 10 from end
+        self.fieldlength = self.maxcols-30
+
+        textnewvalue = self.newvalue().ljust(self.fieldlength-2)
+        # draw the field and value to be edited
+        self.window.addstr( self.startline+2, 20, "[" + textnewvalue+ "]" )
+
+        # send button
+        self.send_btn.row = self.startline+2
+        self.send_btn.draw()
+
 
 
     async def input(self):
@@ -882,15 +900,15 @@ class BLOBMember(BaseMember):
         self.name_btn.focus = False
         self.name_btn.draw()
         # set brackets of editable field in bold
-        self.window.addstr( self.startline+2, self.maxcols-35, "[", curses.A_BOLD )
-        self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
+        self.window.addstr( self.startline+2, 20, "[", curses.A_BOLD )
+        self.window.addstr( self.startline+2, 19 + self.fieldlength, "]", curses.A_BOLD )
         self.memberswin.widgetsrefresh()
         curses.doupdate()
         # set cursor visible
         curses.curs_set(1)
         # pad starts at self.stdscr row 7, col 1
-                                                  # row             startcol          endcol            start text
-        editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-34, 1+self.maxcols-5, self.newvalue())
+                                                  # row       startcol          endcol            start text
+        editstring = EditString(self.stdscr, 7+self.startline+2, 22, 19 + self.fieldlength, self.newvalue())
 
         while (not self.consoleclient.stop) and (not self._close):
             await asyncio.sleep(0)
@@ -905,7 +923,7 @@ class BLOBMember(BaseMember):
             # key is to be inserted into the editable field, and self._newvalue updated
             value = editstring.gettext(key)
             self._newvalue = value.strip()
-            self.window.addstr( self.startline+2, self.maxcols-34, value )
+            self.window.addstr( self.startline+2, 21, value )
             self.memberswin.widgetsrefresh()
             editstring.movecurs()
             curses.doupdate()
