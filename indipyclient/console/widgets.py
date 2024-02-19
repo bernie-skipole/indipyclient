@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys, textwrap, pathlib
+import asyncio, curses, sys, textwrap, pathlib, time
 
 from decimal import Decimal
 
@@ -898,21 +898,30 @@ class BLOBMember(BaseMember):
                     continue
             if self.send_btn.focus:
                 if key == 10:
-                    # submit,         ------------------ a submit to do here -----
+                    # submit
                     self.send_btn.focus = False
                     self.send_btn.draw()
                     self.name_btn.focus = True
                     self.name_btn.draw()
                     self.memberswin.widgetsrefresh()
                     curses.doupdate()
-                    if True:
+                    try:
                         filepath = pathlib.Path(self._newvalue).expanduser().resolve()
                         blobformat = ''.join(filepath.suffixes)
                         members = {self.name : (filepath, 0, blobformat)}
                         self.vector.send_newBLOBVector(members=members)
-                    #except Exception:
-                    #    traceback.print_exc(file=sys.stderr)
-                    #    raise
+                    except Exception:
+                        self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )
+                        self.memberswin.widgetsrefresh()
+                        curses.doupdate()
+                    else:
+                        self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
+                        self.memberswin.widgetsrefresh()
+                        curses.doupdate()
+                    time.sleep(0.3)      # blocking, to avoid screen being changed while this time elapses
+                    self.window.addstr( self.startline+2, 1, "Filepath to send:" )
+                    self.memberswin.widgetsrefresh()
+                    curses.doupdate()
                     continue
                 elif key in (353, 260, 339, 259):  # 353 shift tab, 260 left arrow, 339 page up, 259 up arrow
                     # back to name button
