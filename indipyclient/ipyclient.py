@@ -6,6 +6,8 @@ from time import sleep
 
 from datetime import datetime, timezone
 
+from base64 import standard_b64encode
+
 import xml.etree.ElementTree as ET
 
 from . import events
@@ -205,7 +207,6 @@ class IPyClient(collections.UserDict):
         "Transmits xmldata, this is an internal method, not normally called by a user."
         if self.connected:
             self.writerque.append(xmldata)
-
 
     async def _check_alive(self, writer):
         try:

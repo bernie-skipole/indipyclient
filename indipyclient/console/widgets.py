@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys, textwrap
+import asyncio, curses, sys, textwrap, pathlib
 
 from decimal import Decimal
 
@@ -890,8 +890,45 @@ class BLOBMember(BaseMember):
                     await self.textinput()
                     if not self.vector.enable:
                         return
+                    # after text input, set send button focus
+                    self.send_btn.focus = True
+                    self.send_btn.draw()
+                    self.memberswin.widgetsrefresh()
+                    curses.doupdate()
+                    continue
+            if self.send_btn.focus:
+                if key == 10:
+                    # submit,         ------------------ a submit to do here -----
+                    self.send_btn.focus = False
+                    self.send_btn.draw()
+                    self.name_btn.focus = True
+                    self.name_btn.draw()
+                    self.memberswin.widgetsrefresh()
+                    curses.doupdate()
+                    if True:
+                        filepath = pathlib.Path(self._newvalue).expanduser().resolve()
+                        blobformat = ''.join(filepath.suffixes)
+                        members = {self.name : (filepath, 0, blobformat)}
+                        self.vector.send_newBLOBVector(members=members)
+                    #except Exception:
+                    #    traceback.print_exc(file=sys.stderr)
+                    #    raise
+                    continue
+                elif key in (353, 260, 339, 259):  # 353 shift tab, 260 left arrow, 339 page up, 259 up arrow
+                    # back to name button
+                    self.send_btn.focus = False
+                    self.send_btn.draw()
+                    self.name_btn.focus = True
+                    self.name_btn.draw()
+                    self.memberswin.widgetsrefresh()
+                    curses.doupdate()
+                    continue
+                else:
+                    # on to next widget
+                    self.send_btn.focus = False
+                    self.send_btn.draw()
                     return 9
-                # ignore any other key
+
 
 
     async def textinput(self):
@@ -899,6 +936,8 @@ class BLOBMember(BaseMember):
         # highlight editable field has focus
         self.name_btn.focus = False
         self.name_btn.draw()
+        self.send_btn.focus = False
+        self.send_btn.draw()
         # set brackets of editable field in bold
         self.window.addstr( self.startline+2, 20, "[", curses.A_BOLD )
         self.window.addstr( self.startline+2, 19 + self.fieldlength, "]", curses.A_BOLD )

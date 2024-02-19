@@ -1,7 +1,7 @@
 
 import xml.etree.ElementTree as ET
 
-import math
+import sys, math, pathlib
 
 from .error import ParseException
 
@@ -352,7 +352,9 @@ class BLOBMember(ParentBLOBMember):
         # the value set in the xmldata object should be a bytes object
         if isinstance(newvalue, bytes):
             xmldata.text = newvalue
-        elif hasattr(newvalue, "read") and callable(newvalue.read):
+        elif isinstance(newvalue, pathlib.Path):
+            xmldata.text = newvalue.read_bytes()
+        elif hasattr(newvalue, "seek") and hasattr(newvalue, "read") and callable(newvalue.read):
             # a file-like object
             # set seek(0) so is read from start of file
             newvalue.seek(0)
