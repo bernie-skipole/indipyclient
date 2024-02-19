@@ -353,7 +353,10 @@ class BLOBMember(ParentBLOBMember):
         if isinstance(newvalue, bytes):
             xmldata.text = newvalue
         elif isinstance(newvalue, pathlib.Path):
-            xmldata.text = newvalue.read_bytes()
+            try:
+                xmldata.text = newvalue.read_bytes()
+            except:
+                raise ParseException("Unable to read the given file")
         elif hasattr(newvalue, "seek") and hasattr(newvalue, "read") and callable(newvalue.read):
             # a file-like object
             # set seek(0) so is read from start of file
