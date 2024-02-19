@@ -23,7 +23,7 @@ class Vector(collections.UserDict):
         self._state = state
         self.timestamp = timestamp
         self.message = message
-        self.vectortype = None
+        self.vectortype = self.__class__.__name__
         self.devicename = None
         self._rule = None
         self._perm = None
@@ -79,7 +79,6 @@ class PropertyVector(Vector):
 
     def __init__(self, name, label, group, state, timestamp, message, device, client):
         super().__init__(name, label, group, state, timestamp, message)
-        self.vectortype = self.__class__.__name__
         self._client = client
         self.device = device
         self.devicename = device.devicename

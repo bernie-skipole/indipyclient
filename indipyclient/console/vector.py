@@ -344,7 +344,7 @@ class MembersWin:
         self.submitwin = self.stdscr.subwin(1, self.maxcols - botmorewincols - 3, self.maxrows - 3, botmorewincols + 1)
         self.submit_btn = widgets.Button(self.submitwin, "Submit", 0, 0)
         self.cancel_btn = widgets.Button(self.submitwin, "Cancel", 0, 12)
-        if (self.vector.perm == 'ro') or hasattr(self.vector, "send_newBLOBVector"):
+        if (self.vector.perm == 'ro') or (self.vectortype == "BLOBVector"):
             self.submit_btn.show = False
             self.cancel_btn.show = False
         else:
