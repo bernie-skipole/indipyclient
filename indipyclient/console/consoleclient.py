@@ -46,7 +46,9 @@ class ConsoleControl:
         curses.curs_set(0)
         self.stdscr.keypad(True)
 
-        if curses.LINES < 24 or curses.COLS < 80:
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+
+        if self.maxrows < 24 or self.maxcols < 80:
             curses.nocbreak()
             self.stdscr.keypad(False)
             curses.curs_set(1)
@@ -234,6 +236,14 @@ class ConsoleControl:
                 await asyncio.sleep(0)
                 if isinstance(self.screen, windows.MessagesScreen):
                     result = await self.screen.inputs()
+                    if result == "Resize":
+                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.shutdown()
+                            continue
+                        self.screen = windows.MessagesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
                     if result == "Quit":
                         self._shutdown = True
                         break
@@ -247,6 +257,14 @@ class ConsoleControl:
                         continue
                 if isinstance(self.screen, windows.EnableBLOBsScreen):
                     result = await self.screen.inputs()
+                    if result == "Resize":
+                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.shutdown()
+                            continue
+                        self.screen = windows.EnableBLOBsScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
                     if result == "Quit":
                         self._shutdown = True
                         break
@@ -260,6 +278,14 @@ class ConsoleControl:
                         continue
                 if isinstance(self.screen, windows.DevicesScreen):
                     result = await self.screen.inputs()
+                    if result == "Resize":
+                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.shutdown()
+                            continue
+                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
                     if result == "Quit":
                         self._shutdown = True
                         break
@@ -275,6 +301,14 @@ class ConsoleControl:
                         continue
                 if isinstance(self.screen, windows.ChooseVectorScreen):
                     result = await self.screen.inputs()
+                    if result == "Resize":
+                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.shutdown()
+                            continue
+                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
+                        self.screen.show()
+                        continue
                     if result == "Quit":
                         self._shutdown = True
                         break
@@ -293,6 +327,14 @@ class ConsoleControl:
                         continue
                 if isinstance(self.screen, vector.VectorScreen):
                     result = await self.screen.inputs()
+                    if result == "Resize":
+                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.shutdown()
+                            continue
+                        self.screen = vector.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
+                        self.screen.show()
+                        continue
                     if result == "Quit":
                         self._shutdown = True
                         break

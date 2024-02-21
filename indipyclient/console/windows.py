@@ -13,16 +13,76 @@ from . import widgets
 
 from .. import events
 
-class MessagesScreen:
+
+class ParentScreen:
 
     def __init__(self, stdscr, consoleclient):
         self.stdscr = stdscr
-        self.stdscr.clear()
-
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-
         self.consoleclient = consoleclient
         self.client = consoleclient.client
+        # if close string is set, it becomes the return value from input routines
+        self._close = ""
+
+    def close(self, value):
+        self._close = value
+
+
+    async def keyinput(self):
+        """Waits for a key press,
+           if self.consoleclient.stop is True, returns 'Stop',
+           if screen has been resized, returns 'Resize',
+           if self._close has been given a value, returns that value
+           Otherwise returns the key pressed."""
+        while True:
+            await asyncio.sleep(0)
+            if self.consoleclient.stop:
+                return "Stop"
+            if self._close:
+                return self._close
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if key == curses.KEY_RESIZE:
+                return "Resize"
+            return key
+
+
+
+class ConsoleClientScreen(ParentScreen):
+
+    "Parent to windows which are set in self.consoleclient.screen"
+
+    def __init__(self, stdscr, consoleclient):
+        super().__init__(stdscr, consoleclient)
+        self.stdscr.clear()
+
+    async def keyinput(self):
+        """Waits for a key press,
+           if self.consoleclient.screen is not self, returns 'Stop'
+           if self.consoleclient.stop is True, returns 'Stop',
+           if screen has been resized, returns 'Resize',
+           if self._close has been given a value, returns that value
+           Otherwise returns the key pressed."""
+        while self.consoleclient.screen is self:
+            await asyncio.sleep(0)
+            if self.consoleclient.stop:
+                return "Stop"
+            if self._close:
+                return self._close
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if key == curses.KEY_RESIZE:
+                return "Resize"
+            return key
+        return "Stop"
+
+
+class MessagesScreen(ConsoleClientScreen):
+
+    def __init__(self, stdscr, consoleclient):
+        super().__init__(stdscr, consoleclient)
 
         self.disconnectionflag = False
 
@@ -57,6 +117,7 @@ class MessagesScreen:
         self.devices_btn.focus = False
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
         self.quit_btn.focus = True
+
 
     @property
     def connected(self):
@@ -172,11 +233,10 @@ class MessagesScreen:
         "Gets inputs from the screen"
         try:
             self.stdscr.nodelay(True)
-            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
-                await asyncio.sleep(0)
-                key = self.stdscr.getch()
-                if key == -1:
-                    continue
+            while True:
+                key = await self.keyinput()
+                if key in ("Resize", "Devices", "Vectors", "Stop"):
+                    return key
                 if not self.connected:
                     # only accept quit
                     self.enable_btn.focus = False
@@ -190,7 +250,7 @@ class MessagesScreen:
                     self.buttwin.noutrefresh()
                     self.infowin.noutrefresh()
                     curses.doupdate()
-                    if key == 10 or chr(key) == "q" or chr(key) == "Q":
+                    if key == 10:
                         return "Quit"
                     continue
 
@@ -280,19 +340,10 @@ class MessagesScreen:
 
 
 
-class EnableBLOBsScreen:
+class EnableBLOBsScreen(ConsoleClientScreen):
 
     def __init__(self, stdscr, consoleclient):
-        self.stdscr = stdscr
-        self.stdscr.clear()
-
-        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-
-        self.consoleclient = consoleclient
-        self.client = consoleclient.client
-
-        # if this is set to a string, the input coroutine will return it
-        self._close = ""
+        super().__init__(stdscr, consoleclient)
 
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
@@ -342,9 +393,6 @@ class EnableBLOBsScreen:
             bf = bf.ljust(length)
         return bf
 
-    def close(self, value):
-        "Sets _close, which is returned by the input co-routine"
-        self._close = value
 
     def show(self):
         "Displays the screen"
@@ -410,19 +458,14 @@ class EnableBLOBsScreen:
 
         try:
             self.stdscr.nodelay(True)
-            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
-                await asyncio.sleep(0)
+            while True:
                 if self.pathfocus:
                     # text input here
-                    await self.textinput()
-                    key = 9
+                    key = await self.textinput()
                 else:
-                    key = self.stdscr.getch()
-                if key == -1:
-                    if self._close:
-                        return self._close
-                    continue
-
+                    key = await self.keyinput()
+                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                    return key
                 if key == 10:
                     if self.quit_btn.focus:
                         widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
@@ -540,14 +583,13 @@ class EnableBLOBsScreen:
                                                   # row startcol  endcol      start text
         editstring = widgets.EditString(self.stdscr, 12, 5, self.maxcols-6, self.blobfoldertext())
 
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while not self.consoleclient.stop:
+            key = await self.keyinput()
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                return key
             if key == 10:
                 curses.curs_set(0)
-                return
+                return 9
             # key is to be inserted into the editable field, and self._newpath updated
             value = editstring.gettext(key)
             self._newpath = value.strip()
@@ -557,19 +599,10 @@ class EnableBLOBsScreen:
             curses.doupdate()
 
 
-class DevicesScreen:
+class DevicesScreen(ConsoleClientScreen):
 
     def __init__(self, stdscr, consoleclient):
-        self.stdscr = stdscr
-        self.stdscr.clear()
-
-        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-
-        self.consoleclient = consoleclient
-        self.client = consoleclient.client
-
-        # if this is set to a string, the input coroutine will return it
-        self._close = ""
+        super().__init__(stdscr, consoleclient)
 
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
@@ -620,9 +653,6 @@ class DevicesScreen:
         # devicename to button dictionary
         self.devices = {}
 
-    def close(self, value):
-        "Sets _close, which is returned by the input co-routine"
-        self._close = value
 
     def devicenumber(self):
         "Returns the number of enabled devices"
@@ -842,13 +872,10 @@ class DevicesScreen:
         "Gets inputs from the screen"
         try:
             self.stdscr.nodelay(True)
-            while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
-                await asyncio.sleep(0)
-                key = self.stdscr.getch()
-                if key == -1:
-                    if self._close:
-                        return self._close
-                    continue
+            while True:
+                key = await self.keyinput()
+                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                    return key
                 # which button has focus
                 btnlist = list(self.devices.keys())
                 if key == 10:
@@ -972,22 +999,14 @@ class DevicesScreen:
             return "Quit"
 
 
-class ChooseVectorScreen:
+class ChooseVectorScreen(ConsoleClientScreen):
 
     def __init__(self, stdscr, consoleclient, devicename):
-        self.stdscr = stdscr
-        self.stdscr.clear()
+        super().__init__(stdscr, consoleclient)
 
-        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-
-        self.consoleclient = consoleclient
         self.devicename = devicename
         # start with vectorname None, a vector to view will be chosen by this screen
         self.vectorname = None
-        self.client = consoleclient.client
-
-        # if this is set to a string, the input coroutine will return it
-        self._close = ""
 
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
@@ -1028,17 +1047,15 @@ class ChooseVectorScreen:
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
 
-    def close(self, value):
-        "Sets _close, which is returned by the input co-routine"
-        self._close = value
-        self.groupwin.close()
-        self.vectorswin.close()
-
-
     @property
     def activegroup(self):
         "Return name of group currently active"
         return self.groupwin.active
+
+    def close(self, value):
+        self._close = value
+        self.groupwin.close(value)
+        self.vectorswin.close(value)
 
 
     def show(self):
@@ -1124,13 +1141,11 @@ class ChooseVectorScreen:
             self.stdscr.nodelay(True)
             while (not self.consoleclient.stop) and (self.consoleclient.screen is self):
                 await asyncio.sleep(0)
-                if self.focus not in self.screenparts:
-                    # as default, start with focus on the Devices button
-                    self.devices_btn.focus = True
-                    self.focus = "Devices"
                 if self.focus == "Groups":
                     # focus has been given to the groups widget which monitors its own inputs
                     key = await self.groupwin.input()
+                    if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                        return key
                     if key == 10:
                         # must update the screen with a new group
                         self.show()
@@ -1138,17 +1153,16 @@ class ChooseVectorScreen:
                 elif self.focus == "Vectors":
                     # focus has been given to Vectors which monitors its own inputs
                     key = await self.vectorswin.input()
+                    if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                        return key
                     if key == 10:
                         # a vector has been chosen, get the vectorname chosen
                         self.vectorname = self.vectorswin.vectorname
                         return "Vectors"
                 else:
-                    key = self.stdscr.getch()
-
-                if key == -1:
-                    if self._close:
-                        return self._close
-                    continue
+                    key = await self.keyinput()
+                    if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                        return key
 
                 if key == 10:
                     # enter key pressed
@@ -1219,18 +1233,16 @@ class ChooseVectorScreen:
             traceback.print_exc(file=sys.stderr)
             return "Quit"
 
+# These windows are sub windows of ChooseVectorScreen
 
-
-class GroupButtons:
+class GroupButtons(ParentScreen):
 
     def __init__(self, stdscr, consoleclient):
-        self.stdscr = stdscr
-
-        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+        super().__init__(stdscr, consoleclient)
 
         # window (1 line, full row, starting at 4,0)
         self.window = self.stdscr.subwin(1, self.maxcols, 4, 0)
-        self.consoleclient = consoleclient
+
         self.groups = []          # list of group names
         self.groupcols = {}       # dictionary of groupname to column number
         # active is the name of the group currently being shown
@@ -1248,12 +1260,6 @@ class GroupButtons:
         self.nextfocus = False
         self.prevfocus = False
 
-        # if this is set to True, the input coroutine will stop
-        self._close = False
-
-    def close(self):
-        "Sets _close to True, which stops the input co-routine"
-        self._close = True
 
     def noutrefresh(self):
         self.window.noutrefresh()
@@ -1379,11 +1385,11 @@ class GroupButtons:
     async def input(self):
         "Get group button pressed, or next or previous"
         self.stdscr.nodelay(True)
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                return key
+
             if key == 10:
 
                 if self.prevfocus:
@@ -1513,23 +1519,17 @@ class GroupButtons:
                 continue
             if key in (338, 339, 258, 259):          # 338 page down, 339 page up, 258 down arrow, 259 up arrow
                 return key
-        return -1
 
 
 
-
-class VectorListWin:
-
-    "Used to display a list of vectors"
+class VectorListWin(ParentScreen):
 
     def __init__(self, stdscr, consoleclient):
-        self.stdscr = stdscr
-        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+        super().__init__(stdscr, consoleclient)
+
         # number of lines in a pad, assume 50
         self.padlines = 50
         self.window = curses.newpad(self.padlines, self.maxcols)
-        self.consoleclient = consoleclient
-        self.client = consoleclient.client
 
         # vector index number of top vector being displayed
         self.topvectindex = 0
@@ -1540,9 +1540,6 @@ class VectorListWin:
 
         # this is True, if this widget is in focus
         self._focus = False
-
-        # if this is set to True, the input coroutine will stop
-        self._close = False
 
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
@@ -1570,9 +1567,6 @@ class VectorListWin:
         # start with vectorname None, a vector to view will be chosen by this screen
         self.vectorname = None
 
-    def close(self):
-        "Sets _close to True, which stops the input co-routine"
-        self._close = True
 
     @property
     def botvectindex(self):
@@ -1828,15 +1822,14 @@ class VectorListWin:
         curses.doupdate()
 
 
-
     async def input(self):
         "Get key pressed while this object has focus"
         self.stdscr.nodelay(True)
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                return key
+
             if key == 10:
                 if self.topmore_btn.focus:
                     self.upline()
@@ -1975,5 +1968,3 @@ class VectorListWin:
                         self.vector_btns[btnindex-1].draw()
                         self.noutrefresh()
                         curses.doupdate()
-
-        return -1
