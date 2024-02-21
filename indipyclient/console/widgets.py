@@ -98,11 +98,11 @@ def drawmessage(window, message, bold=False, maxcols=None):
         window.addstr(0, 0, messagetoshow)
 
 
-def draw_timestamp_state(consoleclient, window, vector, maxcols=None):
+def draw_timestamp_state(consoleclient, window, vector):
     "Adds the vector timestamp, and its state to the window"
+    maxrows, maxcols = window.getmaxyx()
     window.clear()
-    if not maxcols:
-        maxcols = curses.COLS
+
     state = vector.state
     timestamp = vector.timestamp.isoformat(sep='T')[11:21]
     window.addstr(0, 1, timestamp)
@@ -916,9 +916,13 @@ class BLOBMember(BaseMember):
                         curses.doupdate()
                     else:
                         self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
+                        self.vector.state = 'Busy'
+                        tstatewin = self.memberswin.tstatewin
+                        draw_timestamp_state(self.consoleclient, tstatewin, self.vector)
+                        tstatewin.noutrefresh()
                         self.memberswin.widgetsrefresh()
                         curses.doupdate()
-                    time.sleep(0.3)      # blocking, to avoid screen being changed while this time elapses
+                    time.sleep(0.4)      # blocking, to avoid screen being changed while this time elapses
                     self.window.addstr( self.startline+2, 1, "Filepath to send:" )
                     self.memberswin.widgetsrefresh()
                     curses.doupdate()

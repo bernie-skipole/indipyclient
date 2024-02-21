@@ -46,7 +46,7 @@ class VectorScreen:
 
         try:
             # window showing the members of the vector
-            self.members = MembersWin(self.stdscr, self.consoleclient, self.vector)
+            self.members = MembersWin(self.stdscr, self.consoleclient, self.vector, self.tstatewin)
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -76,7 +76,7 @@ class VectorScreen:
         if self.vector.message:
             widgets.drawmessage(self.messwin, self.vector.message, maxcols=self.maxcols)
 
-        widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector, maxcols=self.maxcols)
+        widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
 
         # Draw the members widgets
         self.members.draw()
@@ -220,7 +220,7 @@ class VectorScreen:
                     if result == "submitted":
                         self.vector.state = 'Busy'
                         # The vector has been submitted, draw vector state which is now busy
-                        widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector, maxcols=self.maxcols)
+                        widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
                         self.tstatewin.noutrefresh()
                         self.vectors_btn.focus = True
                         self.buttwin.clear()
@@ -265,8 +265,9 @@ class MembersWin:
 
     "Used to display the vector members"
 
-    def __init__(self, stdscr, consoleclient, vector):
+    def __init__(self, stdscr, consoleclient, vector, tstatewin):
         self.stdscr = stdscr
+        self.tstatewin = tstatewin
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
 
 
