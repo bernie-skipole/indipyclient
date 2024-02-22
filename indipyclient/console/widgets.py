@@ -490,6 +490,7 @@ class NumberMember(BaseMember):
         while True:
             key = await self.keyinput()
             if key in ("Vectors", "Resize", "Stop"):
+                curses.curs_set(0)
                 return key
             if key == 10:
                 # a number self._newvalue is being submitted
@@ -657,6 +658,7 @@ class TextMember(BaseMember):
         while True:
             key = await self.keyinput()
             if key in ("Vectors", "Resize", "Stop"):
+                curses.curs_set(0)
                 return key
             if key == 10:
                 curses.curs_set(0)
@@ -951,6 +953,7 @@ class BLOBMember(BaseMember):
         while True:
             key = await self.keyinput()
             if key in ("Vectors", "Resize", "Stop"):
+                curses.curs_set(0)
                 return key
             if key == 10:
                 curses.curs_set(0)
