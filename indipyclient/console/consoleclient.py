@@ -281,8 +281,12 @@ class ConsoleControl:
                     result = await self.screen.inputs()
                     if result == "Resize":
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
+                            continue
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.screen = windows.TooSmall(self.stdscr, self)
+                            self.screen.show()
                             continue
                         self.screen = windows.EnableBLOBsScreen(self.stdscr, self)
                         self.screen.show()
@@ -302,8 +306,12 @@ class ConsoleControl:
                     result = await self.screen.inputs()
                     if result == "Resize":
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
+                            continue
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.screen = windows.TooSmall(self.stdscr, self)
+                            self.screen.show()
                             continue
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
@@ -325,8 +333,12 @@ class ConsoleControl:
                     result = await self.screen.inputs()
                     if result == "Resize":
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
+                            continue
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.screen = windows.TooSmall(self.stdscr, self)
+                            self.screen.show()
                             continue
                         self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
                         self.screen.show()
@@ -351,8 +363,12 @@ class ConsoleControl:
                     result = await self.screen.inputs()
                     if result == "Resize":
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
+                            continue
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.screen = windows.TooSmall(self.stdscr, self)
+                            self.screen.show()
                             continue
                         self.screen = windows.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()

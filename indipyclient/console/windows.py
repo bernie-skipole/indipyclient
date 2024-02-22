@@ -87,9 +87,9 @@ class TooSmall(ConsoleClientScreen):
     def show(self):
         self.stdscr.clear()
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-        self.stdscr.addstr(2, self.maxcols//4, "Terminal too")
-        self.stdscr.addstr(3, self.maxcols//4+3, "small")
-        self.stdscr.addstr(4, self.maxcols//4, "Please resize")
+        self.stdscr.addstr(2, self.maxcols//2-6, "Terminal too")
+        self.stdscr.addstr(3, self.maxcols//2-2, "small")
+        self.stdscr.addstr(4, self.maxcols//2-6, "Please resize")
         self.stdscr.noutrefresh()
         curses.doupdate()
 
