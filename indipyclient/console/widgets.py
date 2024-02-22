@@ -144,12 +144,12 @@ class BaseMember:
         # that is, for a widow of 80, this gives a button of 30
         self.name_btn = Button(window, self.name, 0, 1, self.maxcols//2-10)
         self._focus = False
-        # if this is set to True, the input coroutine will stop
-        self._close = False
+        # if this is set to a value, the input coroutine will stop
+        self._close = ""
 
-    def close(self):
-        "Sets _close to True, which stops the input co-routine"
-        self._close = True
+    def close(self, value):
+        "Sets _close to a value, which stops the input co-routine"
+        self._close = value
 
     def value(self):
         return self.vector[self.name]
@@ -183,17 +183,25 @@ class BaseMember:
         self.name_btn.row = self.startline+1
         self.name_btn.draw()
 
-    async def input(self):
-        "This widget is in focus, and monitors inputs"
-        while (not self.consoleclient.stop) and (not self._close):
+    async def keyinput(self):
+        """Waits for a key press,
+           if self.consoleclient.stop is True, returns 'Stop',
+           if screen has been resized, returns 'Resize',
+           if self._close has been given a value, returns that value
+           Otherwise returns the key pressed."""
+        while not self.consoleclient.stop:
             await asyncio.sleep(0)
             if not self.vector.enable:
-                return
+                return "Vectors"
+            if self._close:
+                return self._close
             key = self.stdscr.getch()
             if key == -1:
                 continue
+            if key == curses.KEY_RESIZE:
+                return "Resize"
             return key
-        return -1
+        return "Stop"
 
 
 class SwitchMember(BaseMember):
@@ -265,13 +273,10 @@ class SwitchMember(BaseMember):
 
     async def input(self):
         "This widget is in focus, and monitors inputs"
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            if not self.vector.enable:
-                return
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Vectors", "Resize", "Stop"):
+                return key
             if self.name_btn.focus:
                 if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                     # go to next or previous member widget
@@ -350,8 +355,7 @@ class SwitchMember(BaseMember):
                     continue
                 self.memberswin.widgetsrefresh()
                 curses.doupdate()
-                continue
-        return -1
+
 
 
 class LightMember(BaseMember):
@@ -378,6 +382,10 @@ class LightMember(BaseMember):
         # draw the value
         self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
 
+    async def input(self):
+        "This widget is in focus, and monitors inputs"
+        key = await self.keyinput()
+        return key
 
 
 #   <!ATTLIST defNumberVector
@@ -447,30 +455,24 @@ class NumberMember(BaseMember):
 
     async def input(self):
         "This widget is in focus, and monitors inputs"
-        if self.vector.perm == "ro":
-            return -1
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            if not self.vector.enable:
-                return
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Vectors", "Resize", "Stop"):
+                return key
             if self.name_btn.focus:
                 if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                     # go to next or previous member widget
                     return key
                 if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
-                    # text input here
-                    await self.numberinput()
-                    if not self.vector.enable:
-                        return
-                    return 9
+                    # input a number here
+                    result = await self.numberinput()
+                    return result
                 # ignore any other key
 
 
     async def numberinput(self):
-        "Input a number value, set it into self._newvalue as a string"
+        """Input a number value, set it into self._newvalue as a string
+           if all ok, return 9 to move to next field"""
         # highlight editable field has focus
         self.name_btn.focus = False
         self.name_btn.draw()
@@ -485,13 +487,10 @@ class NumberMember(BaseMember):
                                                   # row             startcol          endcol            start text
         editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
 
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            if not self.vector.enable:
-                return
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Vectors", "Resize", "Stop"):
+                return key
             if key == 10:
                 # a number self._newvalue is being submitted
                 if not self.checknumber():
@@ -499,9 +498,10 @@ class NumberMember(BaseMember):
                     editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
                     continue
                 else:
-                    # self._newvalue is correct, return with this value to be submitted
+                    # self._newvalue is correct, this value is to be submitted
+                    # return 9 to move to next field
                     curses.curs_set(0)
-                    return
+                    return 9
             # key is to be inserted into the editable field, and self._newvalue updated
             value = editstring.getnumber(key)
             self._newvalue = value.strip()
@@ -622,30 +622,24 @@ class TextMember(BaseMember):
 
     async def input(self):
         "This widget is in focus, and monitors inputs"
-        if self.vector.perm == "ro":
-            return -1
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            if not self.vector.enable:
-                return
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Vectors", "Resize", "Stop"):
+                return key
             if self.name_btn.focus:
                 if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                     # go to next or previous member widget
                     return key
                 if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
                     # text input here
-                    await self.textinput()
-                    if not self.vector.enable:
-                        return
-                    return 9
+                    result = await self.textinput()
+                    return result
                 # ignore any other key
 
 
     async def textinput(self):
-        "Input text, set it into self._newvalue"
+        """Input text, set it into self._newvalue"
+           if all ok, return 9 to move to next field"""
         # highlight editable field has focus
         self.name_btn.focus = False
         self.name_btn.draw()
@@ -660,16 +654,13 @@ class TextMember(BaseMember):
                                                   # row             startcol          endcol            start text
         editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-34, 1+self.maxcols-5, self.newvalue())
 
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            if not self.vector.enable:
-                return
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Vectors", "Resize", "Stop"):
+                return key
             if key == 10:
                 curses.curs_set(0)
-                return
+                return 9
             # key is to be inserted into the editable field, and self._newvalue updated
             value = editstring.gettext(key)
             self._newvalue = value.strip()
@@ -872,24 +863,19 @@ class BLOBMember(BaseMember):
 
     async def input(self):
         "This widget is in focus, and monitors inputs"
-        if self.vector.perm == "ro":
-            return -1
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            if not self.vector.enable:
-                return
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Vectors", "Resize", "Stop"):
+                return key
             if self.name_btn.focus:
                 if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                     # go to next or previous member widget
                     return key
                 if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
                     # text input here
-                    await self.textinput()
-                    if not self.vector.enable:
-                        return
+                    result = await self.textinput()
+                    if result in ("Vectors", "Resize", "Stop"):
+                        return result
                     # after text input, set send button focus
                     self.send_btn.focus = True
                     self.send_btn.draw()
@@ -962,13 +948,10 @@ class BLOBMember(BaseMember):
                                                   # row       startcol          endcol            start text
         editstring = EditString(self.stdscr, 7+self.startline+2, 22, 19 + self.fieldlength, self.newvalue())
 
-        while (not self.consoleclient.stop) and (not self._close):
-            await asyncio.sleep(0)
-            if not self.vector.enable:
-                return
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
+        while True:
+            key = await self.keyinput()
+            if key in ("Vectors", "Resize", "Stop"):
+                return key
             if key == 10:
                 curses.curs_set(0)
                 return

@@ -13,7 +13,7 @@ from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message)
 
-from . import windows, vector
+from . import windows
 
 
 class ConsoleClient(IPyClient):
@@ -207,7 +207,7 @@ class ConsoleControl:
                         # one vector has been disabled, update the ChooseVectorScreen
                         self.screen.update(event)
                         continue
-                    if isinstance(self.screen, vector.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                    if isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
                         # This vector has been disabled, show ChooseVectorScreen
                         self.screen.close("Vectors")
                         continue
@@ -216,7 +216,7 @@ class ConsoleControl:
                 if isinstance(self.screen, windows.ChooseVectorScreen):
                     self.screen.update(event)
                     continue
-                if isinstance(self.screen, vector.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                if isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
                     # The event refers to this vector
                     self.screen.update(event)
 
@@ -322,17 +322,17 @@ class ConsoleControl:
                         continue
                     if result == "Vectors":
                         # get device, vector and show VectorScreen
-                        self.screen = vector.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
+                        self.screen = windows.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
                         continue
-                if isinstance(self.screen, vector.VectorScreen):
+                if isinstance(self.screen, windows.VectorScreen):
                     result = await self.screen.inputs()
                     if result == "Resize":
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
                         if self.maxrows < 24 or self.maxcols < 80:
                             self.shutdown()
                             continue
-                        self.screen = vector.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
+                        self.screen = windows.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
                         continue
                     if result == "Quit":

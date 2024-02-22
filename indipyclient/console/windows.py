@@ -2292,7 +2292,7 @@ class MembersWin(ParentScreen):
         "Sets _close to a value, which stops the input co-routine"
         self._close = value
         for widget in self.memberwidgets:
-            widget.close()
+            widget.close(value)
 
     def set_nofocus(self):
         self.focus = False
