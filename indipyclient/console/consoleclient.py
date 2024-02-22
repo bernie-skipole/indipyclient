@@ -134,6 +134,8 @@ class ConsoleControl:
         try:
             while not self.stop:
                 await asyncio.sleep(0)
+                if isinstance(self.screen, windows.TooSmall):
+                    continue
                 if not self.connected:
                     if isinstance(self.screen, windows.MessagesScreen):
                         # set disconnected status and focus on the quit button
@@ -234,12 +236,32 @@ class ConsoleControl:
         try:
             while not self.stop:
                 await asyncio.sleep(0)
+                if isinstance(self.screen, windows.TooSmall):
+                    result = await self.screen.inputs()
+                    if result == "Resize":
+                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+                        if self.maxrows < 10 or self.maxcols < 40:
+                            self.shutdown()
+                            continue
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.screen = windows.TooSmall(self.stdscr, self)
+                            self.screen.show()
+                            continue
+                        # so resize has increased to proper size
+                        self.screen = windows.MessagesScreen(self.stdscr, self)
+                        self.screen.show()
+                        continue
+
                 if isinstance(self.screen, windows.MessagesScreen):
                     result = await self.screen.inputs()
                     if result == "Resize":
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
+                            continue
+                        if self.maxrows < 24 or self.maxcols < 80:
+                            self.screen = windows.TooSmall(self.stdscr, self)
+                            self.screen.show()
                             continue
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()

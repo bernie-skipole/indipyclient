@@ -79,6 +79,36 @@ class ConsoleClientScreen(ParentScreen):
         return "Stop"
 
 
+class TooSmall(ConsoleClientScreen):
+
+    def update(self, event):
+        pass
+
+    def show(self):
+        self.stdscr.clear()
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+        self.stdscr.addstr(2, self.maxcols//4, "Terminal too")
+        self.stdscr.addstr(3, self.maxcols//4+3, "small")
+        self.stdscr.addstr(4, self.maxcols//4, "Please resize")
+        self.stdscr.noutrefresh()
+        curses.doupdate()
+
+    async def inputs(self):
+        "Gets inputs from the screen"
+        try:
+            self.stdscr.nodelay(True)
+            while True:
+                key = await self.keyinput()
+                if key in ("Resize", "Stop"):
+                    return key
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            traceback.print_exc(file=sys.stderr)
+            return "Quit"
+
+
+
 class MessagesScreen(ConsoleClientScreen):
 
     def __init__(self, stdscr, consoleclient):
