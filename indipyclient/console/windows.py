@@ -2141,8 +2141,6 @@ class VectorScreen(ConsoleClientScreen):
                     result = await self.members.input()
                     if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                         return result
-                    if not self.vector.enable:
-                        return "Vectors"
                     if result == "submitted":
                         self.vector.state = 'Busy'
                         # The vector has been submitted, draw vector state which is now busy
@@ -2176,19 +2174,19 @@ class VectorScreen(ConsoleClientScreen):
                         self.quit_btn.draw()
                         self.buttwin.noutrefresh()
                         curses.doupdate()
-            else:
-                key = await self.keyinput()
-                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                    return key
+                else:
+                    key = await self.keyinput()
+                    if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                        return key
 
-                # check this vector has not been deleted
-                if not self.vector.enable:
-                    return "Vectors"
+                    # check this vector has not been deleted
+                    if not self.vector.enable:
+                        return "Vectors"
 
-                if self.vectors_btn.focus or self.devices_btn.focus or self.messages_btn.focus or self.quit_btn.focus:
-                    result = self.check_bottom_btn(key)
-                    if result:
-                        return result
+                    if self.vectors_btn.focus or self.devices_btn.focus or self.messages_btn.focus or self.quit_btn.focus:
+                        result = self.check_bottom_btn(key)
+                        if result:
+                            return result
 
         except asyncio.CancelledError:
             raise
