@@ -22,6 +22,7 @@ class ParentScreen:
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
         self.consoleclient = consoleclient
         self.client = consoleclient.client
+        self.fields = []  # list of fields in the screen
         # if close string is set, it becomes the return value from input routines
         self._close = ""
 
@@ -51,8 +52,8 @@ class ParentScreen:
                 # mouse is (id, x, y, z, bstate)
                 if mouse[4] == curses.BUTTON1_RELEASED:
                     # return a tuple of the mouse coordinates
-                    #          col     row
-                    return (mouse[1], mouse[2])
+                    #          row     col
+                    return (mouse[2], mouse[1])
                 continue
             return key
 
@@ -89,8 +90,8 @@ class ConsoleClientScreen(ParentScreen):
                 # mouse is (id, x, y, z, bstate)
                 if mouse[4] == curses.BUTTON1_RELEASED:
                     # return a tuple of the mouse coordinates
-                    #         col        row
-                    return (mouse[1], mouse[2])
+                    #         row        col
+                    return (mouse[2], mouse[1])
                 continue
             return key
         return "Stop"
@@ -164,6 +165,12 @@ class MessagesScreen(ConsoleClientScreen):
         self.devices_btn.focus = False
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
         self.quit_btn.focus = True
+
+        self.fields = [self.enable_btn,
+                       self.disable_btn,
+                       self.devices_btn,
+                       self.quit_btn]
+
 
 
     @property
@@ -276,14 +283,24 @@ class MessagesScreen(ConsoleClientScreen):
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
+    def defocus(self):
+        for fld in self.fields:
+            if fld.focus:
+                fld.focus = False
+                fld.draw()
+                break
+
+
     async def inputs(self):
         "Gets inputs from the screen"
         try:
             self.stdscr.nodelay(True)
             while True:
                 key = await self.keyinput()
-                if key in ("Resize", "Devices", "Vectors", "Stop"):
+
+                if key == "Resize":
                     return key
+
                 if not self.connected:
                     # only accept quit
                     self.enable_btn.focus = False
@@ -300,6 +317,29 @@ class MessagesScreen(ConsoleClientScreen):
                     if key == 10:
                         return "Quit"
                     continue
+
+                if key in ("Devices", "Vectors", "Stop"):
+                    return key
+
+                if isinstance(key, tuple):
+                    for fld in self.fields:
+                        if key in fld:
+                            if fld.focus:
+                                # focus already set - return 10
+                                break
+                            # focus not set, defocus the one currently
+                            # in focus
+                            self.defocus()
+                            # and set this into focus
+                            fld.focus = True
+                            fld.draw()
+                            self.buttwin.noutrefresh()
+                            self.infowin.noutrefresh()
+                            curses.doupdate()
+                            break
+                    continue
+
+
 
                 if key in (32, 9, 261, 338, 258):
                     # go to next button

@@ -28,6 +28,23 @@ class Button:
             # no btnlen given
             self.btntext = btntext
         self.btnlen = len(self.btntext) + 2
+        originrow, origincol = self.window.getbegyx()
+        self.fieldrow = originrow+self.row
+        self.startcol = origincol + self.col
+        self.endcol = self.startcol + self.btnlen
+
+
+    def __contains__(self, mouse):
+        "Returns True if the mouse y, x are within this field"
+        if mouse[0] != self.fieldrow:
+            return False
+        if mouse[1] < self.startcol:
+            return False
+        if mouse[1] < self.endcol:
+            return True
+        return False
+
+
 
     @property
     def show(self):
