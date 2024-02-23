@@ -14,6 +14,7 @@ from . import widgets
 from .. import events
 
 
+
 class ParentScreen:
 
     def __init__(self, stdscr, consoleclient):
@@ -45,6 +46,14 @@ class ParentScreen:
                 continue
             if key == curses.KEY_RESIZE:
                 return "Resize"
+            if key == curses.KEY_MOUSE:
+                mouse = curses.getmouse()
+                # mouse is (id, x, y, z, bstate)
+                if mouse[4] == curses.BUTTON1_RELEASED:
+                    # return a tuple of the mouse coordinates
+                    #          col     row
+                    return (mouse[1], mouse[2])
+                continue
             return key
 
 
@@ -75,6 +84,14 @@ class ConsoleClientScreen(ParentScreen):
                 continue
             if key == curses.KEY_RESIZE:
                 return "Resize"
+            if key == curses.KEY_MOUSE:
+                mouse = curses.getmouse()
+                # mouse is (id, x, y, z, bstate)
+                if mouse[4] == curses.BUTTON1_RELEASED:
+                    # return a tuple of the mouse coordinates
+                    #         col        row
+                    return (mouse[1], mouse[2])
+                continue
             return key
         return "Stop"
 

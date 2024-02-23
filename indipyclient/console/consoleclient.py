@@ -45,6 +45,7 @@ class ConsoleControl:
         curses.cbreak()
         curses.curs_set(0)
         self.stdscr.keypad(True)
+        curses.mousemask(curses.BUTTON1_RELEASED)
 
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
 
