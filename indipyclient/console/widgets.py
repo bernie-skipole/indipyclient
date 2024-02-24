@@ -12,89 +12,6 @@ import traceback
 
 
 
-class Button:
-
-    def __init__(self, window, btntext, row, col, btnlen=None):
-        self.window = window
-        self.row = row
-        self.col = col
-        self._focus = False
-        self._show = True
-        self.bold = False
-        if btnlen:
-            # btlen includes the two [ ] brackets
-            self.btntext = textwrap.shorten(btntext, width=btnlen-2, placeholder="...")
-        else:
-            # no btnlen given
-            self.btntext = btntext
-        self.btnlen = len(self.btntext) + 2
-        originrow, origincol = self.window.getbegyx()
-        self.fieldrow = originrow+self.row
-        self.startcol = origincol + self.col
-        self.endcol = self.startcol + self.btnlen
-
-
-    def __contains__(self, mouse):
-        "Returns True if the mouse y, x are within this field"
-        if mouse[0] != self.fieldrow:
-            return False
-        if mouse[1] < self.startcol:
-            return False
-        if mouse[1] < self.endcol:
-            return True
-        return False
-
-
-
-    @property
-    def show(self):
-        return self._show
-
-    @show.setter
-    def show(self, value):
-        # setting show False, also sets focus False
-        if not value:
-            self._focus = False
-        self._show = value
-
-
-    @property
-    def focus(self):
-        return self._focus
-
-    @focus.setter
-    def focus(self, value):
-        if not self._show:
-            # focus can only be set if show is True
-            return
-        self._focus = value
-
-
-    def draw(self):
-        if not self._show:
-            self.window.addstr( self.row, self.col, " "*self.btnlen)
-            return
-        if self._focus:
-            self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_REVERSE)
-        elif self.bold:
-            self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_BOLD)
-        else:
-            self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
-
-    def alert(self):
-        "draw the button with a red background and INVALID Message"
-        if not self._show:
-            return
-        self.window.addstr( self.row, self.col, "[" + self.btntext + "] INVALID!", curses.color_pair(3))
-
-    def ok(self):
-        "draw the button with a green background and OK Message"
-        if not self._show:
-            return
-        self.window.addstr( self.row, self.col, "[" + self.btntext + "] OK!", curses.color_pair(1))
-
-
-
 def drawmessage(window, message, bold=False, maxcols=None):
     """Shows message, message is either a text string, or a tuple of (timestamp, message text)"""
     window.clear()
@@ -136,6 +53,268 @@ def draw_timestamp_state(consoleclient, window, vector):
     else:
         return
     window.addstr(0, maxcols - 20, text, consoleclient.color(state))
+
+
+
+class Button:
+
+    def __init__(self, window, btntext, row, col, btnlen=None, onclick=None):
+        self.window = window
+        self.row = row
+        self.col = col
+        self.onclick = onclick
+        self._focus = False
+        self._show = True
+        self.bold = False
+        if btnlen:
+            # btlen includes the two [ ] brackets
+            self.btntext = textwrap.shorten(btntext, width=btnlen-2, placeholder="...")
+            self.btnlen = btnlen
+        else:
+            # no btnlen given
+            self.btntext = btntext
+            self.btnlen = len(self.btntext) + 2
+        originrow, origincol = self.window.getbegyx()
+        self.fieldrow = originrow+self.row
+        self.startcol = origincol + self.col
+        self.endcol = self.startcol + self.btnlen
+
+    def __contains__(self, mouse):
+        "Returns True if the mouse y, x are within this field"
+        if not self._show:
+            return False
+        if mouse[0] != self.fieldrow:
+            return False
+        if mouse[1] < self.startcol:
+            return False
+        if mouse[1] < self.endcol:
+            return True
+        return False
+
+    @property
+    def show(self):
+        return self._show
+
+    @show.setter
+    def show(self, value):
+        # setting show False, also sets focus False
+        if not value:
+            self._focus = False
+        self._show = value
+
+    @property
+    def focus(self):
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if not self._show:
+            # focus can only be set if show is True
+            return
+        self._focus = value
+
+    def draw(self):
+        if not self._show:
+            self.window.addstr( self.row, self.col, " "*self.btnlen)
+            return
+        if self._focus:
+            self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_REVERSE)
+        elif self.bold:
+            self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_BOLD)
+        else:
+            self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
+
+    def alert(self):
+        "draw the button with a red background and INVALID Message"
+        if not self._show:
+            return
+        self.window.addstr( self.row, self.col, "[" + self.btntext + "] INVALID!", curses.color_pair(3))
+
+    def ok(self):
+        "draw the button with a green background and OK Message"
+        if not self._show:
+            return
+        self.window.addstr( self.row, self.col, "[" + self.btntext + "] OK!", curses.color_pair(1))
+
+
+class Text:
+
+    def __init__(self, window, text, row, col, txtlen=None):
+        self.window = window
+        self.row = row
+        self.col = col
+        self._focus = False
+        self._show = True
+        if txtlen:
+            # txtlen includes the two [ ] brackets
+            if len(text) > txtlen-2:
+                self._text = textwrap.shorten(text, width=txtlen-2, placeholder="...")
+            elif len(text) == txtlen-2:
+                self._text = text
+            else:
+                self._text = text.ljust(txtlen-2)
+            self.txtlen = txtlen
+        else:
+            # no txtlen given
+            self._text = text
+            self.txtlen = len(self._text) + 2
+        originrow, origincol = self.window.getbegyx()
+        self.fieldrow = originrow+self.row
+        self.startcol = origincol + self.col
+        self.endcol = self.startcol + self.txtlen
+
+    @property
+    def text(self):
+        return self._text.strip()
+
+    @text.setter
+    def text(self, text):
+        if len(text) > self.txtlen-2:
+            self._text = textwrap.shorten(text, width=self.txtlen-2, placeholder="...")
+        elif len(text) == self.txtlen-2:
+            self._text = text
+        else:
+            self._text = text.ljust(self.txtlen-2)
+
+
+    def __contains__(self, mouse):
+        "Returns True if the mouse y, x are within this field"
+        if not self._show:
+            return False
+        if mouse[0] != self.fieldrow:
+            return False
+        if mouse[1] < self.startcol:
+            return False
+        if mouse[1] < self.endcol:
+            return True
+        return False
+
+    @property
+    def show(self):
+        return self._show
+
+    @show.setter
+    def show(self, value):
+        # setting show False, also sets focus False
+        if not value:
+            self._focus = False
+        self._show = value
+
+    @property
+    def focus(self):
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if not self._show:
+            # focus can only be set if show is True
+            return
+        self._focus = value
+
+    def draw(self):
+        if not self._show:
+            self.window.addstr( self.row, self.col, " "*self.txtlen)
+            return
+        if self._focus:
+            self.window.addstr( self.row, self.col, "[", curses.A_BOLD)
+            self.window.addstr( self.row, self.col+1, self._text)
+            self.window.addstr( self.row, self.col+self.txtlen-1, "]", curses.A_BOLD)
+        else:
+            self.window.addstr( self.row, self.col, "["+self._text)
+            self.window.addstr( self.row, self.col+self.txtlen-1, "]")
+
+
+
+
+class EditString():
+
+    def __init__(self, stdscr, row, startcol, endcol, text):
+        "Class to input text"
+        self.stdscr = stdscr
+        self.row = row
+        self.startcol = startcol
+        self.endcol = endcol
+        self.length = endcol - startcol + 1
+        self.text = text.strip()
+        if len(self.text) > self.length:
+            self.text = self.text[:self.length]
+        # put curser at end of text
+        self.stringpos = len(self.text)
+
+        # pad text with right hand spaces
+        self.text = self.text.ljust(self.length)
+        self.movecurs()
+
+    def insertch(self, ch):
+        "Insert a character at stringpos"
+        if self.stringpos >= self.length:
+            # stringpos must be less than the length
+            return
+        self.text = self.text[:self.stringpos] + ch + self.text[self.stringpos:-1]
+        self.stringpos += 1
+
+    def delch(self):
+        "delete character at stringpos-1"
+        if not self.stringpos:
+            # stringpos must be greater than zero
+            return
+        self.text = self.text[:self.stringpos-1] + self.text[self.stringpos:] + " "
+        self.stringpos -= 1
+
+    def movecurs(self):
+        self.stdscr.move(self.row, self.startcol+self.stringpos)
+        self.stdscr.refresh()
+
+    def gettext(self, key):
+        "called with each keypress, returns new text"
+        if ascii.isprint(key):
+            if self.stringpos >= self.length:
+                # at max length, return
+                return self.text
+            ch = chr(key)
+            self.insertch(ch)
+        elif key>255:
+            # control character
+            if ((key == curses.KEY_DC) or (key == curses.KEY_BACKSPACE)) and self.stringpos:
+                # delete character (self.stringpos cannot be zero)
+                self.delch()
+            elif (key == curses.KEY_LEFT) and self.stringpos:
+                # move cursor left (self.stringpos cannot be zero)
+                self.stringpos -= 1
+            elif (key == curses.KEY_RIGHT) and (self.stringpos < self.length):
+                # move cursor right
+                self.stringpos += 1
+        return self.text
+
+    def getnumber(self, key):
+        "called with each keypress, returns new number string"
+        if ascii.isdigit(key):
+            if self.stringpos >= self.length:
+                # at max length, return
+                return self.text
+            ch = chr(key)
+            self.insertch(ch)
+        elif ascii.isprint(key):
+            if self.stringpos >= self.length:
+                # at max length, return
+                return self.text
+            ch = chr(key)
+            if ch in (".", " ", ":", ";", "-", "+"):
+                self.insertch(ch)
+        elif key>255:
+            # control character
+            if ((key == curses.KEY_DC) or (key == curses.KEY_BACKSPACE)) and self.stringpos:
+                # delete character (self.stringpos cannot be zero)
+                self.delch()
+            elif (key == curses.KEY_LEFT) and self.stringpos:
+                # move cursor left (self.stringpos cannot be zero)
+                self.stringpos -= 1
+            elif (key == curses.KEY_RIGHT) and (self.stringpos < self.length):
+                # move cursor right
+                self.stringpos += 1
+        return self.text
+
+
 
 
 class BaseMember:
@@ -687,95 +866,6 @@ class TextMember(BaseMember):
             self.memberswin.widgetsrefresh()
             editstring.movecurs()
             curses.doupdate()
-
-
-class EditString():
-
-    def __init__(self, stdscr, row, startcol, endcol, text):
-        "Class to input text"
-        self.stdscr = stdscr
-        self.row = row
-        self.startcol = startcol
-        self.endcol = endcol
-        self.length = endcol - startcol + 1
-        self.text = text.strip()
-        if len(self.text) > self.length:
-            self.text = self.text[:self.length]
-        # put curser at end of text
-        self.stringpos = len(self.text)
-
-        # pad text with right hand spaces
-        self.text = self.text.ljust(self.length)
-        self.movecurs()
-
-    def insertch(self, ch):
-        "Insert a character at stringpos"
-        if self.stringpos >= self.length:
-            # stringpos must be less than the length
-            return
-        self.text = self.text[:self.stringpos] + ch + self.text[self.stringpos:-1]
-        self.stringpos += 1
-
-    def delch(self):
-        "delete character at stringpos-1"
-        if not self.stringpos:
-            # stringpos must be greater than zero
-            return
-        self.text = self.text[:self.stringpos-1] + self.text[self.stringpos:] + " "
-        self.stringpos -= 1
-
-    def movecurs(self):
-        self.stdscr.move(self.row, self.startcol+self.stringpos)
-        self.stdscr.refresh()
-
-    def gettext(self, key):
-        "called with each keypress, returns new text"
-        if ascii.isprint(key):
-            if self.stringpos >= self.length:
-                # at max length, return
-                return self.text
-            ch = chr(key)
-            self.insertch(ch)
-        elif key>255:
-            # control character
-            if ((key == curses.KEY_DC) or (key == curses.KEY_BACKSPACE)) and self.stringpos:
-                # delete character (self.stringpos cannot be zero)
-                self.delch()
-            elif (key == curses.KEY_LEFT) and self.stringpos:
-                # move cursor left (self.stringpos cannot be zero)
-                self.stringpos -= 1
-            elif (key == curses.KEY_RIGHT) and (self.stringpos < self.length):
-                # move cursor right
-                self.stringpos += 1
-        return self.text
-
-    def getnumber(self, key):
-        "called with each keypress, returns new number string"
-        if ascii.isdigit(key):
-            if self.stringpos >= self.length:
-                # at max length, return
-                return self.text
-            ch = chr(key)
-            self.insertch(ch)
-        elif ascii.isprint(key):
-            if self.stringpos >= self.length:
-                # at max length, return
-                return self.text
-            ch = chr(key)
-            if ch in (".", " ", ":", ";", "-", "+"):
-                self.insertch(ch)
-        elif key>255:
-            # control character
-            if ((key == curses.KEY_DC) or (key == curses.KEY_BACKSPACE)) and self.stringpos:
-                # delete character (self.stringpos cannot be zero)
-                self.delch()
-            elif (key == curses.KEY_LEFT) and self.stringpos:
-                # move cursor left (self.stringpos cannot be zero)
-                self.stringpos -= 1
-            elif (key == curses.KEY_RIGHT) and (self.stringpos < self.length):
-                # move cursor right
-                self.stringpos += 1
-        return self.text
 
 
 # Define a property that holds one or more Binary Large Objects, BLOBs.

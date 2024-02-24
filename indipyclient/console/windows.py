@@ -29,6 +29,13 @@ class ParentScreen:
     def close(self, value):
         self._close = value
 
+    def defocus(self):
+        for fld in self.fields:
+            if fld.focus:
+                fld.focus = False
+                fld.draw()
+                break
+
 
     async def keyinput(self):
         """Waits for a key press,
@@ -141,16 +148,16 @@ class MessagesScreen(ConsoleClientScreen):
         # messages window (8 lines, full row - 4, starting at 4,3)
         self.messwin = self.stdscr.subwin(8, self.maxcols-4, 4, 3)
 
-        # info window 6 lines, width 60
-        self.infowin = self.stdscr.subwin(6, 60, self.maxrows-8, self.maxcols//2 - 29)
+        # info window 6 lines, width 70
+        self.infowin = self.stdscr.subwin(6, 70, self.maxrows-8, self.maxcols//2 - 35)
         self.infowin.addstr(0, 14, "All Timestamps are UTC")
         self.infowin.addstr(1, 0, "Once connected, choose 'Devices' and press Enter. Then use")
-        self.infowin.addstr(2, 0, "Tab/Shift-Tab to move between fields, Enter to select, and")
-        self.infowin.addstr(3, 0, "Arrow/Page keys to show further fields where necessary.")
+        self.infowin.addstr(2, 0, "mouse or Tab/Shift-Tab to move between fields, Enter to select,")
+        self.infowin.addstr(3, 0, "and Arrow/Page keys to show further fields where necessary.")
         self.infowin.addstr(5, 5, "Enable/Disable BLOB's:")
 
-        self.enable_btn = widgets.Button(self.infowin, "Enabled", 5, 30)
-        self.disable_btn = widgets.Button(self.infowin, "Disabled", 5, 40)
+        self.enable_btn = widgets.Button(self.infowin, "Enabled", 5, 30, onclick="EnableBLOBs")
+        self.disable_btn = widgets.Button(self.infowin, "Disabled", 5, 40, onclick="DisableBLOBs")
         if self.consoleclient.blobenabled:
             self.enable_btn.bold = True
             self.disable_btn.bold = False
@@ -161,17 +168,15 @@ class MessagesScreen(ConsoleClientScreen):
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
 
-        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 10)
+        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 10, onclick="Devices")
         self.devices_btn.focus = False
-        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2, onclick="Quit")
         self.quit_btn.focus = True
 
         self.fields = [self.enable_btn,
                        self.disable_btn,
                        self.devices_btn,
                        self.quit_btn]
-
-
 
     @property
     def connected(self):
@@ -190,17 +195,15 @@ class MessagesScreen(ConsoleClientScreen):
         # does not keep repeating
         self.disconnectionflag = True
         self.titlewin.addstr(2, 0, "Not Connected")
-        self.enable_btn.focus = False
-        self.disable_btn.focus = False
-        self.devices_btn.focus = False
-        self.quit_btn.focus = True
-        self.enable_btn.draw()
-        self.disable_btn.draw()
-        self.devices_btn.draw()
-        self.quit_btn.draw()
         self.titlewin.noutrefresh()
-        self.infowin.noutrefresh()
-        self.buttwin.noutrefresh()
+        if not self.quit_btn.focus:
+            # defocus everything
+            self.defocus()
+            # and set quit into focus
+            self.quit_btn.focus = True
+            self.quit_btn.draw()
+            self.infowin.noutrefresh()
+            self.buttwin.noutrefresh()
         curses.doupdate()
 
 
@@ -281,14 +284,16 @@ class MessagesScreen(ConsoleClientScreen):
         curses.doupdate()
 
 
-# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-
-    def defocus(self):
-        for fld in self.fields:
-            if fld.focus:
-                fld.focus = False
-                fld.draw()
-                break
+    async def disableBLOBs(self):
+        self.consoleclient.blobenabled = False
+        await self.client.report("Warning! BLOBs disabled")
+        self.consoleclient.send_disableBLOB()
+        self.enable_btn.bold = False
+        self.disable_btn.bold = True
+        self.enable_btn.draw()
+        self.disable_btn.draw()
+        self.infowin.noutrefresh()
+        curses.doupdate()
 
 
     async def inputs(self):
@@ -303,18 +308,18 @@ class MessagesScreen(ConsoleClientScreen):
 
                 if not self.connected:
                     # only accept quit
-                    self.enable_btn.focus = False
-                    self.disable_btn.focus = False
-                    self.devices_btn.focus = False
-                    self.quit_btn.focus = True
-                    self.enable_btn.draw()
-                    self.disable_btn.draw()
-                    self.devices_btn.draw()
-                    self.quit_btn.draw()
-                    self.buttwin.noutrefresh()
-                    self.infowin.noutrefresh()
-                    curses.doupdate()
-                    if key == 10:
+                    if not self.quit_btn.focus:
+                        # defocus everything
+                        self.defocus()
+                        # and set quit into focus
+                        self.quit_btn.focus = True
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                        self.infowin.noutrefresh()
+                        curses.doupdate()
+                    elif key == 10:
+                        return "Quit"
+                    elif isinstance(key, tuple) and (key in self.quit_btn):
                         return "Quit"
                     continue
 
@@ -325,8 +330,13 @@ class MessagesScreen(ConsoleClientScreen):
                     for fld in self.fields:
                         if key in fld:
                             if fld.focus:
-                                # focus already set - return 10
-                                break
+                                # focus already set - return the button onclick
+                                value = fld.onclick
+                                if value == "DisableBLOBs":
+                                    await self.disableBLOBs()
+                                    break
+                                else:
+                                    return value
                             # focus not set, defocus the one currently
                             # in focus
                             self.defocus()
@@ -339,7 +349,7 @@ class MessagesScreen(ConsoleClientScreen):
                             break
                     continue
 
-
+                # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
                 if key in (32, 9, 261, 338, 258):
                     # go to next button
@@ -402,22 +412,16 @@ class MessagesScreen(ConsoleClientScreen):
                     curses.doupdate()
 
                 elif key == 10:
-                    if self.devices_btn.focus:
-                        return "Devices"
-                    elif self.quit_btn.focus:
-                        return "Quit"
-                    elif self.enable_btn.focus:
-                        return "EnableBLOBs"
-                    elif self.disable_btn.focus:
-                        self.consoleclient.blobenabled = False
-                        await self.client.report("Warning! BLOBs disabled")
-                        self.consoleclient.send_disableBLOB()
-                        self.enable_btn.bold = False
-                        self.disable_btn.bold = True
-                        self.enable_btn.draw()
-                        self.disable_btn.draw()
-                        self.infowin.noutrefresh()
-                        curses.doupdate()
+                    # Enter has been pressed, check which field has focus
+                    for fld in self.fields:
+                        if fld.focus:
+                            value = fld.onclick
+                            if value == "DisableBLOBs":
+                                await self.disableBLOBs()
+                                break
+                            else:
+                                return value
+
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -442,43 +446,38 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         # path window (10 lines, full row-4, starting at 4,4)
         self.pathwin = self.stdscr.subwin(11, self.maxcols-4, 4, 4)
 
-        messagerow = self.maxcols//2 - 30
+        thiscol = self.maxcols//2 - 30
 
-        self.pathwin.addstr(2, messagerow, "The INDI spec allows BLOB's to be received, by device or")
-        self.pathwin.addstr(3, messagerow, "by device and property. This client is a simplification")
-        self.pathwin.addstr(4, messagerow, "and enables or disables all received BLOB's.")
-        self.pathwin.addstr(5, messagerow, "To enable BLOB's ensure the path below is set to a valid")
-        self.pathwin.addstr(6, messagerow, "folder where BLOBs will be put, and press submit.")
-
-        self.pathfocus = False
+        self.pathwin.addstr(2, thiscol, "The INDI spec allows BLOB's to be received, by device or")
+        self.pathwin.addstr(3, thiscol, "by device and property. This client is a simplification")
+        self.pathwin.addstr(4, thiscol, "and enables or disables all received BLOB's.")
+        self.pathwin.addstr(5, thiscol, "To enable BLOB's ensure the path below is set to a valid")
+        self.pathwin.addstr(6, thiscol, "folder where BLOBs will be put, and press submit.")
 
         if self.consoleclient.blobfolder is None:
             self._newpath = ''
         else:
             self._newpath = str(self.consoleclient.blobfolder)
 
-        self.submit_btn = widgets.Button(self.pathwin, "Submit", 10, self.maxcols//2 - 3)
+                                    # window         text        row col, length of field
+        self.path_txt = widgets.Text(self.pathwin, self._newpath, 8, 0, txtlen=self.maxcols-8)
+
+        self.submit_btn = widgets.Button(self.pathwin, "Submit", 10, self.maxcols//2 - 3, onclick="Submit")
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
 
-        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 15)
-        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 5)
+        self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 15, onclick="Devices")
+        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 5, onclick="Messages")
         self.messages_btn.focus = True
-        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6, onclick="Quit")
 
+        self.fields = [self.path_txt,
+                       self.submit_btn,
+                       self.devices_btn,
+                       self.messages_btn,
+                       self.quit_btn]
 
-    def blobfoldertext(self):
-        "Return the blobfolder path, padded to the required width for editing"
-        length = self.maxcols-10
-        bf = self._newpath.strip()
-        if not bf:
-            return " "*length
-        if len(bf) > length:
-            bf = textwrap.shorten(bf, width=length, placeholder="...")
-        else:
-            bf = bf.ljust(length)
-        return bf
 
 
     def show(self):
@@ -495,9 +494,12 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
 
         # draw the path
-        self.drawpath()
+        self.path_txt.draw()
         # draw submit, device, messages and quit buttons
-        self.drawbuttons()
+        self.submit_btn.draw()
+        self.messages_btn.draw()
+        self.devices_btn.draw()
+        self.quit_btn.draw()
 
         # refresh these sub-windows and update physical screen
         self.titlewin.noutrefresh()
@@ -507,37 +509,47 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         curses.doupdate()
 
 
-    def drawpath(self):
-        "Draws the path, together with its focus state"
-        if self.pathfocus:
-            self.pathwin.addstr(8, 0, "[", curses.A_BOLD)
-            self.pathwin.addstr(8, 1, self.blobfoldertext())
-            self.pathwin.addstr(8, self.maxcols-9, "]", curses.A_BOLD)
-        else:
-            self.pathwin.addstr(8, 0, "[" + self.blobfoldertext() + "]")
-
-
-    def drawbuttons(self):
-        "Draws the buttons, together with their focus state"
-        # If this window controls are in focus, these buttons are not
-        if self.pathfocus:
-            self.submit_btn.focus = False
-            self.messages_btn.focus = False
-            self.quit_btn.focus = False
-            self.devices_btn.focus = False
-
-        self.submit_btn.draw()
-        self.messages_btn.draw()
-        self.devices_btn.draw()
-        self.quit_btn.draw()
-
-
     def update(self, event):
         "Only update if global message has changed"
         if isinstance(event, events.Message):
             widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
             self.messwin.noutrefresh()
             curses.doupdate()
+
+    async def submit(self):
+        self._newpath = self.path_txt.text
+        if self._newpath:
+            try:
+                blobfolder = pathlib.Path(self._newpath).expanduser().resolve()
+            except Exception:
+                self.consoleclient.blobenabled = False
+                self.consoleclient.send_disableBLOB()
+                self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
+                await self.client.report("Warning! BLOB folder is invalid")
+            else:
+                if blobfolder.is_dir():
+                    self.consoleclient.blobfolder = blobfolder
+                    self._newpath = str(blobfolder)
+                    self.path_txt.text = self._newpath
+                    self.path_txt.draw()
+                    self.consoleclient.blobenabled = True
+                    self.consoleclient.send_enableBLOB()
+                    self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
+                    await self.client.report("BLOB folder is set")
+                else:
+                    self.consoleclient.blobenabled = False
+                    self.consoleclient.send_disableBLOB()
+                    self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
+                    await self.client.report("Warning! BLOB folder is invalid")
+        else:
+            self.consoleclient.blobenabled = False
+            self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
+            await self.client.report("Warning! BLOB folder is invalid")
+            self.consoleclient.send_disableBLOB()
+        self.submit_btn.focus = False
+        self.messages_btn.focus = True
+
+
 
 
     async def inputs(self):
@@ -546,13 +558,43 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         try:
             self.stdscr.nodelay(True)
             while True:
-                if self.pathfocus:
+                if self.path_txt.focus:
                     # text input here
                     key = await self.textinput()
                 else:
                     key = await self.keyinput()
+
                 if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                     return key
+
+                if isinstance(key, tuple):
+                    for fld in self.fields:
+                        if key in fld:
+                            if fld.focus:
+                                # focus already set - return the button onclick
+                                value = fld.onclick
+                                if value == "Submit":
+                                    await self.submit()
+                                    self.submit_btn.draw()
+                                    self.messages_btn.draw()
+                                    self.buttwin.noutrefresh()
+                                    self.pathwin.noutrefresh()
+                                    curses.doupdate()
+                                    break
+                                else:
+                                    return value
+                            # focus not set, defocus the one currently
+                            # in focus
+                            self.defocus()
+                            # and set this into focus
+                            fld.focus = True
+                            fld.draw()
+                            self.pathwin.noutrefresh()
+                            self.buttwin.noutrefresh()
+                            curses.doupdate()
+                            break
+                    continue
+
                 if key == 10:
                     if self.quit_btn.focus:
                         widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
@@ -562,47 +604,16 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                     elif self.messages_btn.focus:
                         return "Messages"
                     elif self.devices_btn.focus:
-                        if self.client.connected:
-                            return "Devices"
-                        else:
-                            return "Messages"
+                        return "Messages"
                     elif self.submit_btn.focus:
-                        if self._newpath:
-                            try:
-                                blobfolder = pathlib.Path(self._newpath).expanduser().resolve()
-                            except Exception:
-                                self.consoleclient.blobenabled = False
-                                self.consoleclient.send_disableBLOB()
-                                self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                                await self.client.report("Warning! BLOB folder is invalid")
-                            else:
-                                if blobfolder.is_dir():
-                                    self.consoleclient.blobfolder = blobfolder
-                                    self._newpath = str(blobfolder)
-                                    self.drawpath()
-                                    self.consoleclient.blobenabled = True
-                                    self.consoleclient.send_enableBLOB()
-                                    self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
-                                    await self.client.report("BLOB folder is set")
-                                else:
-                                    self.consoleclient.blobenabled = False
-                                    self.consoleclient.send_disableBLOB()
-                                    self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                                    await self.client.report("Warning! BLOB folder is invalid")
-                        else:
-                            self.consoleclient.blobenabled = False
-                            self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                            await self.client.report("Warning! BLOB folder is invalid")
-                            self.consoleclient.send_disableBLOB()
-                        self.submit_btn.focus = False
-                        self.messages_btn.focus = True
+                        await self.submit()
 
                 elif key in (32, 9, 261, 338, 258):
                     # go to the next button
-                    if self.pathfocus:
-                        self.pathfocus = False
+                    if self.path_txt.focus:
+                        self.path_txt.focus = False
                         self.submit_btn.focus = True
-                        self.drawpath()
+                        self.path_txt.draw()
                     elif self.submit_btn.focus:
                         self.submit_btn.focus = False
                         self.devices_btn.focus = True
@@ -614,8 +625,8 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                         self.quit_btn.focus = True
                     elif self.quit_btn.focus:
                         self.quit_btn.focus = False
-                        self.pathfocus = True
-                        self.drawpath()
+                        self.path_txt.focus = True
+                        self.path_txt.draw()
 
                 elif key in (353, 260, 339, 259):
                     # go to previous button
@@ -630,18 +641,21 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                         self.submit_btn.focus = True
                     elif self.submit_btn.focus:
                         self.submit_btn.focus = False
-                        self.pathfocus = True
-                        self.drawpath()
-                    elif self.pathfocus:
-                        self.pathfocus = False
+                        self.path_txt.focus = True
+                        self.path_txt.draw()
+                    elif self.path_txt.focus:
+                        self.path_txt.focus = False
                         self.quit_btn.focus = True
-                        self.drawpath()
+                        self.path_txt.draw()
                 else:
                     # button not recognised
                     continue
 
                 # draw buttons
-                self.drawbuttons()
+                self.submit_btn.draw()
+                self.messages_btn.draw()
+                self.devices_btn.draw()
+                self.quit_btn.draw()
                 self.buttwin.noutrefresh()
                 self.pathwin.noutrefresh()
                 curses.doupdate()
@@ -653,26 +667,20 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             return "Quit"
 
 
-    def drawpath(self):
-        "Draws the path, together with its focus state"
-        if self.pathfocus:
-            self.pathwin.addstr(8, 0, "[", curses.A_BOLD)
-            self.pathwin.addstr(8, 1, self.blobfoldertext())
-            self.pathwin.addstr(8, self.maxcols-9, "]", curses.A_BOLD)
-        else:
-            self.pathwin.addstr(8, 0, "[" + self.blobfoldertext() + "]")
-
-
     async def textinput(self):
         "Input text, set it into self._newvalue"
         # set cursor visible
         curses.curs_set(1)
-                                                  # row startcol  endcol      start text
-        editstring = widgets.EditString(self.stdscr, 12, 5, self.maxcols-6, self.blobfoldertext())
+        editstring = widgets.EditString(self.stdscr,
+                                        self.path_txt.fieldrow,                  # row
+                                        self.path_txt.startcol+1,                # start col
+                                        self.path_txt.endcol-2,                  # endcol
+                                        self.path_txt.text )                     # the actual text
 
         while not self.consoleclient.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                curses.curs_set(0)
                 return key
             if key == 10:
                 curses.curs_set(0)
@@ -680,10 +688,12 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             # key is to be inserted into the editable field, and self._newpath updated
             value = editstring.gettext(key)
             self._newpath = value.strip()
-            self.pathwin.addstr( 8, 1, value )
+            self.path_txt.text = value
+            self.path_txt.draw()
             self.pathwin.noutrefresh()
             editstring.movecurs()
             curses.doupdate()
+        curses.curs_set(0)
 
 
 class DevicesScreen(ConsoleClientScreen):
