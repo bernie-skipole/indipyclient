@@ -690,6 +690,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             # key is to be inserted into the editable field, and self._newpath updated
             value = editstring.gettext(key)
             self._newpath = value.strip()
+            # set new value back into self.path_txt
             self.path_txt.text = value
             self.path_txt.draw()
             self.pathwin.noutrefresh()
