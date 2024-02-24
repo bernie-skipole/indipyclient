@@ -671,11 +671,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         "Input text, set it into self._newvalue"
         # set cursor visible
         curses.curs_set(1)
-        editstring = widgets.EditString(self.stdscr,
-                                        self.path_txt.fieldrow,                  # row
-                                        self.path_txt.startcol+1,                # start col
-                                        self.path_txt.endcol-2,                  # endcol
-                                        self.path_txt.text )                     # the actual text
+        editstring = self.path_txt.editstring(self.stdscr)
 
         while not self.consoleclient.stop:
             key = await self.keyinput()

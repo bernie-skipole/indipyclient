@@ -223,6 +223,16 @@ class Text:
             self.window.addstr( self.row, self.col, "["+self._text)
             self.window.addstr( self.row, self.col+self.txtlen-1, "]")
 
+    def editstring(self, stdscr):
+        "Returns an EditString object"
+        editor = EditString(stdscr,
+                            self.fieldrow,                  # row
+                            self.startcol+1,                # start col
+                            self.endcol-2,                  # endcol
+                            self.text )                     # the actual text
+        return editor
+
+
 
 
 
