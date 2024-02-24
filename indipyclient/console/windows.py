@@ -133,7 +133,6 @@ class TooSmall(ConsoleClientScreen):
             return "Quit"
 
 
-
 class MessagesScreen(ConsoleClientScreen):
 
     def __init__(self, stdscr, consoleclient):
@@ -429,8 +428,6 @@ class MessagesScreen(ConsoleClientScreen):
             return "Quit"
 
 
-
-
 class EnableBLOBsScreen(ConsoleClientScreen):
 
     def __init__(self, stdscr, consoleclient):
@@ -479,7 +476,6 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                        self.quit_btn]
 
 
-
     def show(self):
         "Displays the screen"
 
@@ -493,13 +489,9 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         else:
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
 
-        # draw the path
-        self.path_txt.draw()
-        # draw submit, device, messages and quit buttons
-        self.submit_btn.draw()
-        self.messages_btn.draw()
-        self.devices_btn.draw()
-        self.quit_btn.draw()
+        # draw the input fields
+        for fld in self.fields:
+            fld.draw()
 
         # refresh these sub-windows and update physical screen
         self.titlewin.noutrefresh()
@@ -515,6 +507,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
             self.messwin.noutrefresh()
             curses.doupdate()
+
 
     async def submit(self):
         self._newpath = self.path_txt.text
@@ -548,8 +541,6 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             self.consoleclient.send_disableBLOB()
         self.submit_btn.focus = False
         self.messages_btn.focus = True
-
-
 
 
     async def inputs(self):
