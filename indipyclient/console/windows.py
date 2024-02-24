@@ -678,6 +678,12 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                 curses.curs_set(0)
                 return key
+            if isinstance(key, tuple):
+                if key in self.path_txt:
+                    continue
+                else:
+                    curses.curs_set(0)
+                    return key
             if key == 10:
                 curses.curs_set(0)
                 return 9
