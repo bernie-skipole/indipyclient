@@ -36,6 +36,9 @@ class ParentScreen:
                 fld.draw()
                 break
 
+    def devicenumber(self):
+        "Returns the number of enabled devices"
+        return self.client.enabledlen()
 
     async def keyinput(self):
         """Waits for a key press,
@@ -707,7 +710,7 @@ class DevicesScreen(ConsoleClientScreen):
 
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, self.maxcols, 6, 0)
-        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
+        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="TopMore")
         self.topmore_btn.show = False
 
         dnumber = self.devicenumber()
@@ -730,28 +733,23 @@ class DevicesScreen(ConsoleClientScreen):
 
         # botmorewin (1 line, full row, starting at self.maxrows - 4, 0)
         self.botmorewin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 4, 0)
-        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
+        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="BotMore")
         self.botmore_btn.show = False
 
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         # this holds the messages and quit buttons
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
 
-        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 10)
-        self.messages_btn.focus = True
+        # self.focus will be the name of a device in focus
         self.focus = None
-        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2)
+
+        # Start with the messages_btn in focus
+        self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2 - 10, onclick="Messages")
+        self.messages_btn.focus = True
+
+        self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2, onclick="Quit")
         # devicename to button dictionary
         self.devices = {}
-
-
-    def devicenumber(self):
-        "Returns the number of enabled devices"
-        dnumber = 0
-        for device in self.client.values():
-            if device.enable:
-                dnumber += 1
-        return dnumber
 
 
     def show(self):
@@ -782,6 +780,25 @@ class DevicesScreen(ConsoleClientScreen):
         self.devwinrefresh()
         self.buttwin.noutrefresh()
         curses.doupdate()
+
+    def defocus(self):
+        if self.focus:
+            btn = self.devices[self.focus]
+            btn.focus = False
+            btn.draw()
+            self.focus = None
+        elif self.topmore_btn.focus:
+            self.topmore_btn.focus = False
+            self.topmore_btn.draw()
+        elif self.botmore_btn.focus:
+            self.botmore_btn.focus = False
+            self.botmore_btn.draw()
+        elif self.messages_btn.focus:
+            self.messages_btn.focus = False
+            self.messages_btn.draw()
+        elif self.quit_btn.focus:
+            self.quit_btn.focus = False
+            self.quit_btn.draw()
 
 
     def devwinrefresh(self):
@@ -846,6 +863,7 @@ class DevicesScreen(ConsoleClientScreen):
     @property
     def bottomdevice(self):
         "Returns the index of the bottom device being displayed"
+
         idx_of_last_device = self.devicenumber() - 1
 
         last_displayed = self.botline//2
@@ -856,12 +874,13 @@ class DevicesScreen(ConsoleClientScreen):
 
 
     def drawdevices(self):
+        "Called by self.show/update to create and draw the device buttons"
         self.topmorewin.clear()
         self.devwin.clear()
         self.botmorewin.clear()
 
         if not self.devicenumber():
-            self.focus = None
+            self.focus = None                # the devicename in focus
             self.topmore_btn.show = False
             self.botmore_btn.show = False
             self.topmore_btn.focus = False
@@ -874,16 +893,19 @@ class DevicesScreen(ConsoleClientScreen):
         colnumber = self.maxcols//2 - 6
         enabledclients = {devicename:device for devicename,device in self.client.items() if device.enable}
         for linenumber, devicename in enumerate(enabledclients):
-            self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber*2, colnumber)
+            self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber*2, colnumber, onclick=devicename.lower())
 
-        # start with all device buttons focus False
-        for devbutton in self.devices.values():
-            devbutton.focus = False
+        # self.devices is a devicename to button dictionary
 
-        if self.focus not in self.devices:
-            self.focus = None
-        else:
-            self.devices[self.focus].focus = True
+        # Note: initially all device buttons are created with focus False
+        # self.focus has the name of the device which should be in focus
+        # so if it is set, set the appropriate button focus
+
+        if self.focus:
+            if self.focus in self.devices:
+                self.devices[self.focus].focus = True
+            else:
+                self.focus = None
 
         # if self.topdevice is not zero, then draw top more button
         if self.topdevice:
@@ -897,9 +919,8 @@ class DevicesScreen(ConsoleClientScreen):
         for devbutton in self.devices.values():
             devbutton.draw()
 
-        number_of_devices = self.devicenumber()
-        # each device takes 2 lines
-        if self.bottomdevice < number_of_devices -1:
+        # self.bottomdevice is the index of the bottom device being displayed
+        if self.bottomdevice < len(self.devices) -1:
             self.botmore_btn.show = True
         else:
             self.botmore_btn.show = False
@@ -909,6 +930,7 @@ class DevicesScreen(ConsoleClientScreen):
 
 
     def drawbuttons(self):
+        "Called by self.show/update to draw the messages and quit buttons"
         self.buttwin.clear()
 
         # If a device is in focus, these buttons are not
@@ -944,17 +966,11 @@ class DevicesScreen(ConsoleClientScreen):
         if event.devicename is not None:
             if event.devicename.lower() not in self.devices:
                 # unknown device, check this is a definition
-                if isinstance(event, events.defVector):
+                if isinstance(event, events.defVector) or isinstance(event, events.defBLOBVector):
                     # could be a new device
                     self.drawdevices()
                     self.devwinrefresh()
                     curses.doupdate()
-                elif isinstance(event, events.defBLOBVector):
-                    # could be a new device
-                    self.drawdevices()
-                    self.devwinrefresh()
-                    curses.doupdate()
-
 
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -967,6 +983,56 @@ class DevicesScreen(ConsoleClientScreen):
                 key = await self.keyinput()
                 if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                     return key
+
+                if isinstance(key, tuple):
+                    if key in self.quit_btn:
+                        if self.quit_btn.focus:
+                            widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
+                            self.messwin.noutrefresh()
+                            curses.doupdate()
+                            return "Quit"
+                        elif self.messages_btn.focus:
+                            self.messages_btn.focus = False
+                            self.quit_btn.focus = True
+                            self.messages_btn.draw()
+                            self.quit_btn.draw()
+                            self.buttwin.noutrefresh()
+                        else:
+                            # either a top or bottem more button or a device has focus
+                            self.defocus()
+                            self.drawdevices()
+                            self.devwinrefresh()
+                            self.quit_btn.focus = True
+                            self.buttwin.noutrefresh()
+                        curses.doupdate()
+                        continue
+                    if key in self.messages_btn:
+                        if self.messages_btn.focus:
+                            return "Messages"
+                        elif self.quit_btn.focus:
+                            self.quit_btn.focus = False
+                            self.messages_btn.focus = True
+                            self.messages_btn.draw()
+                            self.quit_btn.draw()
+                            self.buttwin.noutrefresh()
+                        else:
+                            # either a top or bottem more button or a device has focus
+                            self.defocus()
+                            self.drawdevices()
+                            self.devwinrefresh()
+                            self.messages_btn.focus = True
+                            self.buttwin.noutrefresh()
+                        curses.doupdate()
+                        continue
+
+
+
+################# to do key in device/more buttons
+
+
+
+
+
                 # which button has focus
                 btnlist = list(self.devices.keys())
                 if key == 10:

@@ -137,6 +137,10 @@ class IPyClient(collections.UserDict):
         event = events.Message(root, None, self)
         await self.rxevent(event)
 
+    def enabledlen(self):
+        "Returns the number of enabled devices"
+        return sum(map(lambda x:1 if x.enable else 0, self.data.values()))
+
 
     def __setitem__(self, device):
         "Devices are added by being learnt from the driver, they cannot be manually added"
