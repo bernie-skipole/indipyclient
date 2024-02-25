@@ -823,7 +823,6 @@ class DevicesScreen(ConsoleClientScreen):
     @property
     def botline(self):
         "Returns the bottom line of the pad to be displayed"
-
         return self.topline + self.devwinbot - self.devwintop
 
     #    self.devwintop = 8
@@ -973,6 +972,39 @@ class DevicesScreen(ConsoleClientScreen):
                     curses.doupdate()
 
 
+    def topmorechosen(self):
+        "Update when topmore button pressed"
+        if not self.topmore_btn.focus:
+            return
+        # pressing topmore button may cause first device to be displayed
+        # which results in the topmore button vanishing
+        btnlist = list(self.devices.keys())
+        # btnlist is the names of the device buttons
+        if self.topdevice == 1:
+            self.topmore_btn.focus = False
+            self.focus = btnlist[0]
+        self.topline -= 2
+        self.drawdevices()
+        self.devwinrefresh()
+
+
+    def botmorechosen(self):
+        "Update when botmore button pressed"
+        if not self.botmore_btn.focus:
+            return
+        # pressing botmore button may cause last device to be displayed
+        # which results in the botmore button vanishing
+        btnlist = list(self.devices.keys())
+        # btnlist is the names of the device buttons
+        if self.bottomdevice == len(btnlist) - 2:
+            self.botmore_btn.focus = False
+            self.focus = btnlist[-1]
+        self.topline += 2
+        self.drawdevices()
+        self.devwinrefresh()
+
+
+
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
     async def inputs(self):
@@ -985,6 +1017,7 @@ class DevicesScreen(ConsoleClientScreen):
                     return key
 
                 if isinstance(key, tuple):
+                    # mouse pressed, find if its clicked in any field
                     if key in self.quit_btn:
                         if self.quit_btn.focus:
                             widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
@@ -998,11 +1031,11 @@ class DevicesScreen(ConsoleClientScreen):
                             self.quit_btn.draw()
                             self.buttwin.noutrefresh()
                         else:
-                            # either a top or bottem more button or a device has focus
+                            # either a top or bottom more button or a device has focus
                             self.defocus()
-                            self.drawdevices()
                             self.devwinrefresh()
                             self.quit_btn.focus = True
+                            self.quit_btn.draw()
                             self.buttwin.noutrefresh()
                         curses.doupdate()
                         continue
@@ -1018,19 +1051,59 @@ class DevicesScreen(ConsoleClientScreen):
                         else:
                             # either a top or bottem more button or a device has focus
                             self.defocus()
-                            self.drawdevices()
                             self.devwinrefresh()
                             self.messages_btn.focus = True
+                            self.messages_btn.draw()
+                            self.buttwin.noutrefresh()
+                        curses.doupdate()
+                        continue
+                    if key in self.topmore_btn:
+                        if self.topmore_btn.focus:
+                            self.topmorechosen()
+                        else:
+                            self.defocus()
+                            self.topmore_btn.focus = True
+                            self.topmore_btn.draw()
+                            self.devwinrefresh()
+                            self.buttwin.noutrefresh()
+                        curses.doupdate()
+                        continue
+                    if key in self.botmore_btn:
+                        if self.botmore_btn.focus:
+                            self.botmorechosen()
+                        else:
+                            self.defocus()
+                            self.botmore_btn.focus = True
+                            self.botmore_btn.draw()
+                            self.devwinrefresh()
                             self.buttwin.noutrefresh()
                         curses.doupdate()
                         continue
 
+                    # so now must check if mouse position is in any of the devices
+                    if key[0] > self.devwinbot:
+                        # no chance of device button being pressed as mouse point
+                        # is at a row greater than bottom line of the device window
+                        continue
 
-
-################# to do key in device/more buttons
-
-
-
+                    devicelist = list(self.devices.values())
+                    for btn_number in range(self.topdevice, self.bottomdevice+1):
+                        btn = devicelist[btn_number]
+                        # key tuple pad starts at row self.devwintop
+                        if (key[0]-self.devwintop, key[1]) in btn:
+                            if btn.focus:
+                                return btn.onclick
+                            else:
+                                # button not in focus, so set it
+                                self.defocus()
+                                btn.focus = True
+                                btn.draw()
+                                self.focus = btn.onclick
+                                self.devwinrefresh()
+                                self.buttwin.noutrefresh()
+                                curses.doupdate()
+                                break
+                    continue
 
 
                 # which button has focus
@@ -1044,25 +1117,11 @@ class DevicesScreen(ConsoleClientScreen):
                     if self.messages_btn.focus:
                         return "Messages"
                     if self.topmore_btn.focus:
-                        # pressing topmore button may cause first device to be displayed
-                        # which results in the topmore button vanishing
-                        if self.topdevice == 1:
-                            self.topmore_btn.focus = False
-                            self.focus = btnlist[0]
-                        self.topline -= 2
-                        self.drawdevices()
-                        self.devwinrefresh()
+                        self.topmorechosen()
                         curses.doupdate()
                         continue
                     if self.botmore_btn.focus:
-                        # pressing botmore button may cause last device to be displayed
-                        # which results in the botmore button vanishing
-                        if self.bottomdevice == len(self.client) - 2:
-                            self.botmore_btn.focus = False
-                            self.focus = btnlist[-1]
-                        self.topline += 2
-                        self.drawdevices()
-                        self.devwinrefresh()
+                        self.botmorechosen()
                         curses.doupdate()
                         continue
 
