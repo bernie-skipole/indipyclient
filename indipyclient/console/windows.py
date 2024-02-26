@@ -698,47 +698,49 @@ class DevicesScreen(ConsoleClientScreen):
     def __init__(self, stdscr, consoleclient):
         super().__init__(stdscr, consoleclient)
 
+        # assume screen 80 x 24                                      # row 0 to 23
+        # self.maxrows = 24
+
         # title window  (1 line, full row, starting at 0,0)
-        self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
+        self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)    # row 0
         self.titlewin.addstr(0, 0, "Devices", curses.A_BOLD)
 
         # messages window (1 line, full row, starting at 2,0)
-        self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
+        self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)     # row 2
 
         # status window (1 line, full row-4, starting at 4,4)
-        self.statwin = self.stdscr.subwin(1, self.maxcols-4, 4, 4)
+        self.statwin = self.stdscr.subwin(1, self.maxcols-4, 4, 4)   # row 4
 
         # topmorewin (1 line, full row, starting at 6, 0)
-        self.topmorewin = self.stdscr.subwin(1, self.maxcols, 6, 0)
+        self.topmorewin = self.stdscr.subwin(1, self.maxcols, 6, 0) # row 6
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="TopMore")
         self.topmore_btn.show = False
 
-        dnumber = self.devicenumber()
+        # devices window                                            # row 7 blank between more and top device
 
-        # devices window - create a pad of 40+2*devices lines, full row
-        self.devwin = curses.newpad(40 + 2* dnumber, self.maxcols)
-
-        # devices window top and bottom row numbers
-        self.devwintop = 8
+        # calculate top and bottom row numbers
+        self.devwintop = 8                                                          # row 8
         # ensure bottom row is an even number at position self.maxrows - 6 or -7
-        row = self.maxrows - 7
-        # very large screen may produce a window bigger that the pad,
-        # so reduce it to around ten times less than the pad
-        if row > 30 + 2* dnumber:
-            row = 30 + 2* dnumber
-        self.devwinbot = row + row % 2
+        row = self.maxrows - 7           # 17
+        self.devwinbot = row + row % 2   # adds 1 if row is odd                     # row 18 (leaving rows 19-23)
 
-        # topline of pad to show
-        self.topline = 0
+        # for 24 row window
+        # device window will have ten rows, displaying five devices, (self.devwinbot-self.devwintop) // 2  = 5
 
+        # device window                          18 - 8 = 10 rows       80            row 8      left col
+        self.devwin = self.stdscr.subwin(self.devwinbot-self.devwintop, self.maxcols, self.devwintop, 0)
+
+        # topindex of device being shown
+        self.topindex = 0                   # so five devices will show devices with indexes 0-4
+                                                                                                  # row 19 blank
         # botmorewin (1 line, full row, starting at self.maxrows - 4, 0)
-        self.botmorewin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 4, 0)
+        self.botmorewin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 4, 0)      # row 20
         self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="BotMore")
         self.botmore_btn.show = False
-
+                                                                                    # rows 21, 22 blank
         # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
         # this holds the messages and quit buttons
-        self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
+        self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)     # row 23
 
         # self.focus will be the name of a device in focus
         self.focus = None
@@ -748,8 +750,11 @@ class DevicesScreen(ConsoleClientScreen):
         self.messages_btn.focus = True
 
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 2, onclick="Quit")
-        # devicename to button dictionary
+
+        # devicename to devices
         self.devices = {}
+        # devicename to buttons
+        self.devbuttons = {}             # devicenames are original case
 
 
     def show(self):
@@ -760,8 +765,10 @@ class DevicesScreen(ConsoleClientScreen):
             self.messwin.clear()
             widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
 
+        self.devices = {devicename:device for devicename,device in self.client.items() if device.enable}
+
         # draw status
-        if not self.devicenumber():
+        if not self.devices:
             self.statwin.addstr(0, 0, "No devices have been discovered")
         else:
             self.statwin.addstr(0, 0, "Choose a device:               ")
@@ -773,17 +780,19 @@ class DevicesScreen(ConsoleClientScreen):
         self.drawbuttons()
 
         # refresh these sub-windows and update physical screen
-
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.statwin.noutrefresh()
-        self.devwinrefresh()
+        self.topmorewin.noutrefresh()
+        self.devwin.noutrefresh()
+        self.botmorewin.noutrefresh()
         self.buttwin.noutrefresh()
         curses.doupdate()
 
     def defocus(self):
+        "Remove focus from all buttons, and re-draw the button which had focus"
         if self.focus:
-            btn = self.devices[self.focus]
+            btn = self.devbuttons[self.focus]
             btn.focus = False
             btn.draw()
             self.focus = None
@@ -800,76 +809,38 @@ class DevicesScreen(ConsoleClientScreen):
             self.quit_btn.focus = False
             self.quit_btn.draw()
 
-
     def devwinrefresh(self):
-
-        # The refresh() and noutrefresh() methods of a pad require 6 arguments
-        # to specify the part of the pad to be displayed and the location on
-        # the screen to be used for the display. The arguments are
-        # pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
-        # the p arguments refer to the upper left corner of the pad region to be displayed and the
-        # s arguments define a clipping box on the screen within which the pad region is to be displayed.
-
-        coords = (self.topline, 0, self.devwintop, 0, self.devwinbot, self.maxcols-1)
-                  # pad row, pad col, win start row, win start col, win end row, win end col
-
-        self.devwin.overwrite(self.stdscr, *coords)
-
+        "Call noutrefresh on more buttons and device window"
         self.topmorewin.noutrefresh()
-        self.devwin.noutrefresh(*coords)
+        self.devwin.noutrefresh()
         self.botmorewin.noutrefresh()
 
 
-    @property
-    def botline(self):
-        "Returns the bottom line of the pad to be displayed"
-        return self.topline + self.devwinbot - self.devwintop
-
-    #    self.devwintop = 8
-    #    self.devwinbot = self.maxrows - 7 or - 6
-
-
-    # ex1: self.topline = 0, self.maxrows = 30
-    # self.devwinbot = 24
-    # botline = 0 + 24 - 8 = 16
-
-    # ex2: self.topline = 0, self.maxrows = 31
-    # self.devwinbot = 24
-    # botline = 0 + 24 - 8 = 16
-
-    # ex3: topline = 0, self.maxrows = 32
-    # self.devwinbot = 26
-    # botline = 0 + 26 - 8 = 18
-
-    # ex4: self.topline = 2, self.maxrows = 15
-    # self.devwinbot = 8
-    # botline = 2 + 8 - 8 = 2
-
-    # ex5: self.topline = 2, self.maxrows = 16
-    # self.devwinbot = 10
-    # botline = 2 + 10 - 8 = 4
-
-    # ex6: self.topline = 2, self.maxrows = 17
-    # self.devwinbot = 10
-    # botline = 2 + 10 - 8 = 4
-
-
-    @property
-    def topdevice(self):
-        "Returns the index of the top device being displayed"
-        return self.topline//2
-
-    @property
-    def bottomdevice(self):
+    def botindex(self):
         "Returns the index of the bottom device being displayed"
 
-        idx_of_last_device = self.devicenumber() - 1
+        # self.topindex is the top device being displayed
+        bottomidx = self.topindex + (self.devwinbot-self.devwintop) // 2 - 1
+        # example  0 + (18-8)//2 - 1  = 4
+        # example  3 + (18-8)//2 - 1  = 7
+        lastidx = len(self.devices)-1
+        if bottomidx > lastidx:
+            return lastidx
+        return bottomidx
 
-        last_displayed = self.botline//2
+    def incrementindex(self):
+        """Returns a tuple of potential new topindex,
+           and potential new botindex"""
 
-        if idx_of_last_device > last_displayed:
-            return last_displayed
-        return idx_of_last_device
+        new_top_idx = self.topindex + 1
+
+        new_bottomidx = new_top_idx + (self.devwinbot-self.devwintop) // 2 - 1
+        lastidx = len(self.devices)-1
+
+        if new_bottomidx > lastidx:
+            # no point incrementing topindex as it does not display any new device
+            return self.topindex, lastidx
+        return new_top_idx, new_bottomidx
 
 
     def drawdevices(self):
@@ -878,36 +849,42 @@ class DevicesScreen(ConsoleClientScreen):
         self.devwin.clear()
         self.botmorewin.clear()
 
-        if not self.devicenumber():
-            self.focus = None                # the devicename in focus
+        if not self.devices:               # no devices
+            self.focus = None
             self.topmore_btn.show = False
             self.botmore_btn.show = False
             self.topmore_btn.focus = False
             self.botmore_btn.focus = False
             return
 
-        # Remove current devices
-        self.devices.clear()
+        # Remove current device buttons
+        self.devbuttons.clear()
+
+        bottomidx = self.botindex()
 
         colnumber = self.maxcols//2 - 6
-        enabledclients = {devicename:device for devicename,device in self.client.items() if device.enable}
-        for linenumber, devicename in enumerate(enabledclients):
-            self.devices[devicename.lower()] = widgets.Button(self.devwin, devicename, linenumber*2, colnumber, onclick=devicename.lower())
 
-        # self.devices is a devicename to button dictionary
+        for idx, devicename in enumerate(self.devices):
+            if idx < self.topindex:
+                continue
+            if idx > bottomidx:
+                break                                                             # linenumber is idx*2 for two lines per device
+            self.devbuttons[devicename] = widgets.Button(self.devwin, devicename, idx*2, colnumber, onclick=devicename.lower())
+
+        # self.devbuttons is a devicename to button dictionary, but only for buttons displayed
 
         # Note: initially all device buttons are created with focus False
         # self.focus has the name of the device which should be in focus
         # so if it is set, set the appropriate button focus
 
         if self.focus:
-            if self.focus in self.devices:
-                self.devices[self.focus].focus = True
+            if self.focus in self.devbuttons:
+                self.devbuttons[self.focus].focus = True
             else:
                 self.focus = None
 
-        # if self.topdevice is not zero, then draw top more button
-        if self.topdevice:
+        # if self.topindex is not zero, then draw top more button
+        if self.topindex:
             self.topmore_btn.show = True
         else:
             self.topmore_btn.show = False
@@ -915,17 +892,16 @@ class DevicesScreen(ConsoleClientScreen):
         self.topmore_btn.draw()
 
         # draw devices buttons
-        for devbutton in self.devices.values():
+        for devbutton in self.devbuttons.values():
             devbutton.draw()
 
-        # self.bottomdevice is the index of the bottom device being displayed
-        if self.bottomdevice < len(self.devices) -1:
+        # bottomidx is the index of the bottom device being displayed
+        if bottomidx < len(self.devices) -1:
             self.botmore_btn.show = True
         else:
             self.botmore_btn.show = False
             self.botmore_btn.focus = False
         self.botmore_btn.draw()
-
 
 
     def drawbuttons(self):
@@ -936,14 +912,12 @@ class DevicesScreen(ConsoleClientScreen):
         if self.focus or self.topmore_btn.focus or self.botmore_btn.focus:
             self.messages_btn.focus = False
             self.quit_btn.focus = False
-        elif not self.quit_btn.focus:
+        elif (not self.quit_btn.focus) and (not self.messages_btn.focus):
+            # at least one button must be in focus
             self.messages_btn.focus = True
-        elif not self.messages_btn.focus:
-            self.quit_btn.focus = True
 
         self.messages_btn.draw()
         self.quit_btn.draw()
-
 
 
     def update(self, event):
@@ -956,34 +930,36 @@ class DevicesScreen(ConsoleClientScreen):
         # check devices unchanged
         if isinstance(event, events.delProperty) and event.vectorname is None:
             # a device has being deleted
-            self.drawdevices()
-            self.drawbuttons()
-            self.devwinrefresh()
-            self.buttwin.noutrefresh()
-            curses.doupdate()
+            self.topindex = 0
+            self.defocus()
+            self.show()
             return
         if event.devicename is not None:
-            if event.devicename.lower() not in self.devices:
+            if event.devicename not in self.devices:
                 # unknown device, check this is a definition
                 if isinstance(event, events.defVector) or isinstance(event, events.defBLOBVector):
                     # could be a new device
-                    self.drawdevices()
-                    self.devwinrefresh()
-                    curses.doupdate()
+                    self.topindex = 0
+                    self.defocus()
+                    self.show()
 
 
     def topmorechosen(self):
         "Update when topmore button pressed"
         if not self.topmore_btn.focus:
             return
-        # pressing topmore button may cause first device to be displayed
-        # which results in the topmore button vanishing
-        btnlist = list(self.devices.keys())
-        # btnlist is the names of the device buttons
-        if self.topdevice == 1:
+
+        btns = list(self.devbuttons.values())
+        names = list(self.devbuttons.keys())
+
+        if self.topindex:
+            self.topindex = self.topindex - 1
+
+        if not self.topindex:
             self.topmore_btn.focus = False
-            self.focus = btnlist[0]
-        self.topline -= 2
+            self.focus = names[0]
+            btns[0].focus = True
+
         self.drawdevices()
         self.devwinrefresh()
 
@@ -992,6 +968,14 @@ class DevicesScreen(ConsoleClientScreen):
         "Update when botmore button pressed"
         if not self.botmore_btn.focus:
             return
+
+        new_top_idx, new_bot_idx = self.incrementindex()
+
+        if new_top_idx == self.topindex:
+            # cannot increment further
+
+       if new_bot_idx == len(self.devices) - 1:
+###########################################################################
         # pressing botmore button may cause last device to be displayed
         # which results in the botmore button vanishing
         btnlist = list(self.devices.keys())
