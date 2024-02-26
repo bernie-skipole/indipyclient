@@ -1089,8 +1089,9 @@ class DevicesScreen(ConsoleClientScreen):
                     devicelist = list(self.devices.values())
                     for btn_number in range(self.topdevice, self.bottomdevice+1):
                         btn = devicelist[btn_number]
-                        # key tuple pad starts at row self.devwintop
-                        if (key[0]-self.devwintop, key[1]) in btn:
+                        # key tuple pad starts at screen row self.devwintop, and
+                        # has been scrolled up at self.topline
+                        if (key[0]-self.devwintop+self.topline, key[1]) in btn:
                             if btn.focus:
                                 return btn.onclick
                             else:
