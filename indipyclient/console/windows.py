@@ -864,12 +864,14 @@ class DevicesScreen(ConsoleClientScreen):
 
         colnumber = self.maxcols//2 - 6
 
+        linenumber = 0
         for idx, devicename in enumerate(self.devices):
             if idx < self.topindex:
                 continue
             if idx > bottomidx:
-                break                                                             # linenumber is idx*2 for two lines per device
-            self.devbuttons[devicename] = widgets.Button(self.devwin, devicename, idx*2, colnumber, onclick=devicename.lower())
+                break
+            self.devbuttons[devicename] = widgets.Button(self.devwin, devicename, linenumber, colnumber, onclick=devicename.lower())
+            linenumber += 2  # two lines per button
 
         # self.devbuttons is a devicename to button dictionary, but only for buttons displayed
 
