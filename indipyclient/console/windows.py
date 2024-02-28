@@ -828,20 +828,6 @@ class DevicesScreen(ConsoleClientScreen):
             return lastidx
         return bottomidx
 
-    def incrementindex(self):
-        """Returns a tuple of potential new topindex,
-           and potential new botindex"""
-
-        new_top_idx = self.topindex + 1
-
-        new_bottomidx = new_top_idx + (self.devwinbot-self.devwintop) // 2 - 1
-        lastidx = len(self.devices)-1
-
-        if new_bottomidx > lastidx:
-            # no point incrementing topindex as it does not display any new device
-            return self.topindex, lastidx
-        return new_top_idx, new_bottomidx
-
 
     def drawdevices(self):
         "Called by self.show/update to create and draw the device buttons"
@@ -853,8 +839,6 @@ class DevicesScreen(ConsoleClientScreen):
             self.focus = None
             self.topmore_btn.show = False
             self.botmore_btn.show = False
-            self.topmore_btn.focus = False
-            self.botmore_btn.focus = False
             return
 
         # Remove current device buttons
@@ -890,7 +874,6 @@ class DevicesScreen(ConsoleClientScreen):
             self.topmore_btn.show = True
         else:
             self.topmore_btn.show = False
-            self.topmore_btn.focus = False
         self.topmore_btn.draw()
 
         # draw devices buttons
@@ -902,7 +885,6 @@ class DevicesScreen(ConsoleClientScreen):
             self.botmore_btn.show = True
         else:
             self.botmore_btn.show = False
-            self.botmore_btn.focus = False
         self.botmore_btn.draw()
 
 
@@ -949,7 +931,7 @@ class DevicesScreen(ConsoleClientScreen):
     def topmorechosen(self):
         "Update when topmore button pressed"
         assert self.topmore_btn.focus
-        assert self.topindex
+        assert self.topindex    # self.topindex cannot be zero
 
         btns = list(self.devbuttons.values())
         names = list(self.devbuttons.keys())
@@ -970,7 +952,7 @@ class DevicesScreen(ConsoleClientScreen):
 
     def botmorechosen(self):
         "Update when botmore button pressed"
-        assert self.botmore_btn.focus:
+        assert self.botmore_btn.focus
 
         # the aim is to increment self.topindex
         # but doing so may display last bottom device
@@ -979,18 +961,23 @@ class DevicesScreen(ConsoleClientScreen):
         btns = list(self.devbuttons.values())
         names = list(self.devbuttons.keys())
 
-        new_top_idx, new_bot_idx = self.incrementindex()
+        new_top_idx = self.topindex + 1
 
-        if new_top_idx == self.topindex:
-            # cannot increment further
-            self.botmore_btn.focus = False
+        new_bottomidx = new_top_idx + (self.devwinbot-self.devwintop) // 2 - 1
+        lastidx = len(btns)-1
+
+        print(new_bottomidx, lastidx)
+
+        if new_bottomidx > lastidx:
+            # no point incrementing topindex as it does not display any new device
+            self.botmore_btn.show = False
             self.focus = names[-1]
             btns[-1].focus = True
         else:
             self.topindex = new_top_idx
-            if new_bot_idx == len(self.devices) - 1:
+            if new_bot_idx == lastidx:
                 # cannot increment further
-                self.botmore_btn.focus = False
+                self.botmore_btn.show = False
                 self.focus = names[-1]
                 btns[-1].focus = True
 
@@ -1005,6 +992,11 @@ class DevicesScreen(ConsoleClientScreen):
         "Gets inputs from the screen"
         try:
             self.stdscr.nodelay(True)
+
+            btns = list(self.devbuttons.values())
+            names = list(self.devbuttons.keys())
+            bottomidx = self.botindex()
+
             while True:
                 key = await self.keyinput()
                 if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
@@ -1043,7 +1035,7 @@ class DevicesScreen(ConsoleClientScreen):
                             self.quit_btn.draw()
                             self.buttwin.noutrefresh()
                         else:
-                            # either a top or bottem more button or a device has focus
+                            # either a top or bottom more button or a device has focus
                             self.defocus()
                             self.devwinrefresh()
                             self.messages_btn.focus = True
@@ -1080,12 +1072,9 @@ class DevicesScreen(ConsoleClientScreen):
                         # is at a row greater than bottom line of the device window
                         continue
 
-                    devicelist = list(self.devices.values())
-                    for btn_number in range(self.topdevice, self.bottomdevice+1):
-                        btn = devicelist[btn_number]
-                        # key tuple pad starts at screen row self.devwintop, and
-                        # has been scrolled up at self.topline
-                        if (key[0]-self.devwintop+self.topline, key[1]) in btn:
+                    for btn_number in range(self.topindex, bottomidx+1):
+                        btn = btns[btn_number]
+                        if key in btn:
                             if btn.focus:
                                 return btn.onclick
                             else:
@@ -1093,7 +1082,7 @@ class DevicesScreen(ConsoleClientScreen):
                                 self.defocus()
                                 btn.focus = True
                                 btn.draw()
-                                self.focus = btn.onclick
+                                self.focus = names[btn_number]
                                 self.devwinrefresh()
                                 self.buttwin.noutrefresh()
                                 curses.doupdate()
@@ -1102,7 +1091,6 @@ class DevicesScreen(ConsoleClientScreen):
 
 
                 # which button has focus
-                btnlist = list(self.devices.keys())
                 if key == 10:
                     if self.quit_btn.focus:
                         widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
@@ -1127,38 +1115,38 @@ class DevicesScreen(ConsoleClientScreen):
                     # go to the next button
                     if self.quit_btn.focus:
                         self.quit_btn.focus = False
-                        if self.topdevice:
-                            # that is, if topdevice does not have index zero
+                        if self.topindex:
+                            # that is, if top button does not have index zero
                             self.topmore_btn.focus = True
                         else:
-                            self.focus = btnlist[0]
+                            self.focus = btns[0]
                     elif self.messages_btn.focus:
                         self.messages_btn.focus = False
                         self.quit_btn.focus = True
                     elif self.topmore_btn.focus:
                         self.topmore_btn.focus = False
-                        self.focus = btnlist[self.topdevice]
+                        self.focus = btns[self.topindex]
                     elif self.botmore_btn.focus:
                         self.botmore_btn.focus = False
                         self.messages_btn.focus = True
                     else:
                         # one of the devices has focus
-                        indx = btnlist.index(self.focus)
-                        if indx == len(self.client) - 1:
+                        indx = names.index(self.focus)
+                        if indx == len(btns)-1:
                             # very last device, the botmore_btn should not be shown
                             self.focus = None
                             self.messages_btn.focus = True
-                        elif indx == self.bottomdevice:
+                        elif indx == self.botindex():
                             if key in (338, 258):      # 338 page down, 258 down arrow
                                 # display next device
-                                self.topline += 2
-                                self.focus = btnlist[indx+1]
+                                self.topindex += 1
+                                self.focus = names[indx+1]
                             else:
                                 # last device on display
                                 self.focus = None
                                 self.botmore_btn.focus = True
                         else:
-                            self.focus = btnlist[indx+1]
+                            self.focus = names[indx+1]
 
                 elif key in (353, 260, 339, 259):
                     # go to previous button
@@ -1173,24 +1161,24 @@ class DevicesScreen(ConsoleClientScreen):
                             self.focus = btnlist[-1]
                     elif self.botmore_btn.focus:
                         self.botmore_btn.focus = False
-                        self.focus = btnlist[self.bottomdevice]
+                        self.focus = names[self.botindex()]
                     elif self.topmore_btn.focus:
                         self.topmore_btn.focus = False
                         self.quit_btn.focus = True
-                    elif self.focus == btnlist[0]:
+                    elif self.focus == names[0]:
                         self.focus = None
                         self.quit_btn.focus = True
                     else:
-                        indx = btnlist.index(self.focus)
-                        if indx == self.topdevice:
+                        indx = names.index(self.focus)
+                        if indx == self.topindex:
                             if key in (339, 259): # 339 page up, 259 up arrow
-                                self.topline -= 2
-                                self.focus = btnlist[indx-1]
+                                self.topindex -= 1
+                                self.focus = names[indx-1]
                             else:
                                 self.focus = None
                                 self.topmore_btn.focus = True
                         else:
-                            self.focus = btnlist[indx-1]
+                            self.focus = names[indx-1]
 
                 else:
                     # button not recognised
