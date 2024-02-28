@@ -948,44 +948,52 @@ class DevicesScreen(ConsoleClientScreen):
 
     def topmorechosen(self):
         "Update when topmore button pressed"
-        if not self.topmore_btn.focus:
-            return
+        assert self.topmore_btn.focus
+        assert self.topindex
 
         btns = list(self.devbuttons.values())
         names = list(self.devbuttons.keys())
 
-        if self.topindex:
-            self.topindex = self.topindex - 1
+        self.topindex -= 1
 
         if not self.topindex:
+            # at the top device
             self.topmore_btn.focus = False
             self.focus = names[0]
             btns[0].focus = True
 
+        # drawdevices will sort out top and bottom
+        # more buttons
         self.drawdevices()
         self.devwinrefresh()
 
 
     def botmorechosen(self):
         "Update when botmore button pressed"
-        if not self.botmore_btn.focus:
-            return
+        assert self.botmore_btn.focus:
+
+        # the aim is to increment self.topindex
+        # but doing so may display last bottom device
+        # which makes more button dissapear
+
+        btns = list(self.devbuttons.values())
+        names = list(self.devbuttons.keys())
 
         new_top_idx, new_bot_idx = self.incrementindex()
 
         if new_top_idx == self.topindex:
             # cannot increment further
-
-       if new_bot_idx == len(self.devices) - 1:
-###########################################################################
-        # pressing botmore button may cause last device to be displayed
-        # which results in the botmore button vanishing
-        btnlist = list(self.devices.keys())
-        # btnlist is the names of the device buttons
-        if self.bottomdevice == len(btnlist) - 2:
             self.botmore_btn.focus = False
-            self.focus = btnlist[-1]
-        self.topline += 2
+            self.focus = names[-1]
+            btns[-1].focus = True
+        else:
+            self.topindex = new_top_idx
+            if new_bot_idx == len(self.devices) - 1:
+                # cannot increment further
+                self.botmore_btn.focus = False
+                self.focus = names[-1]
+                btns[-1].focus = True
+
         self.drawdevices()
         self.devwinrefresh()
 
