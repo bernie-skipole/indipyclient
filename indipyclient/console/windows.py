@@ -1116,6 +1116,7 @@ class DevicesScreen(ConsoleClientScreen):
                     # of the device in focus
                     if self.focus:
                         return self.focus.lower()
+                    continue
 
 
                 if key in (32, 9, 261, 338, 258):   # 32 space, 9 tab, 261 right arrow, 338 page down, 258 down arrow
@@ -1275,7 +1276,6 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
 
-    @property
     def activegroup(self):
         "Return name of group currently active"
         return self.groupwin.active
@@ -1318,7 +1318,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.groupwin.draw()
 
         # Draw the device vector widgets, as given by self.activegroup
-        self.vectorswin.draw(self.devicename, self.activegroup)
+        self.vectorswin.draw(self.devicename, self.activegroup() )
 
         # draw the bottom buttons
         self.devices_btn.draw()
@@ -1329,9 +1329,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.groupwin.noutrefresh()
-
         self.vectorswin.noutrefresh()
-
         self.buttwin.noutrefresh()
 
         curses.doupdate()
@@ -1357,7 +1355,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
             self.groupwin.noutrefresh()
 
         # Draw the device vector widgets, as given by self.activegroup
-        self.vectorswin.draw(self.devicename, self.activegroup)
+        self.vectorswin.draw(self.devicename, self.activegroup() )
         self.vectorswin.noutrefresh()
         curses.doupdate()
 
