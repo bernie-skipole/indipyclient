@@ -986,7 +986,6 @@ class DevicesScreen(ConsoleClientScreen):
         self.devwinrefresh()
 
 
-
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
     async def inputs(self):
@@ -1113,11 +1112,11 @@ class DevicesScreen(ConsoleClientScreen):
                         curses.doupdate()
                         continue
 
-                    # If not Quit or Messages, return the device in focus
-                    return self.focus
+                    # If not Quit or Messages, return the lower case name
+                    # of the device in focus
+                    if self.focus:
+                        return self.focus.lower()
 
-
-# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
                 if key in (32, 9, 261, 338, 258):   # 32 space, 9 tab, 261 right arrow, 338 page down, 258 down arrow
                     # go to the next button
@@ -1231,38 +1230,40 @@ class ChooseVectorScreen(ConsoleClientScreen):
     def __init__(self, stdscr, consoleclient, devicename):
         super().__init__(stdscr, consoleclient)
 
+        # devicename is the actual devicename given by the device (not set to lower case)
         self.devicename = devicename
         # start with vectorname None, a vector to view will be chosen by this screen
         self.vectorname = None
 
         # title window  (1 line, full row, starting at 0,0)
-        self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
+        self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)                  # row 0
         self.titlewin.addstr(0, 0, "Device: " + self.devicename, curses.A_BOLD)
 
         # messages window (1 line, full row, starting at 2,0)
-        self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
+        self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)                   # row 2
         self.lastmessage = ""
 
-        # list areas of the screen, one of these areas as the current 'focus'
+        # list areas of the screen, one of these areas has the current 'focus'
         # Groups being the horizontal line of group names associated with a device
         # Vectors being the area showing the vectors associated with a device and group
-        # and Devices Messages and Quit are the bottom buttons
+        # and Devices, Messages and Quit are the bottom buttons
         self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")
 
         # groups list
         try:
             self.groups = []
-            self.groupwin = GroupButtons(self.stdscr, self.consoleclient)
+            self.groupwin = GroupButtons(self.stdscr, self.consoleclient)         # row 4
+            # this creates its own window (1 line, full row, starting at 4,0)
 
             # window showing the vectors of the active group
-            self.vectorswin = VectorListWin(self.stdscr, self.consoleclient)
-        except Exception:
+            self.vectorswin = VectorListWin(self.stdscr, self.consoleclient)    # topmore row 6
+        except Exception:                                                       # botmore row self.maxrows - 3  ????? row 21
             traceback.print_exc(file=sys.stderr)
             raise
 
         # bottom buttons, [Devices] [Messages] [Quit]
 
-        # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)
+        # buttons window (1 line, full row, starting at  self.maxrows - 1, 0)              # row 23
         self.buttwin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 1, 0)
 
         self.device = None
