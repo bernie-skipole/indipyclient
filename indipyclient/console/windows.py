@@ -1252,13 +1252,12 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
         # groups list
         try:
-            self.groups = []
-            self.groupwin = GroupButtons(self.stdscr, self.consoleclient)         # row 4
+            self.groupwin = GroupButtons(self.stdscr, self.consoleclient, self.devicename)         # row 4
             # this creates its own window (1 line, full row, starting at 4,0)
 
             # window showing the vectors of the active group
-            self.vectorswin = VectorListWin(self.stdscr, self.consoleclient)    # topmore row 6
-        except Exception:                                                       # botmore row self.maxrows - 3  ????? row 21
+            self.vectorswin = VectorListWin(self.stdscr, self.consoleclient, self.devicename)    # topmore row 6
+        except Exception:                                                                        # botmore row self.maxrows - 4 row 20
             traceback.print_exc(file=sys.stderr)
             raise
 
@@ -1276,9 +1275,6 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
 
-    def activegroup(self):
-        "Return name of group currently active"
-        return self.groupwin.active
 
     def close(self, value):
         self._close = value
@@ -1309,16 +1305,11 @@ class ChooseVectorScreen(ConsoleClientScreen):
             self.lastmessage = self.device.messages[0]
             widgets.drawmessage(self.messwin, self.lastmessage, maxcols=self.maxcols)
 
+        # draw horizontal list of groups
+        self.groupwin.draw(self.devicename)
 
-        # get the groups this device contains, use a set to avoid duplicates
-        groupset = {vector.group for vector in self.device.values() if vector.enable}
-        self.groups = sorted(list(groupset))
-        # populate a widget showing horizontal list of groups
-        self.groupwin.set_groups(self.groups)
-        self.groupwin.draw()
-
-        # Draw the device vector widgets, as given by self.activegroup
-        self.vectorswin.draw(self.devicename, self.activegroup() )
+        # Draw the device vector widgets, as given by self.groupwin.active
+        self.vectorswin.draw(self.devicename, self.groupwin.active )
 
         # draw the bottom buttons
         self.devices_btn.draw()
@@ -1343,19 +1334,12 @@ class ChooseVectorScreen(ConsoleClientScreen):
                 widgets.drawmessage(self.messwin, self.lastmessage, maxcols=self.maxcols)
                 self.messwin.noutrefresh()
 
+        # draw the groups
+        self.groupwin.draw(self.devicename)
+        self.groupwin.noutrefresh()
 
-        # get the groups this device contains, use a set to avoid duplicates
-        groupset = {vector.group for vector in self.device.values() if vector.enable}
-        groups = sorted(list(groupset))
-        if self.groups != groups:
-            self.groups = groups
-            # populate a widget showing horizontal list of groups
-            self.groupwin.set_groups(self.groups)
-            self.groupwin.draw()
-            self.groupwin.noutrefresh()
-
-        # Draw the device vector widgets, as given by self.activegroup
-        self.vectorswin.draw(self.devicename, self.activegroup() )
+        # Draw the device vector widgets, as given by self.groupwin.active
+        self.vectorswin.draw(self.devicename, self.groupwin.active )
         self.vectorswin.vecwinrefresh()
         curses.doupdate()
 
@@ -1450,7 +1434,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
                 # so buttons have been set with the appropriate focus
                 # now draw them
-                self.groupwin.draw()
+                self.groupwin.draw(self.devicename)
                 self.devices_btn.draw()
                 self.messages_btn.draw()
                 self.quit_btn.draw()
@@ -1469,11 +1453,13 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
 class GroupButtons(ParentScreen):
 
-    def __init__(self, stdscr, consoleclient):
+    def __init__(self, stdscr, consoleclient, devicename):
         super().__init__(stdscr, consoleclient)
 
         # window (1 line, full row, starting at 4,0)
         self.window = self.stdscr.subwin(1, self.maxcols, 4, 0)
+
+        self.devicename = devicename
 
         self.groups = []          # list of group names
         self.groupcols = {}       # dictionary of groupname to column number
@@ -1514,10 +1500,19 @@ class GroupButtons(ParentScreen):
             self.prevfocus = False
 
 
-    def set_groups(self, groups):
-        self.groups = groups.copy()
-        if not len(self.groups):
-            self.groups = ["default"]
+    def draw(self, devicename=None):
+        "Draw the line of groups"
+        if devicename:
+            self.devicename = devicename
+        device = self.client[self.devicename]
+        # get the groups this device contains, use a set to avoid duplicates
+        groupset = {vector.group for vector in device.values() if vector.enable}
+        if not groupset:
+            groupset = set("default")
+
+        # self.groups is a list of group names
+        self.groups = sorted(list(groupset))
+
         self.groupcols.clear()
         if self.groupfocus:
             if self.groupfocus not in self.groups:
@@ -1529,12 +1524,6 @@ class GroupButtons(ParentScreen):
         elif self.active not in self.groups:
             self.active = self.groups[0]
 
-
-    def draw(self):
-        "Draw the line of groups"
-        self.groupcols.clear()
-        if self.active is None:
-            self.active = self.groups[0]
         # clear the line
         self.window.clear()
 
@@ -1561,7 +1550,7 @@ class GroupButtons(ParentScreen):
 
             # If not the last, check if another can be drawn
             # otherwise print the 'Next' button
-            if (group != self.groups[-1]) and (col+20 >= self.maxcols):
+            if (group != self.groups[-1]) and (col+30 >= self.maxcols):############################
                 self.nextcol = col
                 self.drawnext(self.nextfocus)
                 self.togroup = indx
@@ -1648,7 +1637,7 @@ class GroupButtons(ParentScreen):
                 return
             # set a change of the active group
             self.active = self.groupfocus
-            return 10
+            return "NewGroup"
 
         if key in (32, 9, 261):   # space, tab, right arrow
             if self.prevfocus:
@@ -1754,12 +1743,12 @@ class VectorListWin(ParentScreen):
         # botmore row self.maxrows - 4 row 20
 
 
-    def __init__(self, stdscr, consoleclient):
+    def __init__(self, stdscr, consoleclient, devicename):
         super().__init__(stdscr, consoleclient)
 
 
         self.groupname = None
-        self.devicename = None
+        self.devicename = devicename
         self.device = None
 
 
