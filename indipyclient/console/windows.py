@@ -1329,7 +1329,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.groupwin.noutrefresh()
-        self.vectorswin.noutrefresh()
+        self.vectorswin.vecwinrefresh()
         self.buttwin.noutrefresh()
 
         curses.doupdate()
@@ -1356,7 +1356,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
         # Draw the device vector widgets, as given by self.activegroup
         self.vectorswin.draw(self.devicename, self.activegroup() )
-        self.vectorswin.noutrefresh()
+        self.vectorswin.vecwinrefresh()
         curses.doupdate()
 
 
@@ -1366,28 +1366,34 @@ class ChooseVectorScreen(ConsoleClientScreen):
         try:
             self.stdscr.nodelay(True)
             while True:
+                key = await self.keyinput()
+                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                    return key
+
                 if self.focus == "Groups":
-                    # focus has been given to the GroupButtons which monitors its own inputs
-                    key = await self.groupwin.input()
-                    if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                        return key
-                    if key == 10:
+                    # focus has been given to the GroupButtons
+                    result = self.groupwin.setkey(key)
+                    if result == "NewGroup":
                         # must update the screen with a new group
                         self.show()
+                    if not result:
                         continue
+                    key = result
+
                 elif self.focus == "Vectors":
-                    # focus has been given to VectorListWin which monitors its own inputs
-                    key = await self.vectorswin.input()
-                    if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                        return key
-                    if key == 10:
-                        # a vector has been chosen, get the vectorname chosen
-                        self.vectorname = self.vectorswin.vectorname
-                        return "Vectors"
-                else:
-                    key = await self.keyinput()
-                    if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                        return key
+                    # focus has been given to VectorListWin
+                    result = self.vectorswin.setkey(key)
+                    if not result:
+                        continue
+                    if result in self.device:
+                        # result is a vector name, check if it is enabled
+                        if self.device[result].enable:
+                            # a vector has been chosen, get the vectorname chosen
+                            self.vectorname = result
+                            return "Vectors"
+                        else:
+                            continue
+                    key = result
 
                 if key == 10:
                     # enter key pressed
@@ -1416,7 +1422,8 @@ class ChooseVectorScreen(ConsoleClientScreen):
                     # key not recognised
                     continue
                 if self.focus == "Vectors":
-                    self.vectorswin.focus = False
+                    self.vectorswin.defocus()
+                    self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 elif self.focus == "Groups":
                     self.groupwin.focus = False
                 elif self.focus == "Devices":
@@ -1430,6 +1437,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
                         self.vectorswin.set_top_focus()
                     else:
                         self.vectorswin.set_bot_focus()
+                    self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 elif newfocus == "Groups":
                     self.groupwin.focus = True
                 elif newfocus == "Devices":
@@ -1442,13 +1450,12 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
                 # so buttons have been set with the appropriate focus
                 # now draw them
-                self.vectorswin.draw(self.devicename, self.groupwin.active)
                 self.groupwin.draw()
                 self.devices_btn.draw()
                 self.messages_btn.draw()
                 self.quit_btn.draw()
 
-                self.vectorswin.noutrefresh()
+                self.vectorswin.vecwinrefresh()
                 self.groupwin.noutrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
@@ -1606,306 +1613,254 @@ class GroupButtons(ParentScreen):
             self.window.addstr(0, self.nextcol, "[Next>>")
             self.nextfocus = False
 
+    def setkey(self, key):
 
-    async def input(self):
-        "Get group button pressed, or next or previous"
-        self.stdscr.nodelay(True)
-        while True:
-            key = await self.keyinput()
-            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+        if key == 10:
+
+            if self.prevfocus:
+                # Enter has been pressed when the 'Prev' button has focus
+                self.fromgroup = self.fromgroup - 1
+                if not self.fromgroup:
+                    # self.fromgroup is zero, so no prev button
+                    self.prevfocus = False
+                    self.groupfocus = self.groups[0]
+                self.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return
+
+            if self.nextfocus:
+                # Enter has been pressed when the 'Next' button has
+                # focus
+                if self.fromgroup:
+                    self.fromgroup = self.fromgroup + 1
+                else:
+                    self.fromgroup = 2
+                self.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return
+
+            # set this groupfocus button as the active button,
+            # and return the key
+            if self.active == self.groupfocus:
+                # no change
+                return
+            # set a change of the active group
+            self.active = self.groupfocus
+            return 10
+
+        if key in (32, 9, 261):   # space, tab, right arrow
+            if self.prevfocus:
+                # remove focus from prev button
+                self.drawprev()
+                # set focus on from button
+                self.groupfocus = self.groups[self.fromgroup]
+                self.drawgroup(self.groupfocus)
+                self.window.noutrefresh()
+                curses.doupdate()
+                return
+            if self.nextfocus:
+                return 258   # treat as 258 down arrow key
+            # go to the next group
+            if self.groupfocus == self.groups[-1]:
+                # At the last group, cannot go further
                 return key
-
-            if key == 10:
-
-                if self.prevfocus:
-                    # Enter has been pressed when the 'Prev' button has focus
+            indx = self.groups.index(self.groupfocus)
+            if self.togroup and (indx+1 > self.togroup):
+                # next choice is beyond togroup
+                if key == 261:   # right arrow
+                    if self.fromgroup:
+                        self.fromgroup = self.fromgroup + 1
+                    else:
+                        self.fromgroup = 2
+                    # get the new group in focus
+                    self.groupfocus = self.groups[indx+1]
+                    self.draw()
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    return
+                else:
+                    # so highlight 'next' key
+                    self.drawnext(focus=True)
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    return
+            # get the new group in focus
+            self.groupfocus = self.groups[indx+1]
+            self.draw()
+            self.window.noutrefresh()
+            curses.doupdate()
+            return
+        if key in (353, 260):   # 353 shift tab, 260 left arrow
+            if self.prevfocus:
+                # remove focus from the button
+                self.drawprev(focus=False)
+                return 258   # treat as 258 down arrow key
+            if self.nextfocus:
+                # group to the left of the 'Next' button, now has focus
+                self.groupfocus = self.groups[self.togroup]
+                self.drawgroup(self.groups[self.togroup])
+                # remove focus from next button
+                self.drawnext(focus=False)
+                self.window.noutrefresh()
+                curses.doupdate()
+                return
+            # go to the previous group
+            indx = self.groups.index(self.groupfocus)
+            if not indx:
+                # indx zero means first group
+                return key
+            if indx == self.fromgroup:
+                if key == 260:  # left arrow, moves to previous group
                     self.fromgroup = self.fromgroup - 1
                     if not self.fromgroup:
                         # self.fromgroup is zero, so no prev button
                         self.prevfocus = False
                         self.groupfocus = self.groups[0]
-                    self.draw()
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    continue
-
-                if self.nextfocus:
-                    # Enter has been pressed when the 'Next' button has
-                    # focus
-                    if self.fromgroup:
-                        self.fromgroup = self.fromgroup + 1
                     else:
-                        self.fromgroup = 2
-                    self.draw()
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    continue
-
-                # set this groupfocus button as the active button,
-                # and return the key
-                if self.active == self.groupfocus:
-                    # no change
-                    continue
-                # set a change of the active group
-                self.active = self.groupfocus
-                return 10
-
-            if key in (32, 9, 261):   # space, tab, right arrow
-                if self.prevfocus:
-                    # remove focus from prev button
-                    self.drawprev()
-                    # set focus on from button
-                    self.groupfocus = self.groups[self.fromgroup]
-                    self.drawgroup(self.groupfocus)
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    continue
-                if self.nextfocus:
-                    return 258   # treat as 258 down arrow key
-                # go to the next group
-                if self.groupfocus == self.groups[-1]:
-                    # At the last group, cannot go further
-                    return key
-                indx = self.groups.index(self.groupfocus)
-                if self.togroup and (indx+1 > self.togroup):
-                    # next choice is beyond togroup
-                    if key == 261:   # right arrow
-                        if self.fromgroup:
-                            self.fromgroup = self.fromgroup + 1
-                        else:
-                            self.fromgroup = 2
                         # get the new group in focus
-                        self.groupfocus = self.groups[indx+1]
-                        self.draw()
-                        self.window.noutrefresh()
-                        curses.doupdate()
-                        continue
-                    else:
-                        # so highlight 'next' key
-                        self.drawnext(focus=True)
-                        self.window.noutrefresh()
-                        curses.doupdate()
-                        continue
-                # get the new group in focus
-                self.groupfocus = self.groups[indx+1]
-                self.draw()
-                self.window.noutrefresh()
-                curses.doupdate()
-                continue
-            if key in (353, 260):   # 353 shift tab, 260 left arrow
-                if self.prevfocus:
-                    # remove focus from the button
-                    self.drawprev(focus=False)
-                    return 258   # treat as 258 down arrow key
-                if self.nextfocus:
-                    # group to the left of the 'Next' button, now has focus
-                    self.groupfocus = self.groups[self.togroup]
-                    self.drawgroup(self.groups[self.togroup])
-                    # remove focus from next button
-                    self.drawnext(focus=False)
+                        self.groupfocus = self.groups[indx-1]
+                    self.draw()
                     self.window.noutrefresh()
                     curses.doupdate()
-                    continue
-                # go to the previous group
-                indx = self.groups.index(self.groupfocus)
-                if not indx:
-                    # indx zero means first group
-                    return key
-                if indx == self.fromgroup:
-                    if key == 260:  # left arrow, moves to previous group
-                        self.fromgroup = self.fromgroup - 1
-                        if not self.fromgroup:
-                            # self.fromgroup is zero, so no prev button
-                            self.prevfocus = False
-                            self.groupfocus = self.groups[0]
-                        else:
-                            # get the new group in focus
-                            self.groupfocus = self.groups[indx-1]
-                        self.draw()
-                        self.window.noutrefresh()
-                        curses.doupdate()
-                        continue
-                    else:
-                        # the button to the left must be the 'Prev' button
-                        # remove focus from current button
-                        currentgroup = self.groupfocus
-                        self.groupfocus = None
-                        self.drawgroup(currentgroup)
-                        # set Prev button as the focus
-                        self.drawprev(focus=True)
-                        self.window.noutrefresh()
-                        curses.doupdate()
-                        continue
+                    return
+                else:
+                    # the button to the left must be the 'Prev' button
+                    # remove focus from current button
+                    currentgroup = self.groupfocus
+                    self.groupfocus = None
+                    self.drawgroup(currentgroup)
+                    # set Prev button as the focus
+                    self.drawprev(focus=True)
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    return
 
-                self.groupfocus = self.groups[indx-1]
-                self.draw()
-                self.window.noutrefresh()
-                curses.doupdate()
-                continue
-            if key in (338, 339, 258, 259):          # 338 page down, 339 page up, 258 down arrow, 259 up arrow
-                return key
-
+            self.groupfocus = self.groups[indx-1]
+            self.draw()
+            self.window.noutrefresh()
+            curses.doupdate()
+            return
+        if key in (338, 339, 258, 259):          # 338 page down, 339 page up, 258 down arrow, 259 up arrow
+            return key
+        return
 
 
 class VectorListWin(ParentScreen):
 
+
+        # topmore row 6
+        # botmore row self.maxrows - 4 row 20
+
+
     def __init__(self, stdscr, consoleclient):
         super().__init__(stdscr, consoleclient)
 
-        # number of lines in a pad, assume 50
-        self.padlines = 50
-        self.window = curses.newpad(self.padlines, self.maxcols)
-
-        # vector index number of top vector being displayed
-        self.topvectindex = 0
 
         self.groupname = None
         self.devicename = None
         self.device = None
 
-        # this is True, if this widget is in focus
-        self._focus = False
 
         # topmorewin (1 line, full row, starting at 6, 0)
-        self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
-        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
+        self.topmorewin = self.stdscr.subwin(1, self.maxcols, 6, 0) # row 6
+        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="TopMore")
         self.topmore_btn.show = False
-        self.topmore_btn.focus = False
 
-        # botmorewin (1 line, full row, starting at self.maxrows - 3, 0)
-        self.botmorewin = self.stdscr.subwin(1, self.maxcols-1, self.maxrows - 3, 0)
-        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7)
+        # vectors window                                            # row 7 blank between more and top vector
+
+        # calculate top and bottom row numbers
+        self.vecwintop = 8                                                          # row 8
+        # ensure bottom row is an odd number at position self.maxrows - 4 or -5
+        row = self.maxrows - 4             # 19
+        self.vecwinbot = row - row % 2   # Subtracts 1 if row is even                     # row 19 (leaving rows 20-23)
+
+        # for 24 row window
+        # vector window will have row 8 to row 19, displaying 6 vectors, (self.vecwinbot-self.vecwintop+1) // 2  = 6
+
+        # vector window                          19 - 8 + 1 = 12 rows       80            row 8      left col
+        self.window = self.stdscr.subwin(self.vecwinbot-self.vecwintop+1, self.maxcols, self.vecwintop, 0)
+
+        # topindex of vector being shown
+        self.topindex = 0                   # so six vectors will show vectors with indexes 0-5
+
+        # botmorewin (1 line, full row, starting at self.maxrows - 4, 0)
+        self.botmorewin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 4, 0)      # row 20
+        self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="BotMore")
         self.botmore_btn.show = False
-        self.botmore_btn.focus = False
-
-        self.displaylines = self.maxrows - 5 - 8
-
-        # list of vectors associated with this group
-        self.vectors = []
-
-        # list of vector states, recorded to check if any changes have occurred
-        self.vectorstates = []
-
-        # list of vector buttons
-        self.vector_btns = []
-
-        # start with vectorname None, a vector to view will be chosen by this screen
-        self.vectorname = None
 
 
-    @property
-    def botvectindex(self):
-        """vector index number of bottom vector being displayed"""
-        return min(self.topvectindex + self.displaylines//2, self.lastvectorindex)
+        self.displaylines = self.maxrows - 5 - 8         ######### delete
+
+        # self.focus will be the name of a vector in focus
+        self.focus = None
+
+        # vectornames to vectors in the current group
+        self.vectors = {}
+        # vectornames to buttons
+        self.vecbuttons = {}             # vectornames are original case
+
+        # vector names to vector states of vectors in the current group
+        self.vectorstates = {}
 
 
-    @property
-    def lastvectorindex(self):
-        "index number of last vector"
-        return len(self.vectors) - 1
-
-
-    @property
-    def focus(self):
-        return self._focus
-
-    @focus.setter
-    def focus(self, value):
-        if self._focus == value:
-            return
-        if not value:
-            self.leave_focus()
-            return
-        #return
-        self._focus = True
-        self.botmore_btn.draw()
-        self.topmore_btn.draw()
-        self.botmorewin.noutrefresh()
+    def vecwinrefresh(self):
+        "Call noutrefresh on more buttons and vector window"
         self.topmorewin.noutrefresh()
-        curses.doupdate()
+        self.window.noutrefresh()
+        self.botmorewin.noutrefresh()
 
 
-    def leave_focus(self):
-        "Equivalent to setting focus False"
-        self._focus = False
-        self.topmore_btn.focus = False
-        self.botmore_btn.focus = False
-        for btn in self.vector_btns:
-            if btn.focus:
-                btn.focus = False
-                btn.draw()
-        self.botmore_btn.draw()
-        self.topmore_btn.draw()
-        self.noutrefresh()
-        curses.doupdate()
+    def botindex(self):
+        "Returns the index of the bottom vector being displayed"
+        # self.topindex is the top vector being displayed
+        bottomidx = self.topindex + (self.vecwinbot-self.vecwintop+1) // 2 - 1
+        # example  0 + (19-8+1)//2 - 1  = 5
+        # example  3 + (19-8+1)//2 - 1  = 8
+        lastidx = len(self.vectors)-1
+        if bottomidx > lastidx:
+            return lastidx
+        return bottomidx
+
+
+    def defocus(self):
+        "Remove focus from all buttons, and re-draw the button which had focus"
+        if self.focus:
+            btn = self.vecbuttons[self.focus]
+            btn.focus = False
+            btn.draw()
+            self.focus = None
+        elif self.topmore_btn.focus:
+            self.topmore_btn.focus = False
+            self.topmore_btn.draw()
+        elif self.botmore_btn.focus:
+            self.botmore_btn.focus = False
+            self.botmore_btn.draw()
 
 
     def set_top_focus(self):
-        if self._focus and self.topmore_btn.focus:
-            # no change
-            return
-        self._focus = True
-        if self.topvectindex:
-            # give top button focus
-            self.topmore_btn.show = True
+        names = list(self.vecbuttons.keys())
+        if self.topmore_btn.show:
             self.topmore_btn.focus = True
-            self.topmore_btn.draw()
-            # ensure vectors do not have focus
-            for btn in self.vector_btns:
-                if btn.focus:
-                    btn.focus = False
-                    btn.draw()
         else:
-            # give first vector focus
-            first = True
-            for btn in self.vector_btns:
-                if first:
-                    btn.focus = True
-                    btn.draw()
-                    first = False
-                elif btn.focus:
-                    btn.focus = False
-                    btn.draw()
-
-        self.botmore_btn.focus = False
-        self.botmore_btn.draw()
-        self.noutrefresh()
-        curses.doupdate()
+            self.focus = names[0]
 
 
     def set_bot_focus(self):
-        if self._focus and self.botmore_btn.focus:
-            # no change
-            return
-        self._focus = True
-        self.topmore_btn.focus = False
-        self.topmore_btn.draw()
+        names = list(self.vecbuttons.keys())
         if self.botmore_btn.show:
             self.botmore_btn.focus = True
-            self.botmore_btn.draw()
-            for btn in self.vector_btns:
-                if btn.focus:
-                    btn.focus = False
-                    btn.draw()
         else:
-            # set the last vector in focus
-            for index, btn in enumerate(self.vector_btns):
-                if index == self.lastvectorindex:
-                    btn.focus = True
-                    btn.draw()
-                elif btn.focus:
-                    btn.focus = False
-                    btn.draw()
-        self.noutrefresh()
-        curses.doupdate()
+            self.focus = names[-1]
 
 
-    def draw(self, devicename, groupname):
+    def draw(self, devicename, groupname, change=False):
 
-        nochange = True  # flag to indicate the window does not need to be redrawn
+        # change is a flag to indicate the window needs to be redrawn
 
         if (groupname != self.groupname) or (devicename != self.devicename):
-            nochange = False
+            change = True
 
         self.devicename = devicename
         self.device = self.client[devicename]
@@ -1914,285 +1869,251 @@ class VectorListWin(ParentScreen):
         vectornames = [vector.name for vector in self.device.values() if vector.group == self.groupname and vector.enable]
         vectornames.sort()
 
-        if nochange:
-            currentnames = [vector.name for vector in self.vectors]
+        if not change:
+            currentnames = list(self.vectors.keys())
             if vectornames != currentnames:
                 # A change has occurred
-                nochange = False
+                change = True
 
-        if nochange:
-            # Check if any vector state has changed
-            newstates = [vector.state.lower() for vector in self.vectors]
-            if self.vectorstates != newstates:
-                # A change has occurred
-                nochange = False
 
-        if nochange:
+        # Check if any vector state has changed
+        oldstates = list(self.vectorstates.values())
+
+        # vectornames to vectors
+        self.vectors = { vectorname:self.device[vectorname] for vectorname in vectornames }
+        # vectornames to states
+        self.vectorstates = { vector.name:vector.state.lower() for vector in self.vectors.values() }
+
+        newstates = list(self.vectorstates.values())
+
+        if oldstates != newstates:
+            # A change has occurred
+            change = True
+
+        if not change:
             # no change, therefore do not draw
             return
 
         # A change to the vectors listed, or to a vector state has occurred
         # proceed to draw the screen
 
-        self.vectors = [self.device[name] for name in vectornames]
-        self.vectorstates = [vector.state.lower() for vector in self.vectors]
-
         self.window.clear()
         self.topmorewin.clear()
         self.botmorewin.clear()
 
-        self.topmore_btn.show = False
+        # Remove current vector buttons
+        self.vecbuttons.clear()
+
+        bottomidx = self.botindex()
+
+        # draw the vectors in the client with this device and group
+
+        linenumber = 0
+        for idx, vectorname in enumerate(self.vectors):
+            if idx < self.topindex:
+                continue
+            if idx > bottomidx:
+                break
+            # shorten the name and set it as a button
+            nm = vectorname[:17] + "..." if len(vectorname) > 20 else vectorname
+            self.vecbuttons[vectorname] = widgets.Button(self.window, nm, linenumber, 1, onclick=vectorname.lower())
+            label = self.vectors[vectorname].label
+            lb = label[:27] + "..." if len(label) > 30 else label
+            self.window.addstr(linenumber, 30, lb)  # the shortenned label
+            lowerstate = self.vectorstates[vectorname].lower()
+            if lowerstate == "idle":
+                self.window.addstr(linenumber, self.maxcols - 20, "  Idle  ", self.consoleclient.color(lowerstate))
+            elif lowerstate == "ok":
+                self.window.addstr(linenumber, self.maxcols - 20, "  OK    ", self.consoleclient.color(lowerstate))
+            elif lowerstate == "busy":
+                self.window.addstr(linenumber, self.maxcols - 20, "  Busy  ", self.consoleclient.color(lowerstate))
+            elif lowerstate == "alert":
+                self.window.addstr(linenumber, self.maxcols - 20, "  Alert ", self.consoleclient.color(lowerstate))
+            linenumber += 2  # two lines per button
+
+        # self.vecbuttons is a vectorname to button dictionary, but only for buttons displayed
+
+        # Note: initially all vector buttons are created with focus False
+        # self.focus has the name of the vector which should be in focus
+        # so if it is set, set the appropriate button focus
+
+        if self.focus:
+            if self.focus in self.vecbuttons:
+                self.vecbuttons[self.focus].focus = True
+            else:
+                self.focus = None
+
+        # if self.topindex is not zero, then draw top more button
+        if self.topindex:
+            self.topmore_btn.show = True
+        else:
+            self.topmore_btn.show = False
         self.topmore_btn.draw()
 
-        self.topvectindex = 0
+        # draw vector buttons
+        for vecbutton in self.vecbuttons.values():
+            vecbutton.draw()
 
-        try:
-
-            # draw the vectors in the client with this device and group
-
-            # pad may need increasing if extra members have been added
-            padlines = max(self.padlines, len(self.vectors)*2)
-            if padlines != self.padlines:
-                self.padlines = padlines
-                self.window.resize(self.padlines, self.maxcols)
-
-            # so draw the vector widget, name, label, state, with names as buttons
-            self.vector_btns = []
-
-            line = 0
-
-            for v in self.vectors:
-                # shorten the name and set it as a button
-                nm = v.name[:17] + "..." if len(v.name) > 20 else v.name
-                self.vector_btns.append( widgets.Button(self.window, nm, line, 1) )  # the name as a button
-                self.vector_btns[-1].draw()
-
-                lb = v.label[:27] + "..." if len(v.label) > 30 else v.label
-                self.window.addstr(line, 30, lb)  # the shortenned label
-                lowerstate = v.state.lower()
-                if lowerstate == "idle":
-                    self.window.addstr(line, self.maxcols - 20, "  Idle  ", self.consoleclient.color(v.state))
-                elif lowerstate == "ok":
-                    self.window.addstr(line, self.maxcols - 20, "  OK    ", self.consoleclient.color(v.state))
-                elif lowerstate == "busy":
-                    self.window.addstr(line, self.maxcols - 20, "  Busy  ", self.consoleclient.color(v.state))
-                elif lowerstate == "alert":
-                    self.window.addstr(line, self.maxcols - 20, "  Alert ", self.consoleclient.color(v.state))
-                line += 2
-
-
-            if self.botvectindex >= self.lastvectorindex:
-                self.botmore_btn.show = False
-            else:
-                self.botmore_btn.show = True
-            self.botmore_btn.draw()
-
-        except Exception:
-            traceback.print_exc(file=sys.stderr)
-            raise
-
-
-    def noutrefresh(self):
-
-        # The refresh() and noutrefresh() methods of a pad require 6 arguments
-        # to specify the part of the pad to be displayed and the location on
-        # the screen to be used for the display. The arguments are
-        # pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol;
-        # the p arguments refer to the upper left corner of the pad region to be displayed and the
-        # s arguments define a clipping box on the screen within which the pad region is to be displayed.
-
-        coords = (self.topvectindex*2, 0, 8, 1, self.displaylines + 8, self.maxcols-2)
-                  # pad row, pad col, win start row, win start col, win end row, win end col
-
-        self.topmorewin.noutrefresh()
-        self.window.overwrite(self.stdscr, *coords)
-        self.window.noutrefresh(*coords)
-        self.botmorewin.noutrefresh()
-
-
-    def upline(self):
-        if not self.topvectindex:
-            # already at top
-            return
-        self.topvectindex -= 1
-        if not self.topvectindex:
-            # at the top vectors
-            self.topmore_btn.show = False
-            self.topmore_btn.draw()
-            btn = self.vector_btns[0]
-            btn.focus = True
-            btn.draw()
-        if (not self.botmore_btn.show) and (self.botvectindex < self.lastvectorindex):
+        # bottomidx is the index of the bottom vector being displayed
+        if bottomidx < len(self.vectors) -1:
             self.botmore_btn.show = True
-            self.botmore_btn.draw()
-        self.noutrefresh()
-        curses.doupdate()
-
-
-    def downline(self):
-        if self.botvectindex >= self.lastvectorindex:
-            # already at the bottom
-            return
-        self.topvectindex += 1
-        if not self.topmore_btn.show:
-            self.topmore_btn.show = True
-            self.topmore_btn.draw()
-        if self.botvectindex >= self.lastvectorindex:
+        else:
             self.botmore_btn.show = False
-            self.botmore_btn.draw()
-            btn = self.vector_btns[-1]
-            btn.focus = True
-            btn.draw()
-        self.noutrefresh()
-        curses.doupdate()
+        self.botmore_btn.draw()
 
 
-    async def input(self):
-        "Get key pressed while this object has focus"
-        self.stdscr.nodelay(True)
-        while True:
-            key = await self.keyinput()
-            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+    def topmorechosen(self):
+        "Update when topmore button pressed"
+        if not self.topmore_btn.focus:
+            return
+        if not self.topindex:    # self.topindex cannot be zero
+            return
+
+        # vectors is a dictionary of vectornames to vectors
+        # names is a list of all vector names
+        names = list(self.vectors.keys())
+
+        self.topindex -= 1
+
+        if not self.topindex:
+            # at the top device
+            self.topmore_btn.focus = False
+            self.focus = names[0]
+
+        # draw will sort out top and bottom
+        # more buttons
+        self.draw(self.devicename, self.groupname, change=True)
+        self.vecwinrefresh()
+
+
+    def botmorechosen(self):
+        "Update when botmore button pressed"
+        if not self.botmore_btn.focus:
+            return
+
+        # the aim is to increment self.topindex
+        # but doing so may display last bottom vector
+        # which makes botmore button dissapear
+
+        # vectors is a dictionary of vectornames to vectors
+        # names is a list of all vector names
+        names = list(self.vectors.keys())
+
+        new_top_idx = self.topindex + 1
+
+        new_bot_idx = new_top_idx + (self.vecwinbot-self.vecwintop) // 2 - 1
+        # lastidx is the index of the last vector
+        lastidx = len(names)-1
+
+        if new_bot_idx > lastidx:
+            # no point incrementing topindex as it does not display any new vector
+            self.botmore_btn.show = False
+            self.focus = names[-1]        # set focus to name of last device
+        else:
+            # so increment topindex
+            self.topindex = new_top_idx
+            if new_bot_idx == lastidx:
+                # cannot increment further
+                self.botmore_btn.show = False
+                self.focus = names[-1]
+
+        self.draw(self.devicename, self.groupname, change=True)
+        self.vecwinrefresh()
+
+
+    def setkey(self, key):
+
+        names = list(self.vectors.keys())
+        lastidx = len(names)-1            # index of last vector
+
+        displayedbtns = list(self.vecbuttons.values())
+        displayednames = list(self.vecbuttons.keys())
+        bottomidx = self.botindex()       # index of last displayed vector
+
+        if key == 10:
+            if self.topmore_btn.focus:
+                self.topmorechosen()
+                curses.doupdate()
+            elif self.botmore_btn.focus:
+                self.botmorechosen()
+                curses.doupdate()
+            elif self.focus:
+                return self.focus.lower()
+
+        elif key in (32, 9, 261, 338, 258):
+            # go to the next
+            if self.botmore_btn.focus:
+                self.focus = None
+                self.draw(self.devicename, self.groupname, change=True)
+                self.vecwinrefresh()
+                curses.doupdate()
                 return key
-
-            if key == 10:
-                if self.topmore_btn.focus:
-                    self.upline()
-                elif self.botmore_btn.focus:
-                    self.downline()
-                else:
-                    # find vector button in focus
-                    btnindex = 0
-                    for index, btn in enumerate(self.vector_btns):
-                        if btn.focus:
-                            btnindex = index
-                            break
-                    else:
-                        # no vector in focus
-                        continue
-                    self.vectorname = self.vectors[btnindex].name
-                    return 10
-
-            elif key in (32, 9, 261, 338, 258):
-                # go to the next
-                if self.botmore_btn.focus:
-                    self.focus = False
-                    return key
-                elif self.topmore_btn.focus:
-                    # set focus on top vector
-                    self.topmore_btn.focus = False
-                    btn = self.vector_btns[self.topvectindex]
-                    btn.focus = True
-                    self.topmore_btn.draw()
-                    btn.draw()
-                    self.noutrefresh()
+            elif self.topmore_btn.focus:
+                self.topmore_btn.focus = False
+                self.focus = displayednames[0]
+            else:
+                # one of the devices has focus
+                try:
+                    indx = names.index(self.focus)
+                except ValueError:
+                    return
+                # indx here is the index on the list of all devices, not just those displayed
+                if indx == lastidx:
+                    # very last device, the botmore_btn should not be shown
+                    self.focus = None
+                    self.draw(self.devicename, self.groupname, change=True)
+                    self.vecwinrefresh()
                     curses.doupdate()
-                elif key in (338, 258):   # 338 page down, 258 down arrow
-                    # find vector button in focus
-                    btnindex = 0
-                    for index, btn in enumerate(self.vector_btns):
-                        if btn.focus:
-                            btnindex = index
-                            break
-                    if btnindex >= self.botvectindex:
-                        if not self.botmore_btn.show:
-                            # At the last vector
-                            self.focus = False
-                            return key
-                        else:
-                            self.vector_btns[btnindex].focus = False
-                            self.vector_btns[btnindex+1].focus = True
-                            self.vector_btns[btnindex].draw()
-                            self.vector_btns[btnindex+1].draw()
-                            self.downline()
-                    else:
-                        self.vector_btns[btnindex].focus = False
-                        self.vector_btns[btnindex+1].focus = True
-                        self.vector_btns[btnindex].draw()
-                        self.vector_btns[btnindex+1].draw()
-                        self.noutrefresh()
-                        curses.doupdate()
-                else:
-                    # find vector button in focus
-                    btnindex = 0
-                    for index, btn in enumerate(self.vector_btns):
-                        if btn.focus:
-                            btnindex = index
-                            break
-                    if btnindex >= self.botvectindex:
-                        if self.botmore_btn.show:
-                            self.set_bot_focus()
-                        else:
-                            # At the last vector
-                            self.focus = False
-                            return key
-                    else:
-                        self.vector_btns[btnindex].focus = False
-                        self.vector_btns[btnindex+1].focus = True
-                        self.vector_btns[btnindex].draw()
-                        self.vector_btns[btnindex+1].draw()
-                        self.noutrefresh()
-                        curses.doupdate()
-
-
-            elif key in (353, 260, 339, 259):
-                # go to the previous
-                if self.topmore_btn.focus:
-                    self.focus = False
                     return key
-                elif self.botmore_btn.focus:
-                    # set focus on bottom vector
-                    self.botmore_btn.focus = False
-                    btn = self.vector_btns[self.botvectindex]
-                    btn.focus = True
-                    self.botmore_btn.draw()
-                    btn.draw()
-                    self.noutrefresh()
-                    curses.doupdate()
-                elif key in (339, 259):   # 339 page up, 259 up arrow
-                    # find vector button in focus
-                    btnindex = 0
-                    for index, btn in enumerate(self.vector_btns):
-                        if btn.focus:
-                            btnindex = index
-                            break
-                    if not btnindex:
-                        # At the top vector
-                        self.focus = False
-                        return key
-                    if btnindex == self.topvectindex:
-                        self.vector_btns[btnindex].focus = False
-                        self.vector_btns[btnindex-1].focus = True
-                        self.vector_btns[btnindex].draw()
-                        self.vector_btns[btnindex-1].draw()
-                        self.upline()
+                elif indx == bottomidx:
+                    # last displayed device
+                    if key in (338, 258):      # 338 page down, 258 down arrow
+                        # display next device
+                        self.topindex += 1
+                        self.focus = names[indx+1]
                     else:
-                        self.vector_btns[btnindex].focus = False
-                        self.vector_btns[btnindex-1].focus = True
-                        self.vector_btns[btnindex].draw()
-                        self.vector_btns[btnindex-1].draw()
-                        self.noutrefresh()
-                        curses.doupdate()
+                        # last device on display
+                        self.focus = None
+                        self.botmore_btn.focus = True
                 else:
-                    # find vector button in focus
-                    btnindex = 0
-                    for index, btn in enumerate(self.vector_btns):
-                        if btn.focus:
-                            btnindex = index
-                            break
-                    if not btnindex:
-                        # At the top vector
-                        self.focus = False
-                        return key
-                    if btnindex == self.topvectindex:
-                        self.set_top_focus()
+                    self.focus = names[indx+1]
+
+
+        elif key in (353, 260, 339, 259):  # 353 shift tab, 260 left arrow, 339 page up, 259 up arrow
+            # go to previous button
+            if self.botmore_btn.focus:
+                self.botmore_btn.focus = False
+                self.focus = displayednames[-1]
+            elif self.topmore_btn.focus:
+                self.topmore_btn.focus = False
+                self.draw(self.devicename, self.groupname, change=True)
+                self.vecwinrefresh()
+                curses.doupdate()
+                return key
+            elif self.focus == names[0]:
+                self.focus = None
+                self.draw(self.devicename, self.groupname, change=True)
+                self.vecwinrefresh()
+                curses.doupdate()
+                return key
+            else:
+                try:
+                    indx = names.index(self.focus)
+                except ValueError:
+                    return
+                if indx == self.topindex:
+                    if key in (339, 259): # 339 page up, 259 up arrow
+                        self.topindex -= 1
+                        self.focus = names[indx-1]
                     else:
-                        self.vector_btns[btnindex].focus = False
-                        self.vector_btns[btnindex-1].focus = True
-                        self.vector_btns[btnindex].draw()
-                        self.vector_btns[btnindex-1].draw()
-                        self.noutrefresh()
-                        curses.doupdate()
+                        self.focus = None
+                        self.topmore_btn.focus = True
+                else:
+                    self.focus = names[indx-1]
+
+        self.draw(self.devicename, self.groupname, change=True)
+        self.vecwinrefresh()
+        curses.doupdate()
 
 
 
