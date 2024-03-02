@@ -1275,13 +1275,6 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6)
 
 
-
-    def close(self, value):
-        self._close = value
-        self.groupwin.close(value)
-        self.vectorswin.close(value)
-
-
     def show(self):
         "Displays device"
 
