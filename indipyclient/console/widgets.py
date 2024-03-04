@@ -113,28 +113,39 @@ class Button:
             return
         self._focus = value
 
+    def text(self):
+        "pad out the text to be drawn"
+        if len(self.btntext) == self.btnlen-2:
+            return self.btntext
+        spaces = self.btnlen-2-len(self.btntext)
+        front = spaces//2
+        back = spaces-front
+        return " "*front + self.btntext + " "*back
+
+
+
     def draw(self):
         if not self._show:
             self.window.addstr( self.row, self.col, " "*self.btnlen)
             return
         if self._focus:
-            self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_REVERSE)
+            self.window.addstr( self.row, self.col, f"[{self.text()}]", curses.A_REVERSE)
         elif self.bold:
-            self.window.addstr( self.row, self.col, "[" + self.btntext + "]", curses.A_BOLD)
+            self.window.addstr( self.row, self.col, f"[{self.text()}]", curses.A_BOLD)
         else:
-            self.window.addstr( self.row, self.col, "[" + self.btntext + "]")
+            self.window.addstr( self.row, self.col, f"[{self.text()}]")
 
     def alert(self):
         "draw the button with a red background and INVALID Message"
         if not self._show:
             return
-        self.window.addstr( self.row, self.col, "[" + self.btntext + "] INVALID!", curses.color_pair(3))
+        self.window.addstr( self.row, self.col, f"[{self.text()}] INVALID!", curses.color_pair(3))
 
     def ok(self):
         "draw the button with a green background and OK Message"
         if not self._show:
             return
-        self.window.addstr( self.row, self.col, "[" + self.btntext + "] OK!", curses.color_pair(1))
+        self.window.addstr( self.row, self.col, f"[{self.text()}] OK!", curses.color_pair(1))
 
 
 class Text:

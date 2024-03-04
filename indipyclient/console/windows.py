@@ -1252,7 +1252,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
         # groups list
         try:
-            self.groupwin = GroupButtons(self.stdscr, self.consoleclient, self.devicename)         # row 4
+            self.groupwin = GroupWin(self.stdscr, self.consoleclient, self.devicename)         # row 4
             # this creates its own window (1 line, full row, starting at 4,0)
 
             # window showing the vectors of the active group
@@ -1348,7 +1348,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
                     return key
 
                 if self.focus == "Groups":
-                    # focus has been given to the GroupButtons
+                    # focus has been given to the GroupWin
                     result = self.groupwin.setkey(key)
                     if result == "NewGroup":
                         # must update the screen with a new group
@@ -1402,7 +1402,8 @@ class ChooseVectorScreen(ConsoleClientScreen):
                     self.vectorswin.defocus()
                     self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 elif self.focus == "Groups":
-                    self.groupwin.focus = False
+                    self.groupwin.defocus()
+                    self.groupwin.draw(self.devicename)
                 elif self.focus == "Devices":
                     self.devices_btn.focus = False
                 elif self.focus == "Messages":
@@ -1416,7 +1417,8 @@ class ChooseVectorScreen(ConsoleClientScreen):
                         self.vectorswin.set_bot_focus()
                     self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 elif newfocus == "Groups":
-                    self.groupwin.focus = True
+                    self.groupwin.set_left_focus()
+                    self.groupwin.draw(self.devicename)
                 elif newfocus == "Devices":
                     self.devices_btn.focus = True
                 elif newfocus == "Messages":
@@ -1442,26 +1444,98 @@ class ChooseVectorScreen(ConsoleClientScreen):
             traceback.print_exc(file=sys.stderr)
             return "Quit"
 
-# The following two windows, GroupButtons and VectorListWin are sub windows of ChooseVectorScreen
 
-class GroupButtons(ParentScreen):
+# This class GroupBtns defines the position of group buttons on the row
+
+class GroupBtns:
+
+    def __init__(self, device, maxcols):
+        "get the groups this device contains, use a set to avoid duplicates"
+        self.maxcols = maxcols
+
+        groupset = {vector.group for vector in device.values() if vector.enable}
+        if not groupset:
+            groupset = set("default")
+
+        # self.groups is a list of group names
+        self.groups = sorted(list(groupset))
+
+        # self.positions is a list of tuples (col, btnlen)
+        self.positions = []
+
+        # If there is only one group, text is displayed rather than buttons
+        if len(self.groups) == 1:
+            self.text = textwrap.shorten(f" Groups : {self.groups[0]}", width=self.maxcols-6, placeholder="...")
+            self.scroll = False
+            return
+        elif len(self.groups) == 2:
+            btnlen = self.maxwidth()
+            self.text = "Groups : "
+            self.positions = [(9, btnlen), (10+btnlen, btnlen)]
+            self.scroll = False
+            return
+
+        btnlen = self.maxwidth()
+        self.text = ""
+        self.positions = [(9, btnlen)]
+        for grp in self.groups:
+            prevcol = self.positions[-1][0]
+            nextcol = prevcol + btnlen + 1
+            if nextcol >= self.maxcols - 9 - btnlen:
+                break
+            self.positions.append((nextcol, btnlen))
+
+        if len(self.groups) <= len(self.positions):
+            # if all the groups can fit on the row, there is no scrolling
+            self.scroll = False
+        else:
+            self.scroll = True
+
+    def maxwidth(self):
+        "calculate width of buttons"
+        # =<[prev]=[btn]=[btn]=....               =[next]>=
+        #     9                                      8
+        btnspace = self.maxcols - 9 - 8                           # 80-9-8 is 63
+        # assume three buttons
+        maxbtn = btnspace//3 - 3  # -3 for brackets and space     # 21-3 = 18
+        maxtext = max(len(grp) for grp in self.groups)
+        # choose whichever is smaller
+        if maxbtn >= maxtext:
+            width = maxtext + 2     # 2 for the [] brackets
+        else:
+            width = maxbtn + 2
+        return width
+
+
+
+# The following two windows, GroupWin and VectorListWin are sub windows of ChooseVectorScreen
+
+class GroupWin(ParentScreen):
 
     def __init__(self, stdscr, consoleclient, devicename):
         super().__init__(stdscr, consoleclient)
 
         # window (1 line, full row, starting at 4,0)
-        self.window = self.stdscr.subwin(1, self.maxcols, 4, 0)
+        self.window = self.stdscr.subwin(1, self.maxcols, 4, 0)   # this window on row 4
 
         self.devicename = devicename
+        device = self.client[self.devicename]
 
-        self.groups = []          # list of group names
-        self.groupcols = {}       # dictionary of groupname to column number
+        # grps is a class that calculates button positions along the row
+        self.grps = GroupBtns(device, self.maxcols)
+
+        # group names to buttons
+        self.grpbuttons = {}             # group names are original case
+
+        # this is set to the group name in focus, if any
+        self.focus = None
+
         # active is the name of the group currently being shown
         self.active = None
-        # this is True, if this widget is in focus
-        self._focus = False
-        # this is set to the group in focus, if any
-        self.groupfocus = None
+
+        self.groupcols = {}       # dictionary of groupname to column number
+
+        self.leftidx = 0          # index of leftmost button
 
         # the horizontal display of group buttons may not hold all the buttons
         # give the index of self.groups from and to
@@ -1472,82 +1546,96 @@ class GroupButtons(ParentScreen):
         self.prevfocus = False
 
 
+    def groups(self):
+        "self.groups() returns a list of group names"
+        return self.grps.groups
+
     def noutrefresh(self):
+        "Call noutrefresh on group window"
         self.window.noutrefresh()
 
+    def defocus(self):
+        "Remove focus from all buttons, and re-draw the button which had focus"
+        if self.focus:
+            btn = self.grpbuttons[self.focus]
+            btn.focus = False
+            btn.draw()
+            self.focus = None
+        elif self.leftmore_btn.focus:
+            self.leftmore_btn.focus = False
+            self.leftmore_btn.draw()
+        elif self.rightmore_btn.focus:
+            self.rightmore_btn.focus = False
+            self.rightmore_btn.draw()
 
-    @property
-    def focus(self):
-        return self._focus
-
-    @focus.setter
-    def focus(self, value):
-        if self._focus == value:
-            return
-        self._focus = value
-        if value:
-            self.groupfocus = self.groups[self.fromgroup]
+    def set_left_focus(self):
+        names = list(self.grpbuttons.keys())
+        if self.leftmore_btn.show:
+            self.leftmore_btn.focus = True
         else:
-            self.groupfocus = None
-            self.nextfocus = False
-            self.prevfocus = False
+            self.focus = names[0]
 
+    def set_right_focus(self):
+        names = list(self.grpbuttons.keys())
+        if self.rightmore_btn.show:
+            self.rightmore_btn.focus = True
+        else:
+            self.focus = names[-1]
 
-    def draw(self, devicename=None):
-        "Draw the line of groups"
-        if devicename:
-            self.devicename = devicename
+    def draw(self, devicename):
+        "Draw the line of group buttons"
+
+        self.devicename = devicename
         device = self.client[self.devicename]
-        # get the groups this device contains, use a set to avoid duplicates
-        groupset = {vector.group for vector in device.values() if vector.enable}
-        if not groupset:
-            groupset = set("default")
 
-        # self.groups is a list of group names
-        self.groups = sorted(list(groupset))
-
-        self.groupcols.clear()
-        if self.groupfocus:
-            if self.groupfocus not in self.groups:
-                self.groupfocus = None
-                self.nextfocus = False
-                self.prevfocus = False
-        if self.active is None:
-            self.active = self.groups[0]
-        elif self.active not in self.groups:
-            self.active = self.groups[0]
+        # grps is a class that calculates button positions along the row
+        self.grps = GroupBtns(device, self.maxcols)
 
         # clear the line
         self.window.clear()
 
-        # draw 'Prev' button if necessary
-        if self.fromgroup:
-            self.drawprev(self.prevfocus)
-            col = 11
-        else:
-            col = 2
+        groups = self.grps.groups
 
-        for indx, group in enumerate(self.groups):
-            if indx < self.fromgroup:
-                continue
-            self.groupcols[group] = col
+        self.grpbuttons = {}
 
-            # is this the last?
-            if group == self.groups[-1]:
-                self.togroup = indx
-                if self.nextfocus:
-                    self.nextfocus = False
-                    self.groupfocus = group
+        if len(groups) == 1:
+            self.window.addstr(0, 0, self.grps.text, curses.A_BOLD)
+            # no buttons
+            return
+        elif len(groups) == 2:
+            self.window.addstr(0, 0, self.grps.text)
 
-            col = self.drawgroup(group)
+        # create buttons
 
-            # If not the last, check if another can be drawn
-            # otherwise print the 'Next' button
-            if (group != self.groups[-1]) and (col+30 >= self.maxcols):############################
-                self.nextcol = col
-                self.drawnext(self.nextfocus)
-                self.togroup = indx
+        self.rightmore_btn = widgets.Button(self.window, "next", 0, self.maxcols-8, onclick="Next")
+        self.rightmore_btn.show = False
+
+        self.leftmore_btn = widgets.Button(self.window, "prev", 0, 2, onclick="Previous")
+        self.leftmore_btn.show = False
+
+
+        buttonmaxidx = len(self.grps.positions)-1
+        btnidx = 0
+        for idx in range(self.leftidx, len(groups)):
+            if idx > buttonmaxidx:
+                self.rightmore_btn.show = True
                 break
+            col,btnlen = self.grps.positions[btnidx]
+            btnidx += 1
+            groupname = groups[idx]
+            self.grpbuttons[groupname] = widgets.Button(self.window, groupname, 0, col, btnlen, onclick=groupname.lower())
+
+        for btn in self.grpbuttons.values():
+            btn.draw()
+
+        if self.grps.scroll:
+            if self.leftidx:
+                self.leftmore_btn.show = True
+                self.leftmore_btn.draw()
+            if self.rightmore_btn.show:
+                self.rightmore_btn.draw()
+
+
 
 
     def drawgroup(self, group):
@@ -1555,14 +1643,14 @@ class GroupButtons(ParentScreen):
         grouptoshow = "["+group+"]"
         col = self.groupcols[group]
         if group == self.active:
-            if self.groupfocus == group:
+            if self.focus == group:
                 # group in focus
                 self.window.addstr(0, col, grouptoshow, curses.A_REVERSE)
             else:
                 # active item
                 self.window.addstr(0, col, grouptoshow, curses.A_BOLD)
         else:
-            if self.groupfocus == group:
+            if self.focus == group:
                 # group in focus
                 self.window.addstr(0, col, grouptoshow, curses.A_REVERSE)
             else:
@@ -1577,7 +1665,7 @@ class GroupButtons(ParentScreen):
             # set focus on prev button
             self.prevfocus = True
             # remove focus from group
-            self.groupfocus = None
+            self.focus = None
         else:
             self.window.addstr(0, 2, "<<Prev]")
             self.prevfocus = False
@@ -1586,7 +1674,7 @@ class GroupButtons(ParentScreen):
     def drawnext(self, focus=False):
         if focus:
             # remove focus from group
-            self.groupfocus = None
+            self.focus = None
             self.drawgroup(self.groups[self.togroup])
             # set focus on next button
             self.nextfocus = True
@@ -1605,7 +1693,7 @@ class GroupButtons(ParentScreen):
                 if not self.fromgroup:
                     # self.fromgroup is zero, so no prev button
                     self.prevfocus = False
-                    self.groupfocus = self.groups[0]
+                    self.focus = self.groups[0]
                 self.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
@@ -1625,11 +1713,11 @@ class GroupButtons(ParentScreen):
 
             # set this groupfocus button as the active button,
             # and return the key
-            if self.active == self.groupfocus:
+            if self.active == self.focus:
                 # no change
                 return
             # set a change of the active group
-            self.active = self.groupfocus
+            self.active = self.focus
             return "NewGroup"
 
         if key in (32, 9, 261):   # space, tab, right arrow
@@ -1637,18 +1725,18 @@ class GroupButtons(ParentScreen):
                 # remove focus from prev button
                 self.drawprev()
                 # set focus on from button
-                self.groupfocus = self.groups[self.fromgroup]
-                self.drawgroup(self.groupfocus)
+                self.focus = self.groups[self.fromgroup]
+                self.drawgroup(self.focus)
                 self.window.noutrefresh()
                 curses.doupdate()
                 return
             if self.nextfocus:
                 return 258   # treat as 258 down arrow key
             # go to the next group
-            if self.groupfocus == self.groups[-1]:
+            if self.focus == self.groups[-1]:
                 # At the last group, cannot go further
                 return key
-            indx = self.groups.index(self.groupfocus)
+            indx = self.groups.index(self.focus)
             if self.togroup and (indx+1 > self.togroup):
                 # next choice is beyond togroup
                 if key == 261:   # right arrow
@@ -1657,7 +1745,7 @@ class GroupButtons(ParentScreen):
                     else:
                         self.fromgroup = 2
                     # get the new group in focus
-                    self.groupfocus = self.groups[indx+1]
+                    self.focus = self.groups[indx+1]
                     self.draw()
                     self.window.noutrefresh()
                     curses.doupdate()
@@ -1669,7 +1757,7 @@ class GroupButtons(ParentScreen):
                     curses.doupdate()
                     return
             # get the new group in focus
-            self.groupfocus = self.groups[indx+1]
+            self.focus = self.groups[indx+1]
             self.draw()
             self.window.noutrefresh()
             curses.doupdate()
@@ -1681,7 +1769,7 @@ class GroupButtons(ParentScreen):
                 return 258   # treat as 258 down arrow key
             if self.nextfocus:
                 # group to the left of the 'Next' button, now has focus
-                self.groupfocus = self.groups[self.togroup]
+                self.focus = self.groups[self.togroup]
                 self.drawgroup(self.groups[self.togroup])
                 # remove focus from next button
                 self.drawnext(focus=False)
@@ -1689,7 +1777,7 @@ class GroupButtons(ParentScreen):
                 curses.doupdate()
                 return
             # go to the previous group
-            indx = self.groups.index(self.groupfocus)
+            indx = self.groups.index(self.focus)
             if not indx:
                 # indx zero means first group
                 return key
@@ -1699,10 +1787,10 @@ class GroupButtons(ParentScreen):
                     if not self.fromgroup:
                         # self.fromgroup is zero, so no prev button
                         self.prevfocus = False
-                        self.groupfocus = self.groups[0]
+                        self.focus = self.groups[0]
                     else:
                         # get the new group in focus
-                        self.groupfocus = self.groups[indx-1]
+                        self.focus = self.groups[indx-1]
                     self.draw()
                     self.window.noutrefresh()
                     curses.doupdate()
@@ -1710,8 +1798,8 @@ class GroupButtons(ParentScreen):
                 else:
                     # the button to the left must be the 'Prev' button
                     # remove focus from current button
-                    currentgroup = self.groupfocus
-                    self.groupfocus = None
+                    currentgroup = self.focus
+                    self.focus = None
                     self.drawgroup(currentgroup)
                     # set Prev button as the focus
                     self.drawprev(focus=True)
@@ -1719,7 +1807,7 @@ class GroupButtons(ParentScreen):
                     curses.doupdate()
                     return
 
-            self.groupfocus = self.groups[indx-1]
+            self.focus = self.groups[indx-1]
             self.draw()
             self.window.noutrefresh()
             curses.doupdate()
