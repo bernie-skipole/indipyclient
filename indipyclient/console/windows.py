@@ -1385,7 +1385,10 @@ class ChooseVectorScreen(ConsoleClientScreen):
                 if key in (32, 9, 261, 338, 258):
                     # go to the next widget
                     if self.focus == "Quit":
-                        newfocus = "Groups"
+                        if len(self.groupwin.groups()) == 1:
+                            newfocus = "Vectors"
+                        else:
+                            newfocus = "Groups"
                     else:
                         indx = self.screenparts.index(self.focus)
                         newfocus = self.screenparts[indx+1]
@@ -1393,6 +1396,11 @@ class ChooseVectorScreen(ConsoleClientScreen):
                     # go to previous button
                     if self.focus == "Groups":
                         newfocus = "Quit"
+                    elif self.focus == "Vectors":
+                        if len(self.groupwin.groups()) == 1:
+                            newfocus = "Quit"
+                        else:
+                            newfocus = "Groups"
                     else:
                         indx = self.screenparts.index(self.focus)
                         newfocus = self.screenparts[indx-1]
@@ -1557,6 +1565,8 @@ class GroupWin(ParentScreen):
 
     def defocus(self):
         "Remove focus from all buttons, and re-draw the button which had focus"
+        if not self.grpbuttons:
+            return
         if self.focus:
             btn = self.grpbuttons[self.focus]
             btn.focus = False
@@ -1574,6 +1584,8 @@ class GroupWin(ParentScreen):
     def set_left_focus(self):
         """Sets left, right, focus flags but does not draw
            or set button values"""
+        if not self.grpbuttons:
+            return
         names = list(self.grpbuttons.keys())
         if len(names) == 1:
             # no focus with only one group
@@ -1588,6 +1600,8 @@ class GroupWin(ParentScreen):
     def set_right_focus(self):
         """Sets left, right, focus flags but does not draw
            or set button values"""
+        if not self.grpbuttons:
+            return
         names = list(self.grpbuttons.keys())
         if len(names) == 1:
             # no focus with only one group
@@ -1683,6 +1697,8 @@ class GroupWin(ParentScreen):
 
     def has_focus(self):
         "Returns True if any button has focus"
+        if not self.grpbuttons:
+            return False
         if self.focus or self.leftfocus or self.rightfocus:
             return True
         else:
