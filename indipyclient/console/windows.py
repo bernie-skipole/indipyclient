@@ -1353,6 +1353,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
                     if result == "NewGroup":
                         # must update the screen with a new group
                         self.show()
+                        continue
                     if not result:
                         continue
                     key = result
@@ -1403,7 +1404,6 @@ class ChooseVectorScreen(ConsoleClientScreen):
                     self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 elif self.focus == "Groups":
                     self.groupwin.defocus()
-                    self.groupwin.draw(self.devicename)
                 elif self.focus == "Devices":
                     self.devices_btn.focus = False
                 elif self.focus == "Messages":
@@ -1418,7 +1418,6 @@ class ChooseVectorScreen(ConsoleClientScreen):
                     self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 elif newfocus == "Groups":
                     self.groupwin.set_left_focus()
-                    self.groupwin.draw(self.devicename)
                 elif newfocus == "Devices":
                     self.devices_btn.focus = True
                 elif newfocus == "Messages":
@@ -1512,7 +1511,7 @@ class GroupBtns:
 
 class GroupWin(ParentScreen):
 
-    def __init__(self, stdscr, consoleclient, devicename):
+    def __init__(self, stdscr, consoleclient, devicename, active=None):
         super().__init__(stdscr, consoleclient)
 
         # window (1 line, full row, starting at 4,0)
@@ -1520,6 +1519,9 @@ class GroupWin(ParentScreen):
 
         self.devicename = devicename
         device = self.client[self.devicename]
+
+        # active is the name of the group currently being shown
+        self.active = active
 
         # grps is a class that calculates button positions along the row
         self.grps = GroupBtns(device, self.maxcols)
@@ -1529,9 +1531,8 @@ class GroupWin(ParentScreen):
 
         # this is set to the group name in focus, if any
         self.focus = None
-
-        # active is the name of the group currently being shown
-        self.active = None
+        self.rightfocus = False  # True if rightmore has focus
+        self.leftfocus = False   # True if leftmore has focus
 
         self.groupcols = {}       # dictionary of groupname to column number
 
@@ -1564,28 +1565,45 @@ class GroupWin(ParentScreen):
         elif self.leftmore_btn.focus:
             self.leftmore_btn.focus = False
             self.leftmore_btn.draw()
+            self.leftfocus = False
         elif self.rightmore_btn.focus:
             self.rightmore_btn.focus = False
             self.rightmore_btn.draw()
+            self.rightfocus = False
 
     def set_left_focus(self):
+        """Sets left, right, focus flags but does not draw
+           or set button values"""
         names = list(self.grpbuttons.keys())
+        if len(names) == 1:
+            # no focus with only one group
+            return
         if self.leftmore_btn.show:
-            self.leftmore_btn.focus = True
+            self.leftfocus = True
+            self.focus = None
         else:
             self.focus = names[0]
+        self.rightfocus = False
 
     def set_right_focus(self):
+        """Sets left, right, focus flags but does not draw
+           or set button values"""
         names = list(self.grpbuttons.keys())
+        if len(names) == 1:
+            # no focus with only one group
+            return
         if self.rightmore_btn.show:
-            self.rightmore_btn.focus = True
+            self.rightfocus = True
+            self.focus = None
         else:
             self.focus = names[-1]
+        self.leftfocus = False
 
-    def draw(self, devicename):
+
+    def draw(self, devicename=None):
         "Draw the line of group buttons"
-
-        self.devicename = devicename
+        if devicename:
+            self.devicename = devicename
         device = self.client[self.devicename]
 
         # grps is a class that calculates button positions along the row
@@ -1594,16 +1612,25 @@ class GroupWin(ParentScreen):
         # clear the line
         self.window.clear()
 
+        # groups is a list of group names
         groups = self.grps.groups
+
+        if not self.active in groups:
+            self.active = groups[0]
 
         self.grpbuttons = {}
 
         if len(groups) == 1:
             self.window.addstr(0, 0, self.grps.text, curses.A_BOLD)
+            self.focus = None
+            self.rightfocus = False
+            self.leftfocus = False
             # no buttons
             return
         elif len(groups) == 2:
             self.window.addstr(0, 0, self.grps.text)
+            self.rightfocus = False
+            self.leftfocus = False
 
         # create buttons
 
@@ -1617,13 +1644,23 @@ class GroupWin(ParentScreen):
         buttonmaxidx = len(self.grps.positions)-1
         btnidx = 0
         for idx in range(self.leftidx, len(groups)):
-            if idx > buttonmaxidx:
+            if btnidx > buttonmaxidx:
                 self.rightmore_btn.show = True
+                if self.rightfocus:
+                    self.rightmore_btn.focus = True
                 break
             col,btnlen = self.grps.positions[btnidx]
             btnidx += 1
             groupname = groups[idx]
             self.grpbuttons[groupname] = widgets.Button(self.window, groupname, 0, col, btnlen, onclick=groupname.lower())
+            if self.focus == groupname:
+                self.grpbuttons[groupname].focus = True
+            if self.active == groupname:
+                self.grpbuttons[groupname].bold = True
+
+        if self.focus not in self.grpbuttons:
+            # it could be that the group has been deleted
+            self.focus = None
 
         for btn in self.grpbuttons.values():
             btn.draw()
@@ -1631,187 +1668,177 @@ class GroupWin(ParentScreen):
         if self.grps.scroll:
             if self.leftidx:
                 self.leftmore_btn.show = True
+                if self.leftfocus:
+                    self.leftmore_btn.focus = True
                 self.leftmore_btn.draw()
             if self.rightmore_btn.show:
                 self.rightmore_btn.draw()
 
+        if not self.leftmore_btn.focus:
+            self.leftfocus = False
+
+        if not self.rightmore_btn.focus:
+            self.rightfocus = False
 
 
-
-    def drawgroup(self, group):
-        # draw the group, return col position of next group to be shown
-        grouptoshow = "["+group+"]"
-        col = self.groupcols[group]
-        if group == self.active:
-            if self.focus == group:
-                # group in focus
-                self.window.addstr(0, col, grouptoshow, curses.A_REVERSE)
-            else:
-                # active item
-                self.window.addstr(0, col, grouptoshow, curses.A_BOLD)
+    def has_focus(self):
+        "Returns True if any button has focus"
+        if self.focus or self.leftfocus or self.rightfocus:
+            return True
         else:
-            if self.focus == group:
-                # group in focus
-                self.window.addstr(0, col, grouptoshow, curses.A_REVERSE)
-            else:
-                self.window.addstr(0, col, grouptoshow)
-        col += (len(grouptoshow) + 2)
-        return col
+            return False
 
-
-    def drawprev(self, focus=False):
-        if focus:
-            self.window.addstr(0, 2, "<<Prev]", curses.A_REVERSE)
-            # set focus on prev button
-            self.prevfocus = True
-            # remove focus from group
-            self.focus = None
-        else:
-            self.window.addstr(0, 2, "<<Prev]")
-            self.prevfocus = False
-
-
-    def drawnext(self, focus=False):
-        if focus:
-            # remove focus from group
-            self.focus = None
-            self.drawgroup(self.groups[self.togroup])
-            # set focus on next button
-            self.nextfocus = True
-            self.window.addstr(0, self.nextcol, "[Next>>", curses.A_REVERSE)
-        else:
-            self.window.addstr(0, self.nextcol, "[Next>>")
-            self.nextfocus = False
 
     def setkey(self, key):
 
+        if not self.grpbuttons:
+            return key
+
+        if not self.has_focus():
+            # a focus must be set somewhere before any key can be accepted
+            return key
+
+        btns = list(self.grpbuttons.keys())
+
         if key == 10:
 
-            if self.prevfocus:
-                # Enter has been pressed when the 'Prev' button has focus
-                self.fromgroup = self.fromgroup - 1
-                if not self.fromgroup:
-                    # self.fromgroup is zero, so no prev button
-                    self.prevfocus = False
-                    self.focus = self.groups[0]
-                self.draw()
-                self.window.noutrefresh()
-                curses.doupdate()
-                return
-
-            if self.nextfocus:
-                # Enter has been pressed when the 'Next' button has
-                # focus
-                if self.fromgroup:
-                    self.fromgroup = self.fromgroup + 1
+            if self.leftfocus:
+                # Enter has been pressed when the left 'Prev' button has focus
+                if self.leftidx:
+                    self.leftidx -= 1
                 else:
-                    self.fromgroup = 2
+                    # should never get here
+                    return
+                if not self.leftidx:
+                    # the leftmore btn will vanish
+                    self.leftfocus = False
+                    self.focus = self.groups()[0]
                 self.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return
 
-            # set this groupfocus button as the active button,
-            # and return the key
+            if self.rightfocus:
+                # Enter has been pressed when the right 'Next' button has
+                # focus
+                self.leftidx += 1
+                if self.leftidx + len(self.grps.positions) == len(self.groups()):
+                    # At the last, rightmore button will vanish
+                    self.rightfocus = False
+                    self.focus = self.groups()[-1]
+                self.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return
+
+            # to get here, self.focus must be equal to one of the buttons
+
+            # set this focused button as the active button,
+            # and return a flag to indicate a new group button has been chosen
             if self.active == self.focus:
                 # no change
                 return
             # set a change of the active group
             self.active = self.focus
+            self.draw()
+            self.window.noutrefresh()
+            # no need to do curses.doupdate(), as this triggers a new vector window
             return "NewGroup"
 
-        if key in (32, 9, 261):   # space, tab, right arrow
-            if self.prevfocus:
-                # remove focus from prev button
-                self.drawprev()
-                # set focus on from button
-                self.focus = self.groups[self.fromgroup]
-                self.drawgroup(self.focus)
+        if key in (32, 9, 261):   # space, tab, right arrow; moving along the buttons to the right
+            if self.leftfocus:
+                # remove focus from left button, and set it on first group button
+                self.leftfocus = False
+                self.focus = btns[0]
+                self.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return
-            if self.nextfocus:
+            if self.rightfocus:
+                self.rightfocus = False
+                self.rightmore_btn.draw()
+                self.window.noutrefresh()
                 return 258   # treat as 258 down arrow key
-            # go to the next group
-            if self.focus == self.groups[-1]:
-                # At the last group, cannot go further
-                return key
-            indx = self.groups.index(self.focus)
-            if self.togroup and (indx+1 > self.togroup):
-                # next choice is beyond togroup
-                if key == 261:   # right arrow
-                    if self.fromgroup:
-                        self.fromgroup = self.fromgroup + 1
+            # is focus at the last button
+            if self.focus == btns[-1]:
+                # At the last group
+                if self.rightmore_btn.show:
+                    # there are further groups to the right
+                    if key == 261:   # right arrow, scroll groups
+                        self.focus = self.groups()[self.leftidx + len(self.grps.positions)]
+                        self.leftidx += 1
+                        self.draw()
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        return
                     else:
-                        self.fromgroup = 2
-                    # get the new group in focus
-                    self.focus = self.groups[indx+1]
-                    self.draw()
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    return
+                        # tab or space, move to rightmore button
+                        self.rightfocus = True
+                        self.focus = None
+                        self.draw()
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        return
                 else:
-                    # so highlight 'next' key
-                    self.drawnext(focus=True)
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    return
-            # get the new group in focus
-            self.focus = self.groups[indx+1]
+                    # no rightmore button, so at the very last group
+                    return key
+            # go to the next group
+            indx = btns.index(self.focus)
+            # get the new group button in focus
+            self.focus = btns[indx+1]
             self.draw()
             self.window.noutrefresh()
             curses.doupdate()
             return
         if key in (353, 260):   # 353 shift tab, 260 left arrow
-            if self.prevfocus:
-                # remove focus from the button
-                self.drawprev(focus=False)
-                return 258   # treat as 258 down arrow key
-            if self.nextfocus:
-                # group to the left of the 'Next' button, now has focus
-                self.focus = self.groups[self.togroup]
-                self.drawgroup(self.groups[self.togroup])
-                # remove focus from next button
-                self.drawnext(focus=False)
+            if self.rightfocus:
+                # group to the left of the rightmore button, now has focus
+                self.rightfocus = False
+                self.focus = btns[-1]
+                self.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return
-            # go to the previous group
-            indx = self.groups.index(self.focus)
-            if not indx:
-                # indx zero means first group
-                return key
-            if indx == self.fromgroup:
-                if key == 260:  # left arrow, moves to previous group
-                    self.fromgroup = self.fromgroup - 1
-                    if not self.fromgroup:
-                        # self.fromgroup is zero, so no prev button
-                        self.prevfocus = False
-                        self.focus = self.groups[0]
-                    else:
-                        # get the new group in focus
-                        self.focus = self.groups[indx-1]
-                    self.draw()
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    return
-                else:
-                    # the button to the left must be the 'Prev' button
-                    # remove focus from current button
-                    currentgroup = self.focus
-                    self.focus = None
-                    self.drawgroup(currentgroup)
-                    # set Prev button as the focus
-                    self.drawprev(focus=True)
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    return
+            if self.leftfocus:
+                self.leftfocus = False
+                self.leftmore_btn.draw()
+                self.window.noutrefresh()
+                return 258   # treat as 258 down arrow key
 
-            self.focus = self.groups[indx-1]
+            # is focus at the first button
+            if self.focus == btns[0]:
+                # At the first group
+                if self.leftmore_btn.show:
+                    # there are further groups to the left
+                    if key == 260:   # left arrow, scroll groups
+                        self.leftidx -= 1
+                        self.focus = self.groups()[self.leftidx]
+                        self.draw()
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        return
+                    else:
+                        # shift tab, move to leftmore button
+                        self.leftfocus = True
+                        self.focus = None
+                        self.draw()
+                        self.window.noutrefresh()
+                        curses.doupdate()
+                        return
+                else:
+                    # no leftmore button, so at the very first group
+                    return key #258   # treat as 258 down arrow key
+
+            # go to the previous group
+            indx = btns.index(self.focus)
+            # get the new group button in focus
+            self.focus = btns[indx-1]
             self.draw()
             self.window.noutrefresh()
             curses.doupdate()
             return
+
+
         if key in (338, 339, 258, 259):          # 338 page down, 339 page up, 258 down arrow, 259 up arrow
             return key
         return
