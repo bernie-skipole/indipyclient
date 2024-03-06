@@ -1276,7 +1276,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
 
     def show(self):
-        "Displays device"
+        "Displays device vectors choosable by group"
 
         devices = [ devicename for devicename, device in self.client.items() if device.enable ]
 
@@ -1346,6 +1346,10 @@ class ChooseVectorScreen(ConsoleClientScreen):
                 key = await self.keyinput()
                 if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                     return key
+
+                if isinstance(key, tuple):
+                    # mouse pressed, find if its clicked in any field
+                    pass
 
                 if self.focus == "Groups":
                     # focus has been given to the GroupWin
@@ -1453,10 +1457,13 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
 
 # This class GroupBtns defines the position of group buttons on the row
+# and stores values used to check if any change has occurred
+
+
 
 class GroupBtns:
 
-    def __init__(self, device, maxcols):
+    def __init__(self, device, maxcols, focus, rightfocus, leftfocus, leftidx, active):
         "get the groups this device contains, use a set to avoid duplicates"
         self.maxcols = maxcols
 
@@ -1498,6 +1505,33 @@ class GroupBtns:
         else:
             self.scroll = True
 
+        # these are used to store previous values to check if there is any change
+        self.focus = focus
+        self.rightfocus = rightfocus  # True if rightmore has focus
+        self.leftfocus = leftfocus    # True if leftmore has focus
+        self.leftidx = leftidx        # index of leftmost button
+        self.active = active          # the currently active group
+
+    def __eq__(self, other):
+        if self.active is None:
+            return False
+        if self.maxcols != other.maxcols:
+            return False
+        if self.groups != other.groups:
+            return False
+        if self.focus != other.focus:
+            return False
+        if self.rightfocus != other.rightfocus:
+            return False
+        if self.leftfocus != other.leftfocus:
+            return False
+        if self.leftidx != other.leftidx:
+            return False
+        if self.active != other.active:
+            return False
+        # if all the above are equal
+        return True
+
     def maxwidth(self):
         "calculate width of buttons"
         # =<[prev]=[btn]=[btn]=....               =[next]>=
@@ -1528,11 +1562,18 @@ class GroupWin(ParentScreen):
         self.devicename = devicename
         device = self.client[self.devicename]
 
-        # active is the name of the group currently being shown
-        self.active = active
-
         # grps is a class that calculates button positions along the row
-        self.grps = GroupBtns(device, self.maxcols)
+        # Note, the final argument active is set to None to ensure the first call to draw()
+        # detects active has changed, and initiates a window draw.
+        self.grps = GroupBtns(device, self.maxcols, None, False, False, 0, None)
+        groups = self.grps.groups
+
+        # active is the name of the group currently being shown
+        # it cannot be None
+        if (active is None) or (not active in groups):
+            self.active = groups[0]
+        else:
+            self.active = active
 
         # group names to buttons
         self.grpbuttons = {}             # group names are original case
@@ -1542,17 +1583,15 @@ class GroupWin(ParentScreen):
         self.rightfocus = False  # True if rightmore has focus
         self.leftfocus = False   # True if leftmore has focus
 
-        self.groupcols = {}       # dictionary of groupname to column number
+        self.rightmore_btn = widgets.Button(self.window, "next", 0, self.maxcols-8, onclick="Next")
+        self.rightmore_btn.show = False
 
-        self.leftidx = 0          # index of leftmost button
+        self.leftmore_btn = widgets.Button(self.window, "prev", 0, 2, onclick="Previous")
+        self.leftmore_btn.show = False
 
-        # the horizontal display of group buttons may not hold all the buttons
-        # give the index of self.groups from and to
-        self.fromgroup = 0
-        self.togroup = 0
-        self.nextcol = 0
-        self.nextfocus = False
-        self.prevfocus = False
+        self.leftidx = 0          # group index of leftmost button
+                                  # that is, groups[self.leftidx] is the group of the leftmost button
+
 
 
     def groups(self):
@@ -1618,13 +1657,30 @@ class GroupWin(ParentScreen):
         "Draw the line of group buttons"
         if devicename:
             self.devicename = devicename
+
         device = self.client[self.devicename]
 
-        # grps is a class that calculates button positions along the row
-        self.grps = GroupBtns(device, self.maxcols)
+        # grps calculates button positions along the row
+        # and stores values for comparison with previous values
+        newgrps = GroupBtns(device,
+                            self.maxcols,
+                            self.focus,
+                            self.rightfocus,
+                            self.leftfocus,
+                            self.leftidx,
+                            self.active)
+
+        if self.grps == newgrps:
+            # no change, do not draw
+            return
+        else:
+            self.grps = newgrps
 
         # clear the line
         self.window.clear()
+        # initially buttons are not shown
+        self.rightmore_btn.show = False
+        self.leftmore_btn.show = False
 
         # groups is a list of group names
         groups = self.grps.groups
@@ -1639,20 +1695,15 @@ class GroupWin(ParentScreen):
             self.focus = None
             self.rightfocus = False
             self.leftfocus = False
+            self.grps.focus = None
+            self.grps.rightfocus = False
+            self.grps.leftfocus = False
             # no buttons
             return
         elif len(groups) == 2:
             self.window.addstr(0, 0, self.grps.text)
             self.rightfocus = False
             self.leftfocus = False
-
-        # create buttons
-
-        self.rightmore_btn = widgets.Button(self.window, "next", 0, self.maxcols-8, onclick="Next")
-        self.rightmore_btn.show = False
-
-        self.leftmore_btn = widgets.Button(self.window, "prev", 0, 2, onclick="Previous")
-        self.leftmore_btn.show = False
 
 
         buttonmaxidx = len(self.grps.positions)-1
@@ -1693,6 +1744,15 @@ class GroupWin(ParentScreen):
 
         if not self.rightmore_btn.focus:
             self.rightfocus = False
+
+        # after drawing, set these values into self.grps
+        self.grps.focus = self.focus
+        self.grps.rightfocus = self.rightfocus
+        self.grps.leftfocus = self.leftfocus
+        self.grps.leftidx = self.leftidx
+        self.grps.active = self.active
+
+
 
 
     def has_focus(self):
@@ -1772,7 +1832,7 @@ class GroupWin(ParentScreen):
                 return
             if self.rightfocus:
                 self.rightfocus = False
-                self.rightmore_btn.draw()
+                self.draw()
                 self.window.noutrefresh()
                 return 258   # treat as 258 down arrow key
             # is focus at the last button
@@ -1817,7 +1877,7 @@ class GroupWin(ParentScreen):
                 return
             if self.leftfocus:
                 self.leftfocus = False
-                self.leftmore_btn.draw()
+                self.draw()
                 self.window.noutrefresh()
                 return 258   # treat as 258 down arrow key
 
