@@ -1606,6 +1606,13 @@ class GroupBtns:
         "get the groups this device contains, use a set to avoid duplicates"
         self.maxcols = maxcols
 
+        # these are used to store previous values to check if there is any change
+        self.focus = focus
+        self.rightfocus = rightfocus  # True if rightmore has focus
+        self.leftfocus = leftfocus    # True if leftmore has focus
+        self.leftidx = leftidx        # index of leftmost button
+        self.active = active          # the currently active group
+
         groupset = {vector.group for vector in device.values() if vector.enable}
         if not groupset:
             groupset = set("default")
@@ -1644,12 +1651,7 @@ class GroupBtns:
         else:
             self.scroll = True
 
-        # these are used to store previous values to check if there is any change
-        self.focus = focus
-        self.rightfocus = rightfocus  # True if rightmore has focus
-        self.leftfocus = leftfocus    # True if leftmore has focus
-        self.leftidx = leftidx        # index of leftmost button
-        self.active = active          # the currently active group
+
 
     def __eq__(self, other):
         if self.active is None:
@@ -2063,7 +2065,7 @@ class GroupWin(ParentScreen):
                 self.leftfocus = False
                 self.draw()
                 self.window.noutrefresh()
-                return 258   # treat as 258 down arrow key
+                return key
 
             # is focus at the first button
             if self.focus == btns[0]:
@@ -2087,7 +2089,7 @@ class GroupWin(ParentScreen):
                         return
                 else:
                     # no leftmore button, so at the very first group
-                    return key #258   # treat as 258 down arrow key
+                    return key
 
             # go to the previous group
             indx = btns.index(self.focus)
