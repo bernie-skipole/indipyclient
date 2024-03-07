@@ -1093,6 +1093,7 @@ class DevicesScreen(ConsoleClientScreen):
                                 break
                     continue
 
+                # so not a tuple/mouse press, its a key press
 
                 # which button has focus
                 if key == 10:
@@ -1313,10 +1314,77 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.groupwin.noutrefresh()
-        self.vectorswin.vecwinrefresh()
+        self.vectorswin.noutrefresh()
         self.buttwin.noutrefresh()
 
         curses.doupdate()
+
+
+    def setfocus(self, newfocus):
+        """Sets self.focus to newfocus
+           If newfocus is one of Messages, Quit, Devices, sets the
+           new focus on the button, draws and calls self.buttwin.noutrefresh()
+           and removes focus from all other buttons.
+           If self.focus is Groups or Vectors, and the newfocus is the same
+           then returns unchanged, otherwise calls defocus on the window.
+           So leaves it to the subwindow to set new focus
+           """
+        if self.focus == "Groups" or self.focus == "Vectors":
+            # current self.focus is on the subwindows
+            if self.focus == "Groups" and newfocus != "Groups":
+                self.groupwin.defocus()
+                self.groupwin.noutrefresh()
+            elif self.focus == "Vectors" and newfocus != "Vectors":
+                self.vectorswin.defocus()
+                self.vectorswin.noutrefresh()
+            if newfocus == "Messages":
+                self.messages_btn.focus = True
+                self.messages_btn.draw()
+                self.buttwin.noutrefresh()
+            elif newfocus == "Quit":
+                self.quit_btn.focus = True
+                self.quit_btn.draw()
+                self.buttwin.noutrefresh()
+            elif newfocus == "Devices":
+                self.devices_btn.focus = True
+                self.devices_btn.draw()
+                self.buttwin.noutrefresh()
+            self.focus = newfocus
+            return
+
+        # current self.focus must be one of the bottom buttons
+        if self.focus == "Devices" and newfocus != "Devices":
+            self.devices_btn.focus = False
+            self.devices_btn.draw()
+            if newfocus == "Messages":
+                self.messages_btn.focus = True
+                self.messages_btn.draw()
+            elif newfocus == "Quit":
+                self.quit_btn.focus = True
+                self.quit_btn.draw()
+            self.buttwin.noutrefresh()
+        elif self.focus == "Messages" and newfocus != "Messages":
+            self.messages_btn.focus = False
+            self.messages_btn.draw()
+            if newfocus == "Devices":
+                self.devices_btn.focus = True
+                self.devices_btn.draw()
+            elif newfocus == "Quit":
+                self.quit_btn.focus = True
+                self.quit_btn.draw()
+            self.buttwin.noutrefresh()
+        elif self.focus == "Quit" and newfocus != "Quit":
+            self.quit_btn.focus = False
+            self.quit_btn.draw()
+            if newfocus == "Messages":
+                self.messages_btn.focus = True
+                self.messages_btn.draw()
+            elif newfocus == "Devices":
+                self.devices_btn.focus = True
+                self.devices_btn.draw()
+            self.buttwin.noutrefresh()
+        self.focus = newfocus
+
 
 
     def update(self, event):
@@ -1333,7 +1401,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
         # Draw the device vector widgets, as given by self.groupwin.active
         self.vectorswin.draw(self.devicename, self.groupwin.active )
-        self.vectorswin.vecwinrefresh()
+        self.vectorswin.noutrefresh()
         curses.doupdate()
 
 
@@ -1349,33 +1417,106 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
                 if isinstance(key, tuple):
                     # mouse pressed, find if its clicked in any field
-                    pass
+                    # check all areas of the screen
+                    if key in self.quit_btn:
+                        if self.quit_btn.focus:
+                            widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
+                            self.messwin.noutrefresh()
+                            curses.doupdate()
+                            return "Quit"
+                        else:
+                            # focus is elsewhere
+                            self.setfocus("Quit")
+                        curses.doupdate()
+                        continue
+                    if key in self.messages_btn:
+                        if self.messages_btn.focus:
+                            return "Messages"
+                        else:
+                            self.setfocus("Messages")
+                        curses.doupdate()
+                        continue
+                    if key in self.devices_btn:
+                        if self.devices_btn.focus:
+                            return "Devices"
+                        else:
+                            self.setfocus("Devices")
+                        curses.doupdate()
+                        continue
+
+                    # check if mouse key in groupwin
+                    result = self.groupwin.setkey(key)
+                    if result == "Newfocus":
+                        # focus has been set onto a new group
+                        # must remove focus from other parts of the screen
+                        self.setfocus("Groups")
+                        curses.doupdate()
+                        continue
+                    if result == "NewGroup":
+                        # must update the screen with a new group
+                        self.show()
+                        continue
+
+                    if not result:
+                        continue
+                    # otherwise mouse not pressed in a group, so self.groupwin.setkey(key)
+                    # just returns the key
+                    key = result
+
+                    # check if mouse key pressed in vectorswin
+                    result = self.vectorswin.setkey(key)
+                    if result == "Newfocus":
+                        # focus has been set onto a new vector
+                        # must remove focus from other parts of the screen
+                        self.setfocus("Vectors")
+                        curses.doupdate()
+                        continue
+                    if result == "NewVector":
+                        newvector = self.vectorswin.active
+                        if newvector in self.device:
+                            # newvector is a vector name, check if it is enabled
+                            if self.device[newvector].enable:
+                                self.vectorname = newvector
+                                return "Vectors"
+
+                    # mouse press not on a field
+                    continue
+
+                # so not a tuple/mouse press, its a key press
 
                 if self.focus == "Groups":
                     # focus has been given to the GroupWin
                     result = self.groupwin.setkey(key)
                     if result == "NewGroup":
                         # must update the screen with a new group
+                        # which is available as self.groupwin.active
                         self.show()
                         continue
                     if not result:
                         continue
                     key = result
+                    # key could be a down arrow for next item
+                    # but will not be 10 as Enter will be actioned within self.groupwin.setkey(key)
 
                 elif self.focus == "Vectors":
                     # focus has been given to VectorListWin
                     result = self.vectorswin.setkey(key)
                     if not result:
                         continue
-                    if result in self.device:
-                        # result is a vector name, check if it is enabled
-                        if self.device[result].enable:
-                            # a vector has been chosen, get the vectorname chosen
-                            self.vectorname = result
-                            return "Vectors"
+                    if result == "NewVector":
+                        newvector = self.vectorswin.active
+                        if newvector in self.device:
+                            # newvector is a vector name, check if it is enabled
+                            if self.device[newvector].enable:
+                                self.vectorname = newvector
+                                return "Vectors"
+                            else:
+                                continue
                         else:
                             continue
                     key = result
+                    # key could be a down arrow for next item
+                    # but will not be 10 as Enter will be actioned within self.vectorswin.setkey(key)
 
                 if key == 10:
                     # enter key pressed
@@ -1445,7 +1586,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
                 self.messages_btn.draw()
                 self.quit_btn.draw()
 
-                self.vectorswin.vecwinrefresh()
+                self.vectorswin.noutrefresh()
                 self.groupwin.noutrefresh()
                 self.buttwin.noutrefresh()
                 curses.doupdate()
@@ -1458,8 +1599,6 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
 # This class GroupBtns defines the position of group buttons on the row
 # and stores values used to check if any change has occurred
-
-
 
 class GroupBtns:
 
@@ -1753,8 +1892,6 @@ class GroupWin(ParentScreen):
         self.grps.active = self.active
 
 
-
-
     def has_focus(self):
         "Returns True if any button has focus"
         if not self.grpbuttons:
@@ -1769,6 +1906,53 @@ class GroupWin(ParentScreen):
 
         if not self.grpbuttons:
             return key
+
+        if isinstance(key, tuple):
+            # mouse pressed, find if its clicked in any field
+            if (key in self.leftmore_btn) and self.leftmore_btn.focus:
+                key = 10
+            elif (key in self.rightmore_btn) and self.rightmore_btn.focus:
+                key = 10
+            else:
+                for button in self.grpbuttons.values():
+                    if key in button:
+                        # mouse has been pressed in this button
+                        if button.focus:
+                            # mouse has been pressed on a focused button, equivalent to pressing
+                            # enter and choosing the button
+                            key = 10
+                        break
+
+            # so key is 10 if mouse pressed in a focused field
+            # but is still a tuple for mouse clicked somewhere else
+            if key != 10:
+                # Check if mouse pressed on an unfocussed button
+                # so defocus everything else, and focus the new button
+                if key in self.leftmore_btn:
+                    self.defocus()
+                    self.leftfocus = True
+                    self.draw()
+                    self.window.noutrefresh()
+                    return "Newfocus"
+                if key in self.rightmore_btn:
+                    self.defocus()
+                    self.rightfocus = True
+                    self.draw()
+                    self.window.noutrefresh()
+                    return "Newfocus"
+                for name, button in self.grpbuttons.items():
+                    if key in button:
+                        # mouse has been pressed in this button
+                        self.defocus()
+                        self.focus = name
+                        self.draw()
+                        self.window.noutrefresh()
+                        return "Newfocus"
+
+                # still a tuple, not on any key
+                return key
+
+        # at this point, key is not a tuple
 
         if not self.has_focus():
             # a focus must be set somewhere before any key can be accepted
@@ -1977,8 +2161,11 @@ class VectorListWin(ParentScreen):
         # vector names to vector states of vectors in the current group
         self.vectorstates = {}
 
+        # self.active will be the vector name chosen
+        self.active = None
 
-    def vecwinrefresh(self):
+
+    def noutrefresh(self):
         "Call noutrefresh on more buttons and vector window"
         self.topmorewin.noutrefresh()
         self.window.noutrefresh()
@@ -2156,7 +2343,7 @@ class VectorListWin(ParentScreen):
         # draw will sort out top and bottom
         # more buttons
         self.draw(self.devicename, self.groupname, change=True)
-        self.vecwinrefresh()
+        self.noutrefresh()
 
 
     def botmorechosen(self):
@@ -2191,7 +2378,7 @@ class VectorListWin(ParentScreen):
                 self.focus = names[-1]
 
         self.draw(self.devicename, self.groupname, change=True)
-        self.vecwinrefresh()
+        self.noutrefresh()
 
 
     def setkey(self, key):
@@ -2211,14 +2398,15 @@ class VectorListWin(ParentScreen):
                 self.botmorechosen()
                 curses.doupdate()
             elif self.focus:
-                return self.focus.lower()
+                self.active = self.focus
+                return "NewVector"
 
         elif key in (32, 9, 261, 338, 258):
             # go to the next
             if self.botmore_btn.focus:
                 self.focus = None
                 self.draw(self.devicename, self.groupname, change=True)
-                self.vecwinrefresh()
+                self.noutrefresh()
                 curses.doupdate()
                 return key
             elif self.topmore_btn.focus:
@@ -2235,7 +2423,7 @@ class VectorListWin(ParentScreen):
                     # very last device, the botmore_btn should not be shown
                     self.focus = None
                     self.draw(self.devicename, self.groupname, change=True)
-                    self.vecwinrefresh()
+                    self.noutrefresh()
                     curses.doupdate()
                     return key
                 elif indx == bottomidx:
@@ -2260,13 +2448,13 @@ class VectorListWin(ParentScreen):
             elif self.topmore_btn.focus:
                 self.topmore_btn.focus = False
                 self.draw(self.devicename, self.groupname, change=True)
-                self.vecwinrefresh()
+                self.noutrefresh()
                 curses.doupdate()
                 return key
             elif self.focus == names[0]:
                 self.focus = None
                 self.draw(self.devicename, self.groupname, change=True)
-                self.vecwinrefresh()
+                self.noutrefresh()
                 curses.doupdate()
                 return key
             else:
@@ -2285,7 +2473,7 @@ class VectorListWin(ParentScreen):
                     self.focus = names[indx-1]
 
         self.draw(self.devicename, self.groupname, change=True)
-        self.vecwinrefresh()
+        self.noutrefresh()
         curses.doupdate()
 
 
