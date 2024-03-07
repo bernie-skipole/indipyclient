@@ -1552,9 +1552,9 @@ class ChooseVectorScreen(ConsoleClientScreen):
                 else:
                     # key not recognised
                     continue
+
                 if self.focus == "Vectors":
                     self.vectorswin.defocus()
-                    self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 elif self.focus == "Groups":
                     self.groupwin.defocus()
                 elif self.focus == "Devices":
@@ -1568,7 +1568,6 @@ class ChooseVectorScreen(ConsoleClientScreen):
                         self.vectorswin.set_top_focus()
                     else:
                         self.vectorswin.set_bot_focus()
-                    self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 elif newfocus == "Groups":
                     self.groupwin.set_left_focus()
                 elif newfocus == "Devices":
@@ -1582,6 +1581,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
                 # so buttons have been set with the appropriate focus
                 # now draw them
                 self.groupwin.draw(self.devicename)
+                self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
                 self.devices_btn.draw()
                 self.messages_btn.draw()
                 self.quit_btn.draw()
@@ -1742,7 +1742,7 @@ class GroupWin(ParentScreen):
         self.window.noutrefresh()
 
     def defocus(self):
-        "Remove focus from all buttons, and re-draw the button which had focus"
+        "Remove focus from all buttons, and draw"
         if not self.grpbuttons:
             return
         if self.focus:
@@ -2147,7 +2147,6 @@ class VectorListWin(ParentScreen):
         self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="BotMore")
         self.botmore_btn.show = False
 
-
         self.displaylines = self.maxrows - 5 - 8         ######### delete
 
         # self.focus will be the name of a vector in focus
@@ -2201,18 +2200,24 @@ class VectorListWin(ParentScreen):
 
     def set_top_focus(self):
         names = list(self.vecbuttons.keys())
+        self.defocus()
         if self.topmore_btn.show:
             self.topmore_btn.focus = True
+            self.topmore_btn.draw()
         else:
             self.focus = names[0]
+            self.vecbuttons[self.focus].draw()
 
 
     def set_bot_focus(self):
         names = list(self.vecbuttons.keys())
+        self.defocus()
         if self.botmore_btn.show:
             self.botmore_btn.focus = True
+            self.botmore_btn.draw()
         else:
             self.focus = names[-1]
+            self.vecbuttons[self.focus].draw()
 
 
     def draw(self, devicename, groupname, change=False):
@@ -2323,13 +2328,13 @@ class VectorListWin(ParentScreen):
 
 
     def topmorechosen(self):
-        "Update when topmore button pressed"
+        """Update when topmore button which should already be in focus is pressed
+           to scroll vectors"""
         if not self.topmore_btn.focus:
             return
         if not self.topindex:    # self.topindex cannot be zero
             return
 
-        # vectors is a dictionary of vectornames to vectors
         # names is a list of all vector names
         names = list(self.vectors.keys())
 
@@ -2347,7 +2352,8 @@ class VectorListWin(ParentScreen):
 
 
     def botmorechosen(self):
-        "Update when botmore button pressed"
+        """Update when botmore button which should already be in focus is pressed
+           to scroll vectors"""
         if not self.botmore_btn.focus:
             return
 
@@ -2365,17 +2371,17 @@ class VectorListWin(ParentScreen):
         # lastidx is the index of the last vector
         lastidx = len(names)-1
 
-        if new_bot_idx > lastidx:
-            # no point incrementing topindex as it does not display any new vector
-            self.botmore_btn.show = False
-            self.focus = names[-1]        # set focus to name of last device
-        else:
+        if new_bot_idx <= lastidx:
             # so increment topindex
             self.topindex = new_top_idx
             if new_bot_idx == lastidx:
                 # cannot increment further
                 self.botmore_btn.show = False
                 self.focus = names[-1]
+        else:
+            # no point incrementing topindex as it does not display any new vector
+            self.botmore_btn.show = False
+            self.focus = names[-1]        # set focus to name of last device
 
         self.draw(self.devicename, self.groupname, change=True)
         self.noutrefresh()
@@ -2389,6 +2395,55 @@ class VectorListWin(ParentScreen):
         displayedbtns = list(self.vecbuttons.values())
         displayednames = list(self.vecbuttons.keys())
         bottomidx = self.botindex()       # index of last displayed vector
+
+
+        if isinstance(key, tuple):
+            # mouse pressed, find if its clicked in any field
+            if (key in self.topmore_btn) and self.topmore_btn.focus:
+                self.topmorechosen()
+                curses.doupdate()
+                return    # returning None indicates no further action needed
+
+            if (key in self.botmore_btn) and self.botmore_btn.focus:
+                self.botmorechosen()
+                curses.doupdate()
+                return    # returning None indicates no further action needed
+
+            for button in self.vecbuttons.values():
+                if key in button:
+                    # mouse has been pressed in this button
+                    if button.focus:
+                        self.active = self.focus
+                        return "NewVector"
+
+            # So check if mouse pressed on any unfocussed button
+            if key in self.topmore_btn:
+                self.set_top_focus()
+                self.noutrefresh()
+                curses.doupdate()
+                return "Newfocus"
+
+            if key in self.botmore_btn:
+                self.set_bot_focus()
+                self.noutrefresh()
+                curses.doupdate()
+                return "Newfocus"
+
+            for name, button in self.vecbuttons.items():
+                if key in button:
+                    # mouse has been pressed in this button
+                    self.defocus()
+                    button.focus = True
+                    button.draw()
+                    self.focus = name
+                    self.noutrefresh()
+                    curses.doupdate()
+                    return "Newfocus"
+
+            # to get here, the mouse tuple is not on any button
+            return key
+
+        # so from here, only deal with key presses
 
         if key == 10:
             if self.topmore_btn.focus:
@@ -2404,7 +2459,7 @@ class VectorListWin(ParentScreen):
         elif key in (32, 9, 261, 338, 258):
             # go to the next
             if self.botmore_btn.focus:
-                self.focus = None
+                self.botmore_btn.focus = False
                 self.draw(self.devicename, self.groupname, change=True)
                 self.noutrefresh()
                 curses.doupdate()
@@ -2413,7 +2468,7 @@ class VectorListWin(ParentScreen):
                 self.topmore_btn.focus = False
                 self.focus = displayednames[0]
             else:
-                # one of the devices has focus
+                # one of the vectors has focus
                 try:
                     indx = names.index(self.focus)
                 except ValueError:
