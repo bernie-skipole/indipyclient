@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys, os, pathlib, time, textwrap
+import asyncio, curses, sys, os, pathlib, time
 
 import traceback
 #        except Exception:
@@ -238,7 +238,7 @@ class MessagesScreen(ConsoleClientScreen):
         lastmessagenumber = len(messages) - 1
         mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
         for count, message in enumerate(mlist):
-            displaytext = textwrap.shorten(message, width=self.maxcols-10, placeholder="...")
+            displaytext = widgets.shorten(message, width=self.maxcols-10, placeholder="...")
             if count == lastmessagenumber:
                 # highlight the last, current message
                 self.messwin.addstr(count, 0, displaytext, curses.A_BOLD)
@@ -268,7 +268,7 @@ class MessagesScreen(ConsoleClientScreen):
         lastmessagenumber = len(messages) - 1
         mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
         for count, message in enumerate(mlist):
-            displaytext = textwrap.shorten(message, width=self.maxcols-10, placeholder="...")
+            displaytext = widgets.shorten(message, width=self.maxcols-10, placeholder="...")
             if count == lastmessagenumber:
                 # highlight the last, current message
                 self.messwin.addstr(count, 0, displaytext, curses.A_BOLD)
@@ -1625,7 +1625,7 @@ class GroupBtns:
 
         # If there is only one group, text is displayed rather than buttons
         if len(self.groups) == 1:
-            self.text = textwrap.shorten(f" Groups : {self.groups[0]}", width=self.maxcols-6, placeholder="...")
+            self.text = widgets.shorten(f" Groups : {self.groups[0]}", width=self.maxcols-6, placeholder="...")
             self.scroll = False
             return
         elif len(self.groups) == 2:
@@ -1679,13 +1679,13 @@ class GroupBtns:
         #     9                                      8
         btnspace = self.maxcols - 9 - 8                           # 80-9-8 is 63
         # assume three buttons
-        maxbtn = btnspace//3 - 3  # -3 for brackets and space     # 21-3 = 18
+        maxbtn = btnspace//3 - 1  # -1 for space between buttons     # 21-1 = 18
         maxtext = max(len(grp) for grp in self.groups)
         # choose whichever is smaller
-        if maxbtn >= maxtext:
+        if maxbtn >= maxtext+2:
             width = maxtext + 2     # 2 for the [] brackets
         else:
-            width = maxbtn + 2
+            width = maxbtn
         return width
 
 
@@ -2281,9 +2281,8 @@ class VectorListWin(ParentScreen):
                 continue
             if idx > bottomidx:
                 break
-            # shorten the name and set it as a button
-            nm = vectorname[:17] + "..." if len(vectorname) > 20 else vectorname
-            self.vecbuttons[vectorname] = widgets.Button(self.window, nm, linenumber, 1, onclick=vectorname.lower())
+            # set vectorname as a button, restrict length of name to 20 characters
+            self.vecbuttons[vectorname] = widgets.Button(self.window, vectorname, linenumber, 1, 22, onclick=vectorname.lower())
             label = self.vectors[vectorname].label
             lb = label[:27] + "..." if len(label) > 30 else label
             self.window.addstr(linenumber, 30, lb)  # the shortenned label

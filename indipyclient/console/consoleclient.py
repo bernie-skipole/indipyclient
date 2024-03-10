@@ -15,6 +15,10 @@ from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVect
 
 from . import windows
 
+# set limit to terminal size
+MINROWS = 22
+MINCOLS = 78
+
 
 class ConsoleClient(IPyClient):
 
@@ -49,7 +53,7 @@ class ConsoleControl:
 
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
 
-        if self.maxrows < 24 or self.maxcols < 80:
+        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
             curses.nocbreak()
             self.stdscr.keypad(False)
             curses.curs_set(1)
@@ -244,7 +248,7 @@ class ConsoleControl:
                         if self.maxrows < 10 or self.maxcols < 40:
                             self.shutdown()
                             continue
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue
@@ -260,7 +264,7 @@ class ConsoleControl:
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
                             continue
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue
@@ -285,7 +289,7 @@ class ConsoleControl:
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
                             continue
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue
@@ -310,7 +314,7 @@ class ConsoleControl:
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
                             continue
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue
@@ -337,7 +341,7 @@ class ConsoleControl:
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
                             continue
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue
@@ -367,7 +371,7 @@ class ConsoleControl:
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
                             continue
-                        if self.maxrows < 24 or self.maxcols < 80:
+                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue

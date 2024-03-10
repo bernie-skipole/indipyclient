@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys, textwrap, pathlib, time
+import asyncio, curses, sys, pathlib, time
 
 from decimal import Decimal
 
@@ -9,6 +9,17 @@ import traceback
 #        except Exception:
 #            traceback.print_exc(file=sys.stderr)
 #            raise
+
+
+def shorten(text, width=0, placeholder="..."):
+    "Shorten text"
+    if not width:
+        return text
+    if len(text)<=width:
+        return text
+    if width <= len(placeholder):
+        return placeholder[:width]
+    return text[:width - len(placeholder)] + placeholder
 
 
 
@@ -22,7 +33,7 @@ def drawmessage(window, message, bold=False, maxcols=None):
         message = message[0].isoformat(sep='T')[11:21] + "  " + message[1]
 
     if len(message) > maxcols:
-        messagetoshow = "    " + textwrap.shorten(message, width=maxcols, placeholder="...")
+        messagetoshow = "    " + shorten(message, width=maxcols, placeholder="...")
     else:
         messagetoshow = "    " + message.ljust(maxcols)
 
@@ -68,12 +79,13 @@ class Button:
         self.bold = False
         if btnlen:
             # btlen includes the two [ ] brackets
-            self.btntext = textwrap.shorten(btntext, width=btnlen-2, placeholder="...")
+            self.btntext = shorten(btntext, width=btnlen-2, placeholder="...")
             self.btnlen = btnlen
         else:
             # no btnlen given
             self.btntext = btntext
             self.btnlen = len(self.btntext) + 2
+
         originrow, origincol = self.window.getbegyx()
         self.fieldrow = originrow+self.row
         self.startcol = origincol + self.col
@@ -159,7 +171,7 @@ class Text:
         if txtlen:
             # txtlen includes the two [ ] brackets
             if len(text) > txtlen-2:
-                self._text = textwrap.shorten(text, width=txtlen-2, placeholder="...")
+                self._text = shorten(text, width=txtlen-2, placeholder="...")
             elif len(text) == txtlen-2:
                 self._text = text
             else:
@@ -181,7 +193,7 @@ class Text:
     @text.setter
     def text(self, text):
         if len(text) > self.txtlen-2:
-            self._text = textwrap.shorten(text, width=self.txtlen-2, placeholder="...")
+            self._text = shorten(text, width=self.txtlen-2, placeholder="...")
         elif len(text) == self.txtlen-2:
             self._text = text
         else:
@@ -393,7 +405,7 @@ class BaseMember:
     def draw(self, startline=None):
         if not startline is None:
             self.startline = startline
-        displaylabel = textwrap.shorten(self.vector.memberlabel(self.name), width=self.maxcols-5, placeholder="...")
+        displaylabel = shorten(self.vector.memberlabel(self.name), width=self.maxcols-5, placeholder="...")
         self.window.addstr( self.startline, 1, displaylabel, curses.A_BOLD )
         self.name_btn.row = self.startline+1
         self.name_btn.draw()
@@ -966,7 +978,7 @@ class BLOBMember(BaseMember):
             if not rxfile:
                 rxfile = " "*rxfilenamelength
             else:
-                rxfile = textwrap.shorten(rxfile, width=rxfilenamelength, placeholder="...")
+                rxfile = shorten(rxfile, width=rxfilenamelength, placeholder="...")
             # draw the value
             self.window.addstr(self.startline+1, self.maxcols//2, rxfile, curses.A_BOLD)
 
