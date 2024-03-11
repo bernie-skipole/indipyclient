@@ -410,25 +410,7 @@ class BaseMember:
         self.name_btn.row = self.startline+1
         self.name_btn.draw()
 
-    async def keyinput(self):
-        """Waits for a key press,
-           if self.consoleclient.stop is True, returns 'Stop',
-           if screen has been resized, returns 'Resize',
-           if self._close has been given a value, returns that value
-           Otherwise returns the key pressed."""
-        while not self.consoleclient.stop:
-            await asyncio.sleep(0)
-            if not self.vector.enable:
-                return "Vectors"
-            if self._close:
-                return self._close
-            key = self.stdscr.getch()
-            if key == -1:
-                continue
-            if key == curses.KEY_RESIZE:
-                return "Resize"
-            return key
-        return "Stop"
+
 
 
 class SwitchMember(BaseMember):
@@ -498,90 +480,87 @@ class SwitchMember(BaseMember):
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
-    async def input(self):
-        "This widget is in focus, and monitors inputs"
-        while True:
-            key = await self.keyinput()
-            if key in ("Vectors", "Resize", "Stop"):
+    def setkey(self, key):
+        "This widget is in focus, and deals with inputs"
+
+        if self.name_btn.focus:
+            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                # go to next or previous member widget
                 return key
-            if self.name_btn.focus:
-                if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-                    # go to next or previous member widget
-                    return key
-                if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
-                    # go to on button
-                    self.name_btn.focus = False
-                    self.on.focus = True
-                    self.name_btn.draw()
-                    self.on.draw()
-                    self.memberswin.widgetsrefresh()
-                    curses.doupdate()
-                # ignore any other key
-                continue
-            elif self.on.focus:
-                if key == 10:                  # 10 return
-                    # set on key as bold, off key as standard
-                    self.on.bold = True
-                    self.off.bold = False
-                    self.on.draw()
-                    self.off.draw()
-                elif key in (338, 339, 258, 259):   # 338 page down, 258 down arrow, 339 page up, 259 up arrow
-                    # go to next or previous member widget
-                    self.on.focus = False
-                    self.on.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                    return key
-                elif key in (353, 260): # 353 shift tab, 260 left arrow
-                    # back to name_btn
-                    self.name_btn.focus = True
-                    self.on.focus = False
-                    self.name_btn.draw()
-                    self.on.draw()
-                elif key in (32, 9, 261):  # 32 space, 9 tab, 261 right arrow
-                    # move to off btn
-                    self.on.focus = False
-                    self.on.draw()
-                    self.off.focus = True
-                    self.off.draw()
-                else:
-                    continue
+            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+                # go to on button
+                self.name_btn.focus = False
+                self.on.focus = True
+                self.name_btn.draw()
+                self.on.draw()
                 self.memberswin.widgetsrefresh()
                 curses.doupdate()
-                continue
-            elif self.off.focus:
-                if key == 10:                      # 10 return
-                    # set off key as bold, on key as standard
-                    self.off.bold = True
-                    self.on.bold = False
-                    self.off.draw()
-                    self.on.draw()
-                elif key in (339, 259):   # 339 page up, 259 up arrow
-                    # go to previous member widget or scroll pad
-                    self.off.focus = False
-                    self.off.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                    return key
-                elif key == 261:   # 261 right arrow
-                    # go to name_btn
-                    self.off.focus = False
-                    self.off.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                elif key in (32, 9, 338, 339, 258, 259):   # 32 space, 9 tab, 338 page down, 258 down arrow
-                    # go to next widget or scroll pad
-                    return key
-                elif key in (353, 260):  # 353 shift tab, 260 left arrow
-                    # back to on btn
-                    self.off.focus = False
-                    self.off.draw()
-                    self.on.focus = True
-                    self.on.draw()
-                else:
-                    continue
-                self.memberswin.widgetsrefresh()
-                curses.doupdate()
+            # ignore any other key
+            return
+        elif self.on.focus:
+            if key == 10:                  # 10 return
+                # set on key as bold, off key as standard
+                self.on.bold = True
+                self.off.bold = False
+                self.on.draw()
+                self.off.draw()
+            elif key in (338, 339, 258, 259):   # 338 page down, 258 down arrow, 339 page up, 259 up arrow
+                # go to next or previous member widget
+                self.on.focus = False
+                self.on.draw()
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                return key
+            elif key in (353, 260): # 353 shift tab, 260 left arrow
+                # back to name_btn
+                self.name_btn.focus = True
+                self.on.focus = False
+                self.name_btn.draw()
+                self.on.draw()
+            elif key in (32, 9, 261):  # 32 space, 9 tab, 261 right arrow
+                # move to off btn
+                self.on.focus = False
+                self.on.draw()
+                self.off.focus = True
+                self.off.draw()
+            else:
+                return
+            self.memberswin.widgetsrefresh()
+            curses.doupdate()
+            return
+        elif self.off.focus:
+            if key == 10:                      # 10 return
+                # set off key as bold, on key as standard
+                self.off.bold = True
+                self.on.bold = False
+                self.off.draw()
+                self.on.draw()
+            elif key in (339, 259):   # 339 page up, 259 up arrow
+                # go to previous member widget or scroll pad
+                self.off.focus = False
+                self.off.draw()
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                return key
+            elif key == 261:   # 261 right arrow
+                # go to name_btn
+                self.off.focus = False
+                self.off.draw()
+                self.name_btn.focus = True
+                self.name_btn.draw()
+            elif key in (32, 9, 338, 339, 258, 259):   # 32 space, 9 tab, 338 page down, 258 down arrow
+                # go to next widget or scroll pad
+                return key
+            elif key in (353, 260):  # 353 shift tab, 260 left arrow
+                # back to on btn
+                self.off.focus = False
+                self.off.draw()
+                self.on.focus = True
+                self.on.draw()
+            else:
+                return
+            self.memberswin.window.window.noutrefresh()
+            curses.doupdate()
 
 
 
@@ -609,9 +588,8 @@ class LightMember(BaseMember):
         # draw the value
         self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
 
-    async def input(self):
-        "This widget is in focus, and monitors inputs"
-        key = await self.keyinput()
+    def setkey(self, key):
+        "This widget is in focus, but is read only"
         return key
 
 
@@ -647,6 +625,8 @@ class NumberMember(BaseMember):
             self.linecount = 4
         # the newvalue to be edited and sent
         self._newvalue = self.vector.getformattedvalue(self.name)
+        self.numberfocus = False
+
 
     def newvalue(self):
         value = self._newvalue.strip()
@@ -680,63 +660,65 @@ class NumberMember(BaseMember):
         self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
 
 
-    async def input(self):
-        "This widget is in focus, and monitors inputs"
-        while True:
-            key = await self.keyinput()
-            if key in ("Vectors", "Resize", "Stop"):
+
+    def setkey(self, key):
+        "This widget is in focus, and deals with inputs"
+
+        if self.numberfocus:
+            # highlight editable field has focus
+            self.name_btn.focus = False
+            self.name_btn.draw()
+            # set brackets of editable field in bold
+            self.window.addstr( self.startline+2, self.maxcols-21, "[", curses.A_BOLD )
+            self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
+            self.memberswin.window.noutrefresh()
+            curses.doupdate()
+            # set cursor visible
+            curses.curs_set(1)
+
+            # pad starts at self.stdscr row 7, col 1
+                                                      # row             startcol          endcol            start text
+            editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
+
+
+            result = self.numberinput(key, editstring)
+
+            return result
+
+        if self.name_btn.focus:
+            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                # go to next or previous member widget
                 return key
-            if self.name_btn.focus:
-                if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-                    # go to next or previous member widget
-                    return key
-                if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
-                    # input a number here
-                    result = await self.numberinput()
-                    return result
-                # ignore any other key
+            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+                # input a number here
+                self.numberfocus = True
+                return
 
 
-    async def numberinput(self):
+
+    def numberinput(self, key, editstring):
         """Input a number value, set it into self._newvalue as a string
            if all ok, return 9 to move to next field"""
-        # highlight editable field has focus
-        self.name_btn.focus = False
-        self.name_btn.draw()
-        # set brackets of editable field in bold
-        self.window.addstr( self.startline+2, self.maxcols-21, "[", curses.A_BOLD )
-        self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
-        self.memberswin.widgetsrefresh()
-        curses.doupdate()
-        # set cursor visible
-        curses.curs_set(1)
-        # pad starts at self.stdscr row 7, col 1
-                                                  # row             startcol          endcol            start text
-        editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
 
-        while True:
-            key = await self.keyinput()
-            if key in ("Vectors", "Resize", "Stop"):
+        if key == 10:
+            # a number self._newvalue is being submitted
+            if not self.checknumber():
+                # number not valid, start again by creating a new instance of EditString and self._newvalue reset
+                editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
+                return
+            else:
+                # self._newvalue is correct, this value is to be submitted
+                # return 9 to move to next field
                 curses.curs_set(0)
-                return key
-            if key == 10:
-                # a number self._newvalue is being submitted
-                if not self.checknumber():
-                    # number not valid, start again by creating a new instance of EditString and self._newvalue reset
-                    editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
-                    continue
-                else:
-                    # self._newvalue is correct, this value is to be submitted
-                    # return 9 to move to next field
-                    curses.curs_set(0)
-                    return 9
-            # key is to be inserted into the editable field, and self._newvalue updated
-            value = editstring.getnumber(key)
-            self._newvalue = value.strip()
-            self.window.addstr( self.startline+2, self.maxcols-20, value )
-            self.memberswin.widgetsrefresh()
-            editstring.movecurs()
-            curses.doupdate()
+                self.numberfocus = False
+                return 9
+        # key is to be inserted into the editable field, and self._newvalue updated
+        value = editstring.getnumber(key)
+        self._newvalue = value.strip()
+        self.window.addstr( self.startline+2, self.maxcols-20, value )
+        self.memberswin.window.noutrefresh()
+        editstring.movecurs()
+        curses.doupdate()
 
     def checknumber(self):
         "Return True if self._newvalue is ok"
@@ -781,7 +763,7 @@ class NumberMember(BaseMember):
         self._newvalue = self.member.getformattedstring(newfloat)
         # draw the value to be edited
         self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-        self.memberswin.widgetsrefresh()
+        self.memberswin.window.noutrefresh()
         curses.doupdate()
         return True
 
@@ -812,6 +794,8 @@ class TextMember(BaseMember):
             self.linecount = 3
         # the newvalue to be edited and sent
         self._newvalue = self.vector[self.name]
+
+        self.textfocus = False
 
     def newvalue(self):
         value = self._newvalue.strip()
@@ -848,55 +832,54 @@ class TextMember(BaseMember):
         self.window.addstr( self.startline+2, self.maxcols-35, "[" + textnewvalue+ "]" )
 
 
-    async def input(self):
-        "This widget is in focus, and monitors inputs"
-        while True:
-            key = await self.keyinput()
-            if key in ("Vectors", "Resize", "Stop"):
+    def setkey(self, key):
+        "This widget is in focus, and deals with inputs"
+
+        if self.textfocus:
+            # highlight editable field has focus
+            # highlight editable field has focus
+            self.name_btn.focus = False
+            self.name_btn.draw()
+            # set brackets of editable field in bold
+            self.window.addstr( self.startline+2, self.maxcols-35, "[", curses.A_BOLD )
+            self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
+            self.memberswin.window.nooutrefresh()
+            curses.doupdate()
+            # set cursor visible
+            curses.curs_set(1)
+            # pad starts at self.stdscr row 7, col 1
+                                                      # row             startcol          endcol            start text
+            editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-34, 1+self.maxcols-5, self.newvalue())
+
+
+            result = self.textinput(key, editstring)
+            return result
+
+        if self.name_btn.focus:
+            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                # go to next or previous member widget
                 return key
-            if self.name_btn.focus:
-                if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-                    # go to next or previous member widget
-                    return key
-                if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
-                    # text input here
-                    result = await self.textinput()
-                    return result
-                # ignore any other key
+            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+                # text input here
+                self.textfocus = True
 
 
-    async def textinput(self):
+
+    def textinput(self, key, editstring):
         """Input text, set it into self._newvalue"
            if all ok, return 9 to move to next field"""
-        # highlight editable field has focus
-        self.name_btn.focus = False
-        self.name_btn.draw()
-        # set brackets of editable field in bold
-        self.window.addstr( self.startline+2, self.maxcols-35, "[", curses.A_BOLD )
-        self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
-        self.memberswin.widgetsrefresh()
-        curses.doupdate()
-        # set cursor visible
-        curses.curs_set(1)
-        # pad starts at self.stdscr row 7, col 1
-                                                  # row             startcol          endcol            start text
-        editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-34, 1+self.maxcols-5, self.newvalue())
 
-        while True:
-            key = await self.keyinput()
-            if key in ("Vectors", "Resize", "Stop"):
-                curses.curs_set(0)
-                return key
-            if key == 10:
-                curses.curs_set(0)
-                return 9
-            # key is to be inserted into the editable field, and self._newvalue updated
-            value = editstring.gettext(key)
-            self._newvalue = value.strip()
-            self.window.addstr( self.startline+2, self.maxcols-34, value )
-            self.memberswin.widgetsrefresh()
-            editstring.movecurs()
-            curses.doupdate()
+        if key == 10:
+            curses.curs_set(0)
+            self.numberfocus = False
+            return 9
+        # key is to be inserted into the editable field, and self._newvalue updated
+        value = editstring.gettext(key)
+        self._newvalue = value.strip()
+        self.window.addstr( self.startline+2, self.maxcols-34, value )
+        self.memberswin.window.noutrefresh()
+        editstring.movecurs()
+        curses.doupdate()
 
 
 # Define a property that holds one or more Binary Large Objects, BLOBs.
@@ -935,6 +918,7 @@ class BLOBMember(BaseMember):
         if self.vector.perm != "ro":
             # set a button on the right
             self.send_btn = Button(window, "Send", 0, self.maxcols-9, 6)
+        self.fileinput = False
 
 
     def filename(self):
@@ -1001,105 +985,101 @@ class BLOBMember(BaseMember):
 
 
 
-    async def input(self):
-        "This widget is in focus, and monitors inputs"
-        while True:
-            key = await self.keyinput()
-            if key in ("Vectors", "Resize", "Stop"):
-                return key
-            if self.name_btn.focus:
-                if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-                    # go to next or previous member widget
-                    return key
-                if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
-                    # text input here
-                    result = await self.textinput()
-                    if result in ("Vectors", "Resize", "Stop"):
-                        return result
-                    # after text input, set send button focus
-                    self.send_btn.focus = True
-                    self.send_btn.draw()
-                    self.memberswin.widgetsrefresh()
-                    curses.doupdate()
-                    continue
-            if self.send_btn.focus:
-                if key == 10:
-                    # submit
-                    self.send_btn.focus = False
-                    self.send_btn.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                    self.memberswin.widgetsrefresh()
-                    curses.doupdate()
-                    try:
-                        filepath = pathlib.Path(self._newvalue).expanduser().resolve()
-                        blobformat = ''.join(filepath.suffixes)
-                        members = {self.name : (filepath, 0, blobformat)}
-                        self.vector.send_newBLOBVector(members=members)
-                    except Exception:
-                        self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )
-                        self.memberswin.widgetsrefresh()
-                        curses.doupdate()
-                    else:
-                        self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
-                        self.vector.state = 'Busy'
-                        tstatewin = self.memberswin.tstatewin
-                        draw_timestamp_state(self.consoleclient, tstatewin, self.vector)
-                        tstatewin.noutrefresh()
-                        self.memberswin.widgetsrefresh()
-                        curses.doupdate()
-                    time.sleep(0.4)      # blocking, to avoid screen being changed while this time elapses
-                    self.window.addstr( self.startline+2, 1, "Filepath to send:" )
-                    self.memberswin.widgetsrefresh()
-                    curses.doupdate()
-                    continue
-                elif key in (353, 260, 339, 259):  # 353 shift tab, 260 left arrow, 339 page up, 259 up arrow
-                    # back to name button
-                    self.send_btn.focus = False
-                    self.send_btn.draw()
-                    self.name_btn.focus = True
-                    self.name_btn.draw()
-                    self.memberswin.widgetsrefresh()
-                    curses.doupdate()
-                    continue
-                else:
-                    # on to next widget
-                    self.send_btn.focus = False
-                    self.send_btn.draw()
-                    return 9
+    def setkey(self, key):
+        "This widget is in focus, and deals with inputs"
 
-
-
-    async def textinput(self):
-        "Input text, set it into self._newvalue"
-        # highlight editable field has focus
-        self.name_btn.focus = False
-        self.name_btn.draw()
-        self.send_btn.focus = False
-        self.send_btn.draw()
-        # set brackets of editable field in bold
-        self.window.addstr( self.startline+2, 20, "[", curses.A_BOLD )
-        self.window.addstr( self.startline+2, 19 + self.fieldlength, "]", curses.A_BOLD )
-        self.memberswin.widgetsrefresh()
-        curses.doupdate()
-        # set cursor visible
-        curses.curs_set(1)
-        # pad starts at self.stdscr row 7, col 1
-                                                  # row       startcol          endcol            start text
-        editstring = EditString(self.stdscr, 7+self.startline+2, 22, 19 + self.fieldlength, self.newvalue())
-
-        while True:
-            key = await self.keyinput()
-            if key in ("Vectors", "Resize", "Stop"):
-                curses.curs_set(0)
-                return key
-            if key == 10:
-                curses.curs_set(0)
-                return
-            # key is to be inserted into the editable field, and self._newvalue updated
-            value = editstring.gettext(key)
-            self._newvalue = value.strip()
-            self.window.addstr( self.startline+2, 21, value )
+        if self.fileinput:
+            # text input here
+            # highlight editable field has focus
+            self.name_btn.focus = False
+            self.name_btn.draw()
+            self.send_btn.focus = False
+            self.send_btn.draw()
+            # set brackets of editable field in bold
+            self.window.addstr( self.startline+2, 20, "[", curses.A_BOLD )
+            self.window.addstr( self.startline+2, 19 + self.fieldlength, "]", curses.A_BOLD )
             self.memberswin.widgetsrefresh()
-            editstring.movecurs()
             curses.doupdate()
+            # set cursor visible
+            curses.curs_set(1)
+            # pad starts at self.stdscr row 7, col 1
+                                                      # row       startcol          endcol            start text
+            editstring = EditString(self.stdscr, 7+self.startline+2, 22, 19 + self.fieldlength, self.newvalue())
+
+
+            result = self.textinput(key, editstring)
+            # after text input, set send button focus
+            self.send_btn.focus = True
+            self.send_btn.draw()
+            self.memberswin.widgetsrefresh()
+            curses.doupdate()
+
+
+
+        if self.name_btn.focus:
+            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                # go to next or previous member widget
+                return key
+            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+                self.fileinput = True
+                return
+        if self.send_btn.focus:
+            if key == 10:
+                # submit
+                self.send_btn.focus = False
+                self.send_btn.draw()
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                self.memberswin.window.noutrefresh()
+                curses.doupdate()
+                try:
+                    filepath = pathlib.Path(self._newvalue).expanduser().resolve()
+                    blobformat = ''.join(filepath.suffixes)
+                    members = {self.name : (filepath, 0, blobformat)}
+                    self.vector.send_newBLOBVector(members=members)
+                except Exception:
+                    self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )
+                    self.memberswin.widgetsrefresh()
+                    curses.doupdate()
+                else:
+                    self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
+                    self.vector.state = 'Busy'
+                    tstatewin = self.memberswin.tstatewin
+                    draw_timestamp_state(self.consoleclient, tstatewin, self.vector)
+                    tstatewin.noutrefresh()
+                    self.memberswin.widgetsrefresh()
+                    curses.doupdate()
+                time.sleep(0.4)      # blocking, to avoid screen being changed while this time elapses
+                self.window.addstr( self.startline+2, 1, "Filepath to send:" )
+                self.memberswin.widgetsrefresh()
+                curses.doupdate()
+                return
+            elif key in (353, 260, 339, 259):  # 353 shift tab, 260 left arrow, 339 page up, 259 up arrow
+                # back to name button
+                self.send_btn.focus = False
+                self.send_btn.draw()
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                self.memberswin.widgetsrefresh()
+                curses.doupdate()
+                return
+            else:
+                # on to next widget
+                self.send_btn.focus = False
+                self.send_btn.draw()
+                return 9
+
+
+    def textinput(self, key, editstring):
+        "Input text, set it into self._newvalue"
+        if key == 10:
+            curses.curs_set(0)
+            self.fileinput = False
+            return
+        # key is to be inserted into the editable field, and self._newvalue updated
+        value = editstring.gettext(key)
+        self._newvalue = value.strip()
+        self.window.addstr( self.startline+2, 21, value )
+        self.memberswin.window.noutrefresh()
+        editstring.movecurs()
+        curses.doupdate()
