@@ -2122,7 +2122,6 @@ class VectorListWin(ParentScreen):
         self.devicename = devicename
         self.device = None
 
-
         # topmorewin (1 line, full row, starting at 6, 0)
         self.topmorewin = self.stdscr.subwin(1, self.maxcols, 6, 0) # row 6
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="TopMore")
@@ -2149,8 +2148,6 @@ class VectorListWin(ParentScreen):
         self.botmorewin = self.stdscr.subwin(1, self.maxcols, self.maxrows - 4, 0)      # row 20
         self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="BotMore")
         self.botmore_btn.show = False
-
-        self.displaylines = self.maxrows - 5 - 8         ######### delete
 
         # self.focus will be the name of a vector in focus
         self.focus = None
@@ -2566,7 +2563,7 @@ class VectorScreen(ConsoleClientScreen):
 
         try:
             # window showing the members of the vector
-            self.memberswin = MembersWin(self.stdscr, self.consoleclient, self.vector, self.tstatewin)
+            self.memberswin = MembersWin(self.stdscr, self.consoleclient, self.vector)
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -2649,6 +2646,7 @@ class VectorScreen(ConsoleClientScreen):
         self.buttwin.noutrefresh()
 
         curses.doupdate()
+
 
     def setfocus(self, newfocus):
         """Sets item in focus to newfocus
@@ -2899,26 +2897,43 @@ class MembersWin(ParentScreen):
     "Used to display the vector members"
 
 
-    def __init__(self, stdscr, consoleclient, vector, tstatewin):
+    def __init__(self, stdscr, consoleclient, vector):
         super().__init__(stdscr, consoleclient)
 
         self.vector = vector
         self.vectorname = vector.name
-        self.tstatewin = tstatewin
 
-        self.topline = 0
+        # top more btn on 7th line ( coords 0 to 6 )
+        # bot more btn on line (self.maxrows - 3) + 1
+        # displaylines = (self.maxrows - 2) - 7  - 1
+
+
+        # members window
+        memwintop = 8                                          # row index 8
+        memwinbot = self.maxrows - 4                           # row index 20
+
+        # botmorerow is one below the members window
+        botmorerow = memwinbot + 1                             # row index 21
+        self.displaylines = memwinbot - memwintop + 1          # self.maxrows - 4  - 8 + 1 = 13
+
+        # topmorewin (1 line, full row, starting at 6, 0)
+        self.topmorewin = self.stdscr.subwin(1, self.maxcols, 6, 0)
+        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="TopMore")
+        self.topmore_btn.show = False
+
+        # members window
+        self.window = self.stdscr.subwin(self.displaylines, self.maxcols, memwintop, 0)
+
+        # topindex of member being shown
+        self.topindex = 0                   # so six members will show members with indexes 0-5
+
+        self.topline = 0      ######## ?
 
         # dictionary of member name to member this vector owns
         members_dict = self.vector.members()
 
         # list of member names in alphabetic order
         self.membernames = sorted(members_dict.keys())
-
-        self.memwintop = 8
-        self.memwinbot = self.maxrows - 4             # 19
-
-        # members window                          19 - 8 + 1 = 12 rows       80            row 8      left col
-        self.window = self.stdscr.subwin(self.memwinbot-self.memwintop+1, self.maxcols, self.memwintop, 0)
 
         # create the member widgets
         try:
@@ -2940,21 +2955,11 @@ class MembersWin(ParentScreen):
 
         # this is True, if this widget is in focus
         self.focus = False
-
-        # topmorewin (1 line, full row, starting at 6, 0)
-        self.topmorewin = self.stdscr.subwin(1, self.maxcols-1, 6, 0)
-        self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7)
-        self.topmore_btn.show = False
-        self.topmore_btn.focus = False
-
-        # window.subwin(nlines, ncols, begin_y, begin_x)
-        # Return a sub-window, whose upper-left corner is at (begin_y, begin_x), and whose width/height is ncols/nlines.
-
-
+ 
         # botmorewin = 1 line height, columns just over half of self.maxrows, to give room on the right for submitwin
         # starting at y = columns - 11, x = 0)
         botmorewincols = self.maxcols//2 + 4
-        self.botmorewin = self.stdscr.subwin(1, botmorewincols, self.maxrows - 3, 0)
+        self.botmorewin = self.stdscr.subwin(1, botmorewincols, botmorerow, 0)
         if self.vector.perm == 'ro':
             self.botmore_btn = widgets.Button(self.botmorewin, "<More>", 0, botmorewincols-11)
         else:
@@ -2962,10 +2967,10 @@ class MembersWin(ParentScreen):
         self.botmore_btn.show = False
         self.botmore_btn.focus = False
 
-        # submitwin and submit_btn, located to the right of botmorewin
-        # submitwin = 1 line height, starting at y=self.maxrows - 3, x = botmorewincols + 1
+        # submitwin holding submit_btn and cancel_btn, located to the right of botmorewin
+        # submitwin = 1 line height, starting at y=botmorerow, x = botmorewincols + 1
         # width = self.maxcols -x - 2
-        self.submitwin = self.stdscr.subwin(1, self.maxcols - botmorewincols - 3, self.maxrows - 3, botmorewincols + 1)
+        self.submitwin = self.stdscr.subwin(1, self.maxcols - botmorewincols - 3, botmorerow, botmorewincols + 1)
         self.submit_btn = widgets.Button(self.submitwin, "Submit", 0, 0)
         self.cancel_btn = widgets.Button(self.submitwin, "Cancel", 0, 12)
         if (self.vector.perm == 'ro') or (self.vector.vectortype == "BLOBVector"):
@@ -2974,20 +2979,7 @@ class MembersWin(ParentScreen):
         else:
             self.submit_btn.show = True
             self.cancel_btn.show = True
-        self.submit_btn.focus = False
-        self.cancel_btn.focus = False
 
-        # top more btn on 7th line ( coords 0 to 6 )
-        # bot more btn on line (self.maxrows - 3) + 1
-        # displaylines = (self.maxrows - 2) - 7  - 1
-
-        self.displaylines = self.maxrows - 10
-
-    def close(self, value):
-        "Sets _close to a value, which stops the input co-routine"
-        self._close = value
-        for widget in self.memberwidgets:
-            widget.close(value)
 
     def defocus(self):
         self.focus = False
@@ -3021,7 +3013,7 @@ class MembersWin(ParentScreen):
         self.submitwin.noutrefresh()
 
 
-        if self.topline:
+        if self.topline:      #      change topline to topindex #############################
             # self.topline is not zero, so topmore button must be shown
             # and with focus set
             self.topmore_btn.show = True

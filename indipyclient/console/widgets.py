@@ -22,7 +22,6 @@ def shorten(text, width=0, placeholder="..."):
     return text[:width - len(placeholder)] + placeholder
 
 
-
 def drawmessage(window, message, bold=False, maxcols=None):
     """Shows message, message is either a text string, or a tuple of (timestamp, message text)"""
     window.clear()
@@ -133,7 +132,6 @@ class Button:
         front = spaces//2
         back = spaces-front
         return " "*front + self.btntext + " "*back
-
 
 
     def draw(self):
@@ -371,12 +369,6 @@ class BaseMember:
         # that is, for a widow of 80, this gives a button of 30
         self.name_btn = Button(window, self.name, 0, 1, self.maxcols//2-10)
         self._focus = False
-        # if this is set to a value, the input coroutine will stop
-        self._close = ""
-
-    def close(self, value):
-        "Sets _close to a value, which stops the input co-routine"
-        self._close = value
 
     def value(self):
         return self.vector[self.name]
