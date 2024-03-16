@@ -2935,20 +2935,23 @@ class MembersWin(ParentScreen):
         # list of member names in alphabetic order
         self.membernames = sorted(members_dict.keys())
 
+        # namelen is length of name button
+        namelen = max(len(name) for name in self.membernames)
+
         # create the member widgets
         try:
             self.memberwidgets = []
             for name in self.membernames:
                 if self.vector.vectortype == "SwitchVector":
-                    self.memberwidgets.append(widgets.SwitchMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
+                    self.memberwidgets.append(widgets.SwitchMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
                 elif self.vector.vectortype == "LightVector":
-                    self.memberwidgets.append(widgets.LightMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
+                    self.memberwidgets.append(widgets.LightMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
                 elif self.vector.vectortype == "NumberVector":
-                    self.memberwidgets.append(widgets.NumberMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
+                    self.memberwidgets.append(widgets.NumberMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
                 elif self.vector.vectortype == "TextVector":
-                    self.memberwidgets.append(widgets.TextMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
+                    self.memberwidgets.append(widgets.TextMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
                 elif self.vector.vectortype == "BLOBVector":
-                    self.memberwidgets.append(widgets.BLOBMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
+                    self.memberwidgets.append(widgets.BLOBMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -3136,6 +3139,21 @@ class MembersWin(ParentScreen):
 
         try:
 
+            # check if a widget is in focus
+            if self.vector.perm != "ro":
+                # if ro, nothing to set on widgets
+                for widget in self.displayed:
+                    if widget.focus:
+                        # a widget is in focus
+                        key = widget.setkey(key)
+                        if key:
+                            # if the widget returns a key. then continue with
+                            # checking it
+                            break
+                        # the widget has handled the key, and returns None
+                        # to indicate no further checks required.
+                        return
+
             if key == 10:
                 # Enter key pressed
                 if self.topmore_btn.focus:
@@ -3204,6 +3222,9 @@ class MembersWin(ParentScreen):
                         memberwidget.reset()
                     self.memwin.noutrefresh()
                     curses.doupdate()
+                    return
+                else:
+                    # Enter pressed, but none of the above have handled it
                     return
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -3384,16 +3405,6 @@ class MembersWin(ParentScreen):
                     self.draw()
                     curses.doupdate()
                     return
-
-
-            # check if a widget is in focus
-            for widget in self.displayed:
-                if widget.focus:
-                    # a widget is in focus, and writeable
-                    return widget.setkey(key)
-            else:
-                # no widget is in focus
-                return key
 
 
         except asyncio.CancelledError:

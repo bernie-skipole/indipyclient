@@ -70,6 +70,7 @@ class Button:
 
     def __init__(self, window, btntext, row, col, btnlen=None, onclick=None):
         self.window = window
+        self.btntext = btntext
         self.row = row
         self.col = col
         self.onclick = onclick
@@ -77,12 +78,9 @@ class Button:
         self._show = True
         self.bold = False
         if btnlen:
-            # btlen includes the two [ ] brackets
-            self.btntext = shorten(btntext, width=btnlen-2, placeholder="...")
             self.btnlen = btnlen
         else:
             # no btnlen given
-            self.btntext = btntext
             self.btnlen = len(self.btntext) + 2
 
         originrow, origincol = self.window.getbegyx()
@@ -128,6 +126,8 @@ class Button:
         "pad out the text to be drawn"
         if len(self.btntext) == self.btnlen-2:
             return self.btntext
+        if len(self.btntext) > self.btnlen-2:
+            return shorten(self.btntext, width=self.btnlen-2, placeholder="...")
         spaces = self.btnlen-2-len(self.btntext)
         front = spaces//2
         back = spaces-front
@@ -348,7 +348,7 @@ class EditString():
 
 class BaseMember:
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
 
         self.stdscr = stdscr
         self.consoleclient = consoleclient
@@ -357,17 +357,20 @@ class BaseMember:
         self.tstatewin = tstatewin
         self.vector = vector
         self.name = name
+        self.maxrows, self.maxcols = self.window.getmaxyx()
+        # namelen sets a button on the left with length
+        # if namelen not given, or too long, sets max len of self.maxcols//2-10
+        # that is, for a widow of 80, this gives button text of 30, button size = 32 (for two brackets)
+        if (not namelen) or (namelen>self.maxcols//2-10):
+            namelen = self.maxcols//2-10
         membersdict = self.vector.members()
         self.member = membersdict[name]
         # self.member is a propertymember
-        self.maxrows, self.maxcols = self.window.getmaxyx()
         self.startline = 0
         # linecount is the number of lines this widget takes up,
         # including an end empty line
         self.linecount = 4
-        # set a button on the left at, 0,0 with length self.maxcols//2-10
-        # that is, for a widow of 80, this gives a button of 30
-        self.name_btn = Button(window, self.name, 0, 1, self.maxcols//2-10)
+        self.name_btn = Button(window, self.name, 0, 1, namelen+2)
         self._focus = False
 
 
@@ -409,12 +412,16 @@ class BaseMember:
         self.name_btn.draw()
 
 
+    def setkey(self, key):
+        return key
+
+
 
 
 class SwitchMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
         # create  ON, OFF buttons
         self.on = Button(window, 'ON', 0, 0)
         self.on.bold = True if self.value() == "On" else False
@@ -491,7 +498,7 @@ class SwitchMember(BaseMember):
                 self.on.focus = True
                 self.name_btn.draw()
                 self.on.draw()
-                self.windowrefresh()
+                self.window.noutrefresh()
                 curses.doupdate()
             # ignore any other key
             return
@@ -506,8 +513,6 @@ class SwitchMember(BaseMember):
                 # go to next or previous member widget
                 self.on.focus = False
                 self.on.draw()
-                self.name_btn.focus = True
-                self.name_btn.draw()
                 return key
             elif key in (353, 260): # 353 shift tab, 260 left arrow
                 # back to name_btn
@@ -523,7 +528,7 @@ class SwitchMember(BaseMember):
                 self.off.draw()
             else:
                 return
-            self.windowrefresh()
+            self.window.noutrefresh()
             curses.doupdate()
             return
         elif self.off.focus:
@@ -537,17 +542,17 @@ class SwitchMember(BaseMember):
                 # go to previous member widget or scroll pad
                 self.off.focus = False
                 self.off.draw()
-                self.name_btn.focus = True
-                self.name_btn.draw()
                 return key
-            elif key == 261:   # 261 right arrow
+            elif key in (32, 261):   # 32 space, 261 right arrow
                 # go to name_btn
                 self.off.focus = False
                 self.off.draw()
                 self.name_btn.focus = True
                 self.name_btn.draw()
-            elif key in (32, 9, 338, 339, 258, 259):   # 32 space, 9 tab, 338 page down, 258 down arrow
+            elif key in (9, 338, 339, 258, 259):   # 9 tab, 338 page down, 258 down arrow
                 # go to next widget or scroll pad
+                self.off.focus = False
+                self.off.draw()
                 return key
             elif key in (353, 260):  # 353 shift tab, 260 left arrow
                 # back to on btn
@@ -564,8 +569,8 @@ class SwitchMember(BaseMember):
 
 class LightMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
         self.linecount = 3
 
 
@@ -614,8 +619,8 @@ class LightMember(BaseMember):
 
 class NumberMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
         self.linecount = 3
         if self.vector.perm == "ro":
             self.linecount = 3
@@ -785,8 +790,8 @@ class NumberMember(BaseMember):
 
 class TextMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
         self.linecount = 4
         if self.vector.perm == "ro":
             self.linecount = 3
@@ -904,8 +909,8 @@ class TextMember(BaseMember):
 
 class BLOBMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
         self.linecount = 4
         if self.vector.perm == "ro":
             self.linecount = 3
