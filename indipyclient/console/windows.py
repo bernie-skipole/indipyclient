@@ -2564,7 +2564,7 @@ class VectorScreen(ConsoleClientScreen):
 
         try:
             # window showing the members of the vector
-            self.memberswin = MembersWin(self.stdscr, self.consoleclient, self.vector)
+            self.memberswin = MembersWin(self.stdscr, self.consoleclient, self.tstatewin, self.vector)
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise
@@ -2898,9 +2898,10 @@ class MembersWin(ParentScreen):
     "Used to display the vector members"
 
 
-    def __init__(self, stdscr, consoleclient, vector):
+    def __init__(self, stdscr, consoleclient, tstatewin, vector):
         super().__init__(stdscr, consoleclient)
 
+        self.tstatewin = tstatewin
         self.vector = vector
         self.vectorname = vector.name
 
@@ -2939,15 +2940,15 @@ class MembersWin(ParentScreen):
             self.memberwidgets = []
             for name in self.membernames:
                 if self.vector.vectortype == "SwitchVector":
-                    self.memberwidgets.append(widgets.SwitchMember(self.stdscr, self.consoleclient, self.memwin, self, self.vector, name))
+                    self.memberwidgets.append(widgets.SwitchMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
                 elif self.vector.vectortype == "LightVector":
-                    self.memberwidgets.append(widgets.LightMember(self.stdscr, self.consoleclient, self.memwin, self, self.vector, name))
+                    self.memberwidgets.append(widgets.LightMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
                 elif self.vector.vectortype == "NumberVector":
-                    self.memberwidgets.append(widgets.NumberMember(self.stdscr, self.consoleclient, self.memwin, self, self.vector, name))
+                    self.memberwidgets.append(widgets.NumberMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
                 elif self.vector.vectortype == "TextVector":
-                    self.memberwidgets.append(widgets.TextMember(self.stdscr, self.consoleclient, self.memwin, self, self.vector, name))
+                    self.memberwidgets.append(widgets.TextMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
                 elif self.vector.vectortype == "BLOBVector":
-                    self.memberwidgets.append(widgets.BLOBMember(self.stdscr, self.consoleclient, self.memwin, self, self.vector, name))
+                    self.memberwidgets.append(widgets.BLOBMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name))
         except Exception:
             traceback.print_exc(file=sys.stderr)
             raise

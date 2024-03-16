@@ -348,13 +348,13 @@ class EditString():
 
 class BaseMember:
 
-    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
 
         self.stdscr = stdscr
         self.consoleclient = consoleclient
         self.client = consoleclient.client
         self.window = window
-        self.memberswin = memberswin
+        self.tstatewin = tstatewin
         self.vector = vector
         self.name = name
         membersdict = self.vector.members()
@@ -369,6 +369,12 @@ class BaseMember:
         # that is, for a widow of 80, this gives a button of 30
         self.name_btn = Button(window, self.name, 0, 1, self.maxcols//2-10)
         self._focus = False
+
+
+    def windowrefresh(self):
+        self.window.draw()
+        self.window.noutrefresh()
+
 
     def value(self):
         return self.vector[self.name]
@@ -407,8 +413,8 @@ class BaseMember:
 
 class SwitchMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
-        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
         # create  ON, OFF buttons
         self.on = Button(window, 'ON', 0, 0)
         self.on.bold = True if self.value() == "On" else False
@@ -485,7 +491,7 @@ class SwitchMember(BaseMember):
                 self.on.focus = True
                 self.name_btn.draw()
                 self.on.draw()
-                self.memberswin.widgetsrefresh()
+                self.windowrefresh()
                 curses.doupdate()
             # ignore any other key
             return
@@ -517,7 +523,7 @@ class SwitchMember(BaseMember):
                 self.off.draw()
             else:
                 return
-            self.memberswin.widgetsrefresh()
+            self.windowrefresh()
             curses.doupdate()
             return
         elif self.off.focus:
@@ -551,15 +557,15 @@ class SwitchMember(BaseMember):
                 self.on.draw()
             else:
                 return
-            self.memberswin.window.window.noutrefresh()
+            self.window.noutrefresh()
             curses.doupdate()
 
 
 
 class LightMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
-        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
         self.linecount = 3
 
 
@@ -608,8 +614,8 @@ class LightMember(BaseMember):
 
 class NumberMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
-        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
         self.linecount = 3
         if self.vector.perm == "ro":
             self.linecount = 3
@@ -663,7 +669,7 @@ class NumberMember(BaseMember):
             # set brackets of editable field in bold
             self.window.addstr( self.startline+2, self.maxcols-21, "[", curses.A_BOLD )
             self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
-            self.memberswin.window.noutrefresh()
+            self.window.noutrefresh()
             curses.doupdate()
             # set cursor visible
             curses.curs_set(1)
@@ -708,7 +714,7 @@ class NumberMember(BaseMember):
         value = editstring.getnumber(key)
         self._newvalue = value.strip()
         self.window.addstr( self.startline+2, self.maxcols-20, value )
-        self.memberswin.window.noutrefresh()
+        self.window.noutrefresh()
         editstring.movecurs()
         curses.doupdate()
 
@@ -722,7 +728,7 @@ class NumberMember(BaseMember):
             self._newvalue = self.member.getformattedvalue()
             # draw the value to be edited
             self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-            self.memberswin.widgetsrefresh()
+            self.windowrefresh()
             curses.doupdate()
             return False
         # check step, and round newfloat to nearest step value
@@ -738,7 +744,7 @@ class NumberMember(BaseMember):
             self._newvalue = self.member.getformattedstring(minvalue)
             # draw the value to be edited
             self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-            self.memberswin.widgetsrefresh()
+            self.windowrefresh()
             curses.doupdate()
             return True
         if self.member.max != self.member.min:
@@ -748,14 +754,14 @@ class NumberMember(BaseMember):
                 self._newvalue = self.member.getformattedstring(maxvalue)
                 # draw the value to be edited
                 self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-                self.memberswin.widgetsrefresh()
+                self.windowrefresh()
                 curses.doupdate()
                 return True
         # reset self._newvalue to the correct format, and accept this
         self._newvalue = self.member.getformattedstring(newfloat)
         # draw the value to be edited
         self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-        self.memberswin.window.noutrefresh()
+        self.window.noutrefresh()
         curses.doupdate()
         return True
 
@@ -779,8 +785,8 @@ class NumberMember(BaseMember):
 
 class TextMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
-        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
         self.linecount = 4
         if self.vector.perm == "ro":
             self.linecount = 3
@@ -835,7 +841,7 @@ class TextMember(BaseMember):
             # set brackets of editable field in bold
             self.window.addstr( self.startline+2, self.maxcols-35, "[", curses.A_BOLD )
             self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
-            self.memberswin.window.nooutrefresh()
+            self.window.noutrefresh()
             curses.doupdate()
             # set cursor visible
             curses.curs_set(1)
@@ -869,7 +875,7 @@ class TextMember(BaseMember):
         value = editstring.gettext(key)
         self._newvalue = value.strip()
         self.window.addstr( self.startline+2, self.maxcols-34, value )
-        self.memberswin.window.noutrefresh()
+        self.window.noutrefresh()
         editstring.movecurs()
         curses.doupdate()
 
@@ -898,8 +904,8 @@ class TextMember(BaseMember):
 
 class BLOBMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, memberswin, vector, name):
-        super().__init__(stdscr, consoleclient, window, memberswin, vector, name)
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name)
         self.linecount = 4
         if self.vector.perm == "ro":
             self.linecount = 3
@@ -990,7 +996,7 @@ class BLOBMember(BaseMember):
             # set brackets of editable field in bold
             self.window.addstr( self.startline+2, 20, "[", curses.A_BOLD )
             self.window.addstr( self.startline+2, 19 + self.fieldlength, "]", curses.A_BOLD )
-            self.memberswin.widgetsrefresh()
+            self.windowrefresh()
             curses.doupdate()
             # set cursor visible
             curses.curs_set(1)
@@ -1003,7 +1009,7 @@ class BLOBMember(BaseMember):
             # after text input, set send button focus
             self.send_btn.focus = True
             self.send_btn.draw()
-            self.memberswin.widgetsrefresh()
+            self.windowrefresh()
             curses.doupdate()
 
 
@@ -1022,7 +1028,7 @@ class BLOBMember(BaseMember):
                 self.send_btn.draw()
                 self.name_btn.focus = True
                 self.name_btn.draw()
-                self.memberswin.window.noutrefresh()
+                self.window.noutrefresh()
                 curses.doupdate()
                 try:
                     filepath = pathlib.Path(self._newvalue).expanduser().resolve()
@@ -1031,19 +1037,18 @@ class BLOBMember(BaseMember):
                     self.vector.send_newBLOBVector(members=members)
                 except Exception:
                     self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )
-                    self.memberswin.widgetsrefresh()
+                    self.windowrefresh()
                     curses.doupdate()
                 else:
                     self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
                     self.vector.state = 'Busy'
-                    tstatewin = self.memberswin.tstatewin
-                    draw_timestamp_state(self.consoleclient, tstatewin, self.vector)
-                    tstatewin.noutrefresh()
-                    self.memberswin.widgetsrefresh()
+                    draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
+                    self.tstatewin.noutrefresh()
+                    self.windowrefresh()
                     curses.doupdate()
                 time.sleep(0.4)      # blocking, to avoid screen being changed while this time elapses
                 self.window.addstr( self.startline+2, 1, "Filepath to send:" )
-                self.memberswin.widgetsrefresh()
+                self.windowrefresh()
                 curses.doupdate()
                 return
             elif key in (353, 260, 339, 259):  # 353 shift tab, 260 left arrow, 339 page up, 259 up arrow
@@ -1052,7 +1057,7 @@ class BLOBMember(BaseMember):
                 self.send_btn.draw()
                 self.name_btn.focus = True
                 self.name_btn.draw()
-                self.memberswin.widgetsrefresh()
+                self.windowrefresh()
                 curses.doupdate()
                 return
             else:
@@ -1072,6 +1077,6 @@ class BLOBMember(BaseMember):
         value = editstring.gettext(key)
         self._newvalue = value.strip()
         self.window.addstr( self.startline+2, 21, value )
-        self.memberswin.window.noutrefresh()
+        self.window.noutrefresh()
         editstring.movecurs()
         curses.doupdate()
