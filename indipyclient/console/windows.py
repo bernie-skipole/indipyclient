@@ -3243,7 +3243,6 @@ class MembersWin(ParentScreen):
                     curses.doupdate()
                     return
 
-
                 if (displayedindex := self.displayed_widgetindex_in_focus()) is not None:
                     # A widget is in focus
                     widget = self.displayed[displayedindex]
@@ -3293,6 +3292,94 @@ class MembersWin(ParentScreen):
                     self.displayedwidgets()
                     nextwidget = self.displayed[-1]
                     nextwidget.focus = True
+                    self.draw()
+                    curses.doupdate()
+                    return
+
+# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+
+            if key in (353, 260, 339, 259):   # go to prev button
+
+                if self.cancel_btn.focus:
+                    # go to submit button
+                    self.cancel_btn.focus = False
+                    self.submit_btn.focus = True
+                    self.cancel_btn.draw()
+                    self.submit_btn.draw()
+                    self.submitwin.noutrefresh()
+                    curses.doupdate()
+                    return
+                if self.submit_btn.focus:
+                    self.submit_btn.focus = False
+                    self.submit_btn.draw()
+                    self.submitwin.noutrefresh()
+                    if self.botmore_btn.show:
+                        self.botmore_btn.focus = True
+                        self.botmore_btn.draw()
+                        self.botmorewin.noutrefresh()
+                        curses.doupdate()
+                        return
+                    # set bottom displayed widget into focus
+                    widget = self.displayed[-1]
+                    widget.focus = True
+                    widget.draw()
+                    self.memwin.noutrefresh()
+                    curses.doupdate()
+                    return
+                if self.botmore_btn.focus:
+                    # set bottom displayed widget into focus
+                    self.botmore_btn.focus = False
+                    self.botmore_btn.draw()
+                    self.botmorewin.noutrefresh()
+                    widget = self.displayed[-1]
+                    widget.focus = True
+                    widget.draw()
+                    self.memwin.noutrefresh()
+                    curses.doupdate()
+                    return
+                if self.topmore_btn.focus:
+                    # top button of this window
+                    return "previous"
+                # So now check if a member button is in focus
+                if (displayedindex := self.displayed_widgetindex_in_focus()) is not None:
+                    # A widget is in focus
+                    widget = self.displayed[displayedindex]
+                    if displayedindex:
+                        # not zero, so focus can just move up one
+                        widget.focus = False
+                        widget.draw()
+                        prevwidget = self.displayed[displayedindex-1]
+                        prevwidget.focus = True
+                        prevwidget.draw()
+                        self.memwin.noutrefresh()
+                        curses.doupdate()
+                        return
+                    # showing top widget of the displayed widgets
+                    # Either scroll down, or jump to more ....
+                    # self.topindex is the widget index
+                    if not self.topindex:
+                        # This is the first widget, the more button will not be shown
+                        return "previous"
+                    # top displayed widgets, but more can be shown, if shift-tab pressed,
+                    # jump to topmore
+                    if key == 353:
+                        # shift tab key pressed, set the topmore button in focus
+                        widget.focus = False
+                        widget.draw()
+                        self.topmore_btn.focus = True
+                        self.topmore_btn.draw()
+                        self.memwin.noutrefresh()
+                        self.topmorewin.noutrefresh()
+                        curses.doupdate()
+                        return
+                    # prev required, but not shift-tab and not first widget,
+                    # so scroll the window down
+                    widget.focus = False
+                    widget.draw()
+                    self.topindex -= 1
+                    self.displayedwidgets()
+                    prevwidget = self.displayed[0]
+                    prevwidget.focus = True
                     self.draw()
                     curses.doupdate()
                     return
