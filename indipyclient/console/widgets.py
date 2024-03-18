@@ -628,6 +628,7 @@ class NumberMember(BaseMember):
             self.linecount = 4
         # the newvalue to be edited and sent
         self._newvalue = self.vector.getformattedvalue(self.name)
+        # self.numberfocus is True if the editable number field is in focus
         self.numberfocus = False
 
 
@@ -662,30 +663,18 @@ class NumberMember(BaseMember):
         # draw the value to be edited
         self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
 
-
-
     def setkey(self, key):
         "This widget is in focus, and deals with inputs"
 
         if self.numberfocus:
-            # highlight editable field has focus
-            self.name_btn.focus = False
-            self.name_btn.draw()
-            # set brackets of editable field in bold
-            self.window.addstr( self.startline+2, self.maxcols-21, "[", curses.A_BOLD )
-            self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
-            self.window.noutrefresh()
-            curses.doupdate()
-            # set cursor visible
-            curses.curs_set(1)
 
-            # pad starts at self.stdscr row 7, col 1
-                                                      # row             startcol          endcol            start text
-            editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
+            # get position of editable text
+            #startrow, startcol = self.window.getbegyx()
+
+                                                      # row                     startcol                  endcol                start text
 
 
-            result = self.numberinput(key, editstring)
-
+            result = self.numberinput(key)
             return result
 
         if self.name_btn.focus:
@@ -695,11 +684,24 @@ class NumberMember(BaseMember):
             if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
                 # input a number here
                 self.numberfocus = True
+                # highlight editable field has focus
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                # set brackets of editable field in bold
+                self.window.addstr( self.startline+2, self.maxcols-21, "[", curses.A_BOLD )
+                self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
+                startrow, startcol = self.window.getbegyx()
+                self.editstring = EditString(self.stdscr, startrow+self.startline+2, startcol+self.maxcols-20, startcol+self.maxcols-5, self.newvalue())
+                #self.stdscr.move(startrow+self.startline+2, startcol+self.maxcols-4)
+                self.window.noutrefresh()
+                curses.doupdate()
+                # set cursor visible
+                curses.curs_set(1)
                 return
 
 
 
-    def numberinput(self, key, editstring):
+    def numberinput(self, key):
         """Input a number value, set it into self._newvalue as a string
            if all ok, return 9 to move to next field"""
 
@@ -707,7 +709,9 @@ class NumberMember(BaseMember):
             # a number self._newvalue is being submitted
             if not self.checknumber():
                 # number not valid, start again by creating a new instance of EditString and self._newvalue reset
-                editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-20, 1+self.maxcols-5, self.newvalue())
+                # get position of editable text
+                startrow, startcol = self.window.getbegyx()
+                self.editstring = EditString(self.stdscr, startrow+self.startline+2, startcol+self.maxcols-20, startcol+self.maxcols-5, self.newvalue())
                 return
             else:
                 # self._newvalue is correct, this value is to be submitted
@@ -716,7 +720,7 @@ class NumberMember(BaseMember):
                 self.numberfocus = False
                 return 9
         # key is to be inserted into the editable field, and self._newvalue updated
-        value = editstring.getnumber(key)
+        value = self.editstring.getnumber(key)
         self._newvalue = value.strip()
         self.window.addstr( self.startline+2, self.maxcols-20, value )
         self.window.noutrefresh()
