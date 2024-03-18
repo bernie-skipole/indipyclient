@@ -702,10 +702,10 @@ class NumberMember(BaseMember):
     def setkey(self, key):
         "This widget is in focus, and deals with inputs"
         if self.name_btn.focus:
-            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+            if key in (9, 353, 260, 339, 338, 259, 258):  # 9 tab, 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
-            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+            if key in (32, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
                 self.name_btn.focus = False
                 self.name_btn.draw()
                 # input a number here
@@ -800,164 +800,6 @@ class NumberMember(BaseMember):
         curses.doupdate()
         return True
 
-
-
-class OLDNumberMember(BaseMember):
-
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
-        self.linecount = 3
-        if self.vector.perm == "ro":
-            self.linecount = 3
-        else:
-            self.linecount = 4
-        # the newvalue to be edited and sent
-        self._newvalue = self.vector.getformattedvalue(self.name)
-        # self.numberfocus is True if the editable number field is in focus
-        self.numberfocus = False
-
-
-    def newvalue(self):
-        value = self._newvalue.strip()
-        if len(value) > 16:
-            value = value[:16]
-        return value
-
-
-    def reset(self):
-        "Reset the widget removing any value updates, called by cancel"
-        if self.vector.perm == "ro":
-            return
-        self._newvalue = self.member.getformattedvalue()
-        textnewvalue = self.newvalue().ljust(16)
-        # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
-
-    def draw(self, startline=None):
-        super().draw(startline)
-        # draw the number value
-        text = self.member.getformattedvalue().strip()
-        if len(text) > 16:
-            text = text[:16]
-        # draw the value
-        self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
-        if self.vector.perm == "ro":
-            return
-        # the length of the editable number field is 16
-        textnewvalue = self.newvalue().ljust(16)
-        # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-21, "[" + textnewvalue+ "]" )
-
-    def setkey(self, key):
-        "This widget is in focus, and deals with inputs"
-
-        if self.numberfocus:
-
-            # get position of editable text
-            #startrow, startcol = self.window.getbegyx()
-
-                                                      # row                     startcol                  endcol                start text
-
-
-            result = self.numberinput(key)
-            return result
-
-        if self.name_btn.focus:
-            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-                # go to next or previous member widget
-                return key
-            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
-                # input a number here
-                self.numberfocus = True
-                # highlight editable field has focus
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                # set brackets of editable field in bold
-                self.window.addstr( self.startline+2, self.maxcols-21, "[", curses.A_BOLD )
-                self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
-                startrow, startcol = self.window.getbegyx()
-                self.editstring = EditString(self.stdscr, startrow+self.startline+2, startcol+self.maxcols-20, startcol+self.maxcols-5, self.newvalue())
-                #self.stdscr.move(startrow+self.startline+2, startcol+self.maxcols-4)
-                self.window.noutrefresh()
-                curses.doupdate()
-                # set cursor visible
-                curses.curs_set(1)
-                return
-
-
-
-    def numberinput(self, key):
-        """Input a number value, set it into self._newvalue as a string
-           if all ok, return 9 to move to next field"""
-
-        if key == 10:
-            # a number self._newvalue is being submitted
-            if not self.checknumber():
-                # number not valid, start again by creating a new instance of EditString and self._newvalue reset
-                # get position of editable text
-                startrow, startcol = self.window.getbegyx()
-                self.editstring = EditString(self.stdscr, startrow+self.startline+2, startcol+self.maxcols-20, startcol+self.maxcols-5, self.newvalue())
-                return
-            else:
-                # self._newvalue is correct, this value is to be submitted
-                # return 9 to move to next field
-                curses.curs_set(0)
-                self.numberfocus = False
-                return 9
-        # key is to be inserted into the editable field, and self._newvalue updated
-        value = self.editstring.getnumber(key)
-        self._newvalue = value.strip()
-        self.window.addstr( self.startline+2, self.maxcols-20, value )
-        self.window.noutrefresh()
-        editstring.movecurs()
-        curses.doupdate()
-
-    def checknumber(self):
-        "Return True if self._newvalue is ok"
-        # self._newvalue is the new value input
-        try:
-            newfloat = self.member.getfloat(self._newvalue)
-        except (ValueError, TypeError):
-            # reset self._newvalue
-            self._newvalue = self.member.getformattedvalue()
-            # draw the value to be edited
-            self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-            self.windowrefresh()
-            curses.doupdate()
-            return False
-        # check step, and round newfloat to nearest step value
-        stepvalue = self.member.getfloat(self.member.step)
-        minvalue = self.member.getfloat(self.member.min)
-        if stepvalue:
-            stepvalue = Decimal(str(stepvalue))
-            difference = newfloat - minvalue
-            newfloat = minvalue + float(int(Decimal(str(difference)) / stepvalue) * stepvalue)
-        # check not less than minimum
-        if newfloat < minvalue:
-            # reset self._newvalue to be the minimum, and accept this
-            self._newvalue = self.member.getformattedstring(minvalue)
-            # draw the value to be edited
-            self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-            self.windowrefresh()
-            curses.doupdate()
-            return True
-        if self.member.max != self.member.min:
-            maxvalue = self.member.getfloat(self.member.max)
-            if newfloat > maxvalue:
-                # reset self._newvalue to be the maximum, and accept this
-                self._newvalue = self.member.getformattedstring(maxvalue)
-                # draw the value to be edited
-                self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-                self.windowrefresh()
-                curses.doupdate()
-                return True
-        # reset self._newvalue to the correct format, and accept this
-        self._newvalue = self.member.getformattedstring(newfloat)
-        # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-        self.window.noutrefresh()
-        curses.doupdate()
-        return True
 
 
 # <!ATTLIST defTextVector
