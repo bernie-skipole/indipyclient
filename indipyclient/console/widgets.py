@@ -741,7 +741,7 @@ class NumberMember(BaseMember):
                 self.nmbr_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
-                return
+                return 9 # tab for next item
             # key is to be inserted into the editable field, and self._newpath updated
             value = editstring.getnumber(key)
             self._newvalue = value.strip()

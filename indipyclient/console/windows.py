@@ -2844,19 +2844,28 @@ class VectorScreen(ConsoleClientScreen):
                 if self.memberswin.focus:
                     # focus has been given to the MembersWin
 
-                    result = self.memberswin.setkey(key)
-                    if not result:
-                        continue
+                    while True:
 
-                    if result == "edit":
-                        # An editable field is in focus
-                        inputfield = self.memberswin.inputfield()
-                        if inputfield is not None:
+                        result = self.memberswin.setkey(key)
+                        if result == "edit":
+                            # An editable field is in focus
+                            inputfield = self.memberswin.inputfield()
+                            if inputfield is None:
+                                break
                             result = await inputfield()
-                            if not result:
-                                continue
                             if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                                 return result
+                            if not result:
+                                break
+                            # inputfield has returned a key, typically 9 for next
+                            # which now loops back into self.memberswin.setkey(key)
+                            key = result
+                        else:
+                            # no editable field, so break out of this loop
+                            break
+
+                    if not result:
+                        continue
 
 
                     if result == "submitted":
