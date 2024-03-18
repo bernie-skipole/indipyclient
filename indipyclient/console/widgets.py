@@ -678,10 +678,8 @@ class NumberMember(BaseMember):
             return
         self._newvalue = self.member.getformattedvalue()
         # draw the value to be edited
-        self.nmbr_txt.text = self.newvalue() #.ljust(16)
+        self.nmbr_txt.text = self.newvalue()
         self.nmbr_txt.draw()
-        ## self.window.noutrefresh() probably not needed ##############
-
 
 
     def draw(self, startline=None):
@@ -705,7 +703,7 @@ class NumberMember(BaseMember):
             if key in (9, 353, 260, 339, 338, 259, 258):  # 9 tab, 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
-            if key in (32, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+            if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
                 self.name_btn.focus = False
                 self.name_btn.draw()
                 # input a number here

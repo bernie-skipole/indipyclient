@@ -3159,6 +3159,8 @@ class MembersWin(ParentScreen):
 
     def inputfield(self):
         "Returns None, or an awaitable widget inputfield"
+        if self.vector.perm == "ro":
+            return
         return self._inputfield
 
 
