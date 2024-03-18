@@ -372,6 +372,11 @@ class BaseMember:
         self.linecount = 4
         self.name_btn = Button(window, self.name, 0, 1, namelen+2)
         self._focus = False
+        # if close string is set, it becomes the return value from input routines
+        self._close = ""
+
+    def close(self, value):
+        self._close = value
 
 
     def windowrefresh(self):
@@ -414,6 +419,33 @@ class BaseMember:
 
     def setkey(self, key):
         return key
+
+    async def keyinput(self):
+        """Waits for a key press,
+           if self.consoleclient.stop is True, returns 'Stop',
+           if screen has been resized, returns 'Resize',
+           if self._close has been given a value, returns that value
+           Otherwise returns the key pressed."""
+        while True:
+            await asyncio.sleep(0)
+            if self.consoleclient.stop:
+                return "Stop"
+            if self._close:
+                return self._close
+            key = self.stdscr.getch()
+            if key == -1:
+                continue
+            if key == curses.KEY_RESIZE:
+                return "Resize"
+            if key == curses.KEY_MOUSE:
+                mouse = curses.getmouse()
+                # mouse is (id, x, y, z, bstate)
+                if mouse[4] == curses.BUTTON1_RELEASED:
+                    # return a tuple of the mouse coordinates
+                    #          row     col
+                    return (mouse[2], mouse[1])
+                continue
+            return key
 
 
 
@@ -618,6 +650,159 @@ class LightMember(BaseMember):
 
 
 class NumberMember(BaseMember):
+
+    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
+        self.linecount = 3
+        if self.vector.perm == "ro":
+            self.linecount = 3
+        else:
+            self.linecount = 4
+        # the newvalue to be edited and sent
+        self._newvalue = self.vector.getformattedvalue(self.name)
+
+                                    # window         text        row col, length of field
+        self.nmbr_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
+
+
+    def newvalue(self):
+        value = self._newvalue.strip()
+        if len(value) > 16:
+            value = value[:16]
+        return value
+
+
+    def reset(self):
+        "Reset the widget removing any value updates, called by cancel"
+        if self.vector.perm == "ro":
+            return
+        self._newvalue = self.member.getformattedvalue()
+        # draw the value to be edited
+        self.nmbr_txt.text = self.newvalue() #.ljust(16)
+        self.nmbr_txt.draw()
+        ## self.window.noutrefresh() probably not needed ##############
+
+
+
+    def draw(self, startline=None):
+        super().draw(startline)
+        # draw the number value
+        text = self.member.getformattedvalue().strip()
+        if len(text) > 16:
+            text = text[:16]
+        # draw the value
+        self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
+        if self.vector.perm == "ro":
+            return
+        # the length of the editable number field is 16
+        textnewvalue = self.newvalue().ljust(16)
+        # draw the value to be edited
+        self.nmbr_txt.draw()
+
+    def setkey(self, key):
+        "This widget is in focus, and deals with inputs"
+        if self.name_btn.focus:
+            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                # go to next or previous member widget
+                return key
+            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                # input a number here
+                self.nmbr_txt.focus = True
+                self.nmbr_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return "edit"
+
+
+    async def inputfield(self):
+        "Input text, set it into self._newvalue"
+        # set cursor visible
+        curses.curs_set(1)
+        editstring = self.nmbr_txt.editstring(self.stdscr)
+
+        while not self.consoleclient.stop:
+            key = await self.keyinput()
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                curses.curs_set(0)
+                return key
+            if isinstance(key, tuple):
+                if key in self.nmbr_txt:
+                    continue
+                else:
+                    curses.curs_set(0)
+                    return key
+            if key == 10:
+                curses.curs_set(0)
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                self.nmbr_txt.focus = False
+                self.nmbr_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return
+            # key is to be inserted into the editable field, and self._newpath updated
+            value = editstring.getnumber(key)
+            self._newvalue = value.strip()
+            # set new value back into self.nmbr_txt
+            self.nmbr_txt.text = value
+            self.nmbr_txt.draw()
+            self.window.noutrefresh()
+            editstring.movecurs()
+            curses.doupdate()
+        curses.curs_set(0)
+
+    def checknumber(self):
+        "Return True if self._newvalue is ok"
+        # self._newvalue is the new value input
+        try:
+            newfloat = self.member.getfloat(self._newvalue)
+        except (ValueError, TypeError):
+            # reset self._newvalue
+            self._newvalue = self.member.getformattedvalue()
+            # draw the value to be edited
+            self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
+            self.windowrefresh()
+            curses.doupdate()
+            return False
+        # check step, and round newfloat to nearest step value
+        stepvalue = self.member.getfloat(self.member.step)
+        minvalue = self.member.getfloat(self.member.min)
+        if stepvalue:
+            stepvalue = Decimal(str(stepvalue))
+            difference = newfloat - minvalue
+            newfloat = minvalue + float(int(Decimal(str(difference)) / stepvalue) * stepvalue)
+        # check not less than minimum
+        if newfloat < minvalue:
+            # reset self._newvalue to be the minimum, and accept this
+            self._newvalue = self.member.getformattedstring(minvalue)
+            # draw the value to be edited
+            self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
+            self.windowrefresh()
+            curses.doupdate()
+            return True
+        if self.member.max != self.member.min:
+            maxvalue = self.member.getfloat(self.member.max)
+            if newfloat > maxvalue:
+                # reset self._newvalue to be the maximum, and accept this
+                self._newvalue = self.member.getformattedstring(maxvalue)
+                # draw the value to be edited
+                self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
+                self.windowrefresh()
+                curses.doupdate()
+                return True
+        # reset self._newvalue to the correct format, and accept this
+        self._newvalue = self.member.getformattedstring(newfloat)
+        # draw the value to be edited
+        self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
+        self.window.noutrefresh()
+        curses.doupdate()
+        return True
+
+
+
+class OLDNumberMember(BaseMember):
 
     def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
         super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)

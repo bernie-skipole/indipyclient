@@ -2843,9 +2843,20 @@ class VectorScreen(ConsoleClientScreen):
 
                 if self.memberswin.focus:
                     # focus has been given to the MembersWin
+
                     result = self.memberswin.setkey(key)
                     if not result:
                         continue
+
+                    if result == "edit":
+                        # An editable field is in focus
+                        inputfield = self.memberswin.inputfield()
+                        if inputfield is not None:
+                            result = await inputfield()
+                            if not result:
+                                continue
+                            if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                                return result
 
 
                     if result == "submitted":
@@ -2995,6 +3006,9 @@ class MembersWin(ParentScreen):
         # keep these in a list for easy reference
         self.controlbtns = [ self.topmore_btn, self.botmore_btn, self.submit_btn, self.cancel_btn]
 
+        # this will be set to a widgets awitable input field if it gets focus
+        self._inputfield = None
+
 
     def displayedwidgets(self):
         "Sets list of widgets displayed"
@@ -3134,6 +3148,10 @@ class MembersWin(ParentScreen):
                 return index
 
 
+    def inputfield(self):
+        "Returns None, or an awaitable widget inputfield"
+        return self._inputfield
+
 
     def setkey(self, key):
 
@@ -3145,10 +3163,17 @@ class MembersWin(ParentScreen):
                 for widget in self.displayed:
                     if widget.focus:
                         # a widget is in focus
-                        key = widget.setkey(key)
-                        if key:
+                        result = widget.setkey(key)
+                        if result == "edit":
+                            # this sets an input awaitable
+                            self._inputfield = widget.inputfield
+                            return result
+                        else:
+                            self._inputfield = None
+                        if result:
                             # if the widget returns a key. then continue with
                             # checking it
+                            key = result
                             break
                         # the widget has handled the key, and returns None
                         # to indicate no further checks required.
