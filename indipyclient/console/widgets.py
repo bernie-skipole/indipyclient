@@ -246,12 +246,11 @@ class Text:
 
     def editstring(self, stdscr):
         "Returns an object to edit the string"
-        editor = EditString(stdscr,
+        return   EditString(stdscr,
                             self.fieldrow,                  # row
                             self.startcol+1,                # start col
                             self.endcol-2,                  # endcol
                             self.text )                     # the actual text
-        return editor
 
 
 
@@ -653,7 +652,6 @@ class NumberMember(BaseMember):
 
     def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
         super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
-        self.linecount = 3
         if self.vector.perm == "ro":
             self.linecount = 3
         else:
@@ -684,18 +682,19 @@ class NumberMember(BaseMember):
 
     def draw(self, startline=None):
         super().draw(startline)
+
         # draw the number value
-        text = self.member.getformattedvalue().strip()
-        if len(text) > 16:
-            text = text[:16]
-        # draw the value
-        self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
+        if self.vector.perm != "wo":
+            text = self.member.getformattedvalue().strip()
+            if len(text) > 16:
+                text = text[:16]
+            # draw the value
+            self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
+
         if self.vector.perm == "ro":
             return
-        # the length of the editable number field is 16
-        textnewvalue = self.newvalue().ljust(16)
-        # draw the value to be edited
         self.nmbr_txt.draw()
+
 
     def setkey(self, key):
         "This widget is in focus, and deals with inputs"
@@ -715,7 +714,7 @@ class NumberMember(BaseMember):
 
 
     async def inputfield(self):
-        "Input text, set it into self._newvalue"
+        "Input number, set it into self._newvalue"
         # set cursor visible
         curses.curs_set(1)
         editstring = self.nmbr_txt.editstring(self.stdscr)
@@ -742,7 +741,6 @@ class NumberMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9 # tab key for next item
-            # key is to be inserted into the editable field, and self._newpath updated
             value = editstring.getnumber(key)
             self._newvalue = value.strip()
             # set new value back into self.nmbr_txt
@@ -805,13 +803,16 @@ class TextMember(BaseMember):
 
     def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
         super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
-        self.linecount = 4
         if self.vector.perm == "ro":
             self.linecount = 3
+        else:
+            self.linecount = 4
         # the newvalue to be edited and sent
         self._newvalue = self.vector[self.name]
 
-        self.textfocus = False
+                               # window         text        row                col           length of field
+        self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-35, txtlen=30)
+
 
     def newvalue(self):
         value = self._newvalue.strip()
@@ -824,9 +825,10 @@ class TextMember(BaseMember):
         if self.vector.perm == "ro":
             return
         self._newvalue = self.member.membervalue
-        textnewvalue = self.newvalue().ljust(30)
         # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-35, "[" + textnewvalue+ "]" )
+        self.edit_txt.text = self.newvalue()
+        self.edit_txt.draw()
+
 
     def draw(self, startline=None):
         super().draw(startline)
@@ -841,61 +843,63 @@ class TextMember(BaseMember):
 
         if self.vector.perm == "ro":
             return
-
-        # the length of the editable text field is 30
-        textnewvalue = self.newvalue().ljust(30)
-        # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-35, "[" + textnewvalue+ "]" )
+        self.edit_txt.draw()
 
 
     def setkey(self, key):
         "This widget is in focus, and deals with inputs"
-
-        if self.textfocus:
-            # highlight editable field has focus
-            # highlight editable field has focus
-            self.name_btn.focus = False
-            self.name_btn.draw()
-            # set brackets of editable field in bold
-            self.window.addstr( self.startline+2, self.maxcols-35, "[", curses.A_BOLD )
-            self.window.addstr( self.startline+2, self.maxcols-4, "]", curses.A_BOLD )
-            self.window.noutrefresh()
-            curses.doupdate()
-            # set cursor visible
-            curses.curs_set(1)
-            # pad starts at self.stdscr row 7, col 1
-                                                      # row             startcol          endcol            start text
-            editstring = EditString(self.stdscr, 7+self.startline+2, 1+self.maxcols-34, 1+self.maxcols-5, self.newvalue())
-
-
-            result = self.textinput(key, editstring)
-            return result
-
         if self.name_btn.focus:
-            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+            if key in (9, 353, 260, 339, 338, 259, 258):  # 9 tab, 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
-            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
-                # text input here
-                self.textfocus = True
+            if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                # input a text string here
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return "edit"
 
 
+    async def inputfield(self):
+        "Input text, set it into self._newvalue"
+        # set cursor visible
+        curses.curs_set(1)
+        editstring = self.edit_txt.editstring(self.stdscr)
 
-    def textinput(self, key, editstring):
-        """Input text, set it into self._newvalue"
-           if all ok, return 9 to move to next field"""
+        while not self.consoleclient.stop:
+            key = await self.keyinput()
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                curses.curs_set(0)
+                return key
+            if isinstance(key, tuple):
+                if key in self.edit_txt:
+                    continue
+                else:
+                    curses.curs_set(0)
+                    return key
+            if key == 10:
+                curses.curs_set(0)
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                self.edit_txt.text = self._newvalue
+                self.edit_txt.focus = False
+                self.edit_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return 9 # tab key for next item
+            value = editstring.gettext(key)
+            self._newvalue = value.strip()
+            # set new value back into self.edit_txt
+            self.edit_txt.text = value
+            self.edit_txt.draw()
+            self.window.noutrefresh()
+            editstring.movecurs()
+            curses.doupdate()
+        curses.curs_set(0)
 
-        if key == 10:
-            curses.curs_set(0)
-            self.numberfocus = False
-            return 9
-        # key is to be inserted into the editable field, and self._newvalue updated
-        value = editstring.gettext(key)
-        self._newvalue = value.strip()
-        self.window.addstr( self.startline+2, self.maxcols-34, value )
-        self.window.noutrefresh()
-        editstring.movecurs()
-        curses.doupdate()
 
 
 # Define a property that holds one or more Binary Large Objects, BLOBs.
