@@ -734,14 +734,16 @@ class NumberMember(BaseMember):
                     curses.curs_set(0)
                     return key
             if key == 10:
+                self.checknumber()
                 curses.curs_set(0)
                 self.name_btn.focus = True
                 self.name_btn.draw()
+                self.nmbr_txt.text = self._newvalue
                 self.nmbr_txt.focus = False
                 self.nmbr_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
-                return 9 # tab for next item
+                return 9 # tab key for next item
             # key is to be inserted into the editable field, and self._newpath updated
             value = editstring.getnumber(key)
             self._newvalue = value.strip()
@@ -754,18 +756,14 @@ class NumberMember(BaseMember):
         curses.curs_set(0)
 
     def checknumber(self):
-        "Return True if self._newvalue is ok"
+        "set self._newvalue, limiting it to correct range"
         # self._newvalue is the new value input
         try:
             newfloat = self.member.getfloat(self._newvalue)
         except (ValueError, TypeError):
             # reset self._newvalue
             self._newvalue = self.member.getformattedvalue()
-            # draw the value to be edited
-            self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-            self.windowrefresh()
-            curses.doupdate()
-            return False
+            return
         # check step, and round newfloat to nearest step value
         stepvalue = self.member.getfloat(self.member.step)
         minvalue = self.member.getfloat(self.member.min)
@@ -777,29 +775,15 @@ class NumberMember(BaseMember):
         if newfloat < minvalue:
             # reset self._newvalue to be the minimum, and accept this
             self._newvalue = self.member.getformattedstring(minvalue)
-            # draw the value to be edited
-            self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-            self.windowrefresh()
-            curses.doupdate()
-            return True
+            return
         if self.member.max != self.member.min:
             maxvalue = self.member.getfloat(self.member.max)
             if newfloat > maxvalue:
                 # reset self._newvalue to be the maximum, and accept this
                 self._newvalue = self.member.getformattedstring(maxvalue)
-                # draw the value to be edited
-                self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-                self.windowrefresh()
-                curses.doupdate()
-                return True
+                return
         # reset self._newvalue to the correct format, and accept this
         self._newvalue = self.member.getformattedstring(newfloat)
-        # draw the value to be edited
-        self.window.addstr( self.startline+2, self.maxcols-20, self.newvalue().ljust(16) )
-        self.window.noutrefresh()
-        curses.doupdate()
-        return True
-
 
 
 # <!ATTLIST defTextVector
