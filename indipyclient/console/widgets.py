@@ -684,12 +684,11 @@ class NumberMember(BaseMember):
         super().draw(startline)
 
         # draw the number value
-        if self.vector.perm != "wo":
-            text = self.member.getformattedvalue().strip()
-            if len(text) > 16:
-                text = text[:16]
-            # draw the value
-            self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
+        text = self.member.getformattedvalue().strip()
+        if len(text) > 16:
+            text = text[:16]
+        # draw the value
+        self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
 
         if self.vector.perm == "ro":
             return
@@ -834,12 +833,11 @@ class TextMember(BaseMember):
         super().draw(startline)
 
         # draw the text
-        if self.vector.perm != "wo":
-            text = self.member.membervalue.strip()
-            if len(text) > 30:
-                text = text[:30]
-            # draw the value
-            self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
+        text = self.member.membervalue.strip()
+        if len(text) > 30:
+            text = text[:30]
+        # draw the value
+        self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
 
         if self.vector.perm == "ro":
             return
