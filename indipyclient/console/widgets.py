@@ -1042,7 +1042,6 @@ class BLOBMember(BaseMember):
                 self.window.addstr( self.startline+2, 1, "Filepath to send:" )
                 self.window.noutrefresh()
                 curses.doupdate()
-                #self.focus = False
                 return 9
 
 
