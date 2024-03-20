@@ -926,16 +926,17 @@ class BLOBMember(BaseMember):
 
     def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
         super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
-        self.linecount = 4
         if self.vector.perm == "ro":
             self.linecount = 3
+        else:
+            self.linecount = 4
         # the filename to be edited and sent
         self._newvalue = ""
         # length of editable field, start with nominal 40
-        self.fieldlength = 40
-        if self.vector.perm != "ro":
-            # set a button on the right
-            self.send_btn = Button(window, "Send", 0, self.maxcols-9, 6)
+                               # window         text        row                col           length of field
+        self.file_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-55, txtlen=40)
+        self.send_btn = Button(window, "Send", 0, self.maxcols-9, 6)
+
         self.fileinput = False
 
 
@@ -951,23 +952,19 @@ class BLOBMember(BaseMember):
         if not self._newvalue:
             return ""
         value = self._newvalue.strip()
-        textlength = self.fieldlength - 2  # for the [] brackets
-        if len(value) > textlength:
-            value = value[:textlength]
+        if len(value) > 40:
+            value = value[:40]
         return value
 
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
             return
-        self._newvalue = ""
-        textlength = self.fieldlength - 2  # for the [] brackets
-        if not self._newvalue:
-            textnewvalue = " "*textlength
-        else:
-            textnewvalue = self.newvalue().ljust(textlength)
+        self._newvalue = self.member.membervalue
         # draw the value to be edited
-        self.window.addstr( self.startline+2, 20, "[" + textnewvalue+ "]" )
+        self.file_txt.text = self.newvalue()
+        self.file_txt.draw()
+
 
     def draw(self, startline=None):
         super().draw(startline)
@@ -988,18 +985,74 @@ class BLOBMember(BaseMember):
             return
 
         # Draw the editable field
-        self.window.addstr( self.startline+2, 1, "Filepath to send:" )  # 18 characters from start from start
-
-        # draw field 20 from start to 10 from end
-        self.fieldlength = self.maxcols-30
-
-        textnewvalue = self.newvalue().ljust(self.fieldlength-2)
-        # draw the field and value to be edited
-        self.window.addstr( self.startline+2, 20, "[" + textnewvalue+ "]" )
+        self.window.addstr( self.startline+2, 1, "Filepath to send:" )  # 18 characters
+        self.file_txt.draw()
 
         # send button
         self.send_btn.row = self.startline+2
         self.send_btn.draw()
+
+
+
+
+    def setkey(self, key):
+        "This widget is in focus, and deals with inputs"
+        if self.name_btn.focus:
+            if key in (9, 353, 260, 339, 338, 259, 258):  # 9 tab, 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                # go to next or previous member widget
+                return key
+            if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                # input a text string here
+                self.file_txt.focus = True
+                self.file_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return "edit"
+
+
+    async def inputfield(self):
+        "Input text, set it into self._newvalue, and also check if self.send_btn is in focus"
+        if self.file_txt.focus:
+            # set cursor visible
+            curses.curs_set(1)
+            editstring = self.file_txt.editstring(self.stdscr)
+
+            while not self.consoleclient.stop:
+                key = await self.keyinput()
+                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                    curses.curs_set(0)
+                    return key
+                if isinstance(key, tuple):
+                    if key in self.file_txt:
+                        continue
+                    else:
+                        curses.curs_set(0)
+                        return key
+                if key == 10:
+                    curses.curs_set(0)
+                    self.send_btn.focus = True
+                    self.send_btn.draw()
+                    self.file_txt.text = self._newvalue
+                    self.file_txt.focus = False
+                    self.file_txt.draw()
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    break
+                value = editstring.gettext(key)
+                self._newvalue = value.strip()
+                # set new value back into self.file_txt
+                self.file_txt.text = value
+                self.file_txt.draw()
+                self.window.noutrefresh()
+                editstring.movecurs()
+                curses.doupdate()
+            curses.curs_set(0)
+        if self.send_btn.focus:
+##########################################################
+
+
 
 
 
