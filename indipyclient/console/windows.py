@@ -3475,13 +3475,7 @@ def submitvector(vector, memberwidgets):
         # members is a dictionary of membername : member value (new text string)
         vector.send_newTextVector(members=members)
         return True
-    elif vector.vectortype == "BLOBVector":
-        members = {}
-        # members is a dictionary of membername : member value , blob size, blob format
-        for member in memberwidgets:
-            filepath = member.newvalue()
-            blobformat = ''.join(pathlib.Path(filepath).suffixes)
-            members[member.name] = (filepath, 0, blobformat)
-        vector.send_newBLOBVector(members=members)
-        return True
+    # BLOBVector's are not called with submit button
+    # each member has its own send button
+    # LightVectors are ro and cannot be submitted
     return False
