@@ -156,10 +156,10 @@ class MessagesScreen(ConsoleClientScreen):
         self.infowin.addstr(1, 0, "Once connected, choose 'Devices' and press Enter. Then use")
         self.infowin.addstr(2, 0, "mouse or Tab/Shift-Tab to move between fields, Enter to select,")
         self.infowin.addstr(3, 0, "and Arrow/Page keys to show further fields where necessary.")
-        self.infowin.addstr(5, 5, "Enable/Disable BLOB's:")
+        self.infowin.addstr(5, 5, "Enable/Disable Received BLOB's:")
 
-        self.enable_btn = widgets.Button(self.infowin, "Enabled", 5, 30, onclick="EnableBLOBs")
-        self.disable_btn = widgets.Button(self.infowin, "Disabled", 5, 40, onclick="DisableBLOBs")
+        self.enable_btn = widgets.Button(self.infowin, "Enabled", 5, 38, onclick="EnableBLOBs")
+        self.disable_btn = widgets.Button(self.infowin, "Disabled", 5, 48, onclick="DisableBLOBs")
         if self.consoleclient.blobenabled:
             self.enable_btn.bold = True
             self.disable_btn.bold = False
@@ -2609,6 +2609,7 @@ class VectorScreen(ConsoleClientScreen):
 
         vectors = [ vectorname for vectorname, vector in self.device.items() if vector.enable ]
 
+
         if self.vectorname not in vectors:
             widgets.drawmessage(self.messwin, f"{self.vectorname} not found!", maxcols=self.maxcols)
             self.vectors_btn.draw()
@@ -2630,23 +2631,27 @@ class VectorScreen(ConsoleClientScreen):
 
         widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
 
-        # Draw the members widgets
-        self.memberswin.draw()
-
         # draw the bottom buttons
         self.vectors_btn.draw()
         self.devices_btn.draw()
         self.messages_btn.draw()
         self.quit_btn.draw()
 
+        # Draw the members widgets
+        self.memberswin.draw()
+
+
         #  and refresh
         self.titlewin.noutrefresh()
         self.messwin.noutrefresh()
         self.tstatewin.noutrefresh()
-        self.memberswin.noutrefresh()
         self.buttwin.noutrefresh()
+        self.memberswin.noutrefresh()
 
         curses.doupdate()
+
+
+
 
 
     def setfocus(self, newfocus):
@@ -2752,6 +2757,17 @@ class VectorScreen(ConsoleClientScreen):
 
         self.show()
         # calling self.show in turn calls button and members draw and noutrefresh methods
+
+        # after an update, the cursor may need putting back into an editable field
+        if self.memberswin.focus:
+            index = self.memberswin.widgetindex_in_focus()
+            if not index is None:
+                widget = self.memberswin.memberwidgets[index]
+                if hasattr(widget, "edit_txt"):
+                    if widget.edit_txt.focus:
+                        editstring = widget.edit_txt.editstring(self.stdscr)
+                        editstring.movecurs()
+                        curses.doupdate()
 
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow

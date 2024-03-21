@@ -654,7 +654,7 @@ class NumberMember(BaseMember):
         self._newvalue = self.vector.getformattedvalue(self.name)
 
                                     # window         text        row col, length of field
-        self.nmbr_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
+        self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
 
 
     def newvalue(self):
@@ -670,8 +670,8 @@ class NumberMember(BaseMember):
             return
         self._newvalue = self.member.getformattedvalue()
         # draw the value to be edited
-        self.nmbr_txt.text = self.newvalue()
-        self.nmbr_txt.draw()
+        self.edit_txt.text = self.newvalue()
+        self.edit_txt.draw()
 
 
     def draw(self, startline=None):
@@ -686,7 +686,7 @@ class NumberMember(BaseMember):
 
         if self.vector.perm == "ro":
             return
-        self.nmbr_txt.draw()
+        self.edit_txt.draw()
 
 
     def setkey(self, key):
@@ -699,8 +699,8 @@ class NumberMember(BaseMember):
                 self.name_btn.focus = False
                 self.name_btn.draw()
                 # input a number here
-                self.nmbr_txt.focus = True
-                self.nmbr_txt.draw()
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
@@ -710,7 +710,7 @@ class NumberMember(BaseMember):
         "Input number, set it into self._newvalue"
         # set cursor visible
         curses.curs_set(1)
-        editstring = self.nmbr_txt.editstring(self.stdscr)
+        editstring = self.edit_txt.editstring(self.stdscr)
 
         while not self.consoleclient.stop:
             key = await self.keyinput()
@@ -718,7 +718,7 @@ class NumberMember(BaseMember):
                 curses.curs_set(0)
                 return key
             if isinstance(key, tuple):
-                if key in self.nmbr_txt:
+                if key in self.edit_txt:
                     continue
                 else:
                     curses.curs_set(0)
@@ -728,17 +728,17 @@ class NumberMember(BaseMember):
                 curses.curs_set(0)
                 self.name_btn.focus = True
                 self.name_btn.draw()
-                self.nmbr_txt.text = self._newvalue
-                self.nmbr_txt.focus = False
-                self.nmbr_txt.draw()
+                self.edit_txt.text = self._newvalue
+                self.edit_txt.focus = False
+                self.edit_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9 # tab key for next item
             value = editstring.getnumber(key)
             self._newvalue = value.strip()
-            # set new value back into self.nmbr_txt
-            self.nmbr_txt.text = value
-            self.nmbr_txt.draw()
+            # set new value back into self.edit_txt
+            self.edit_txt.text = value
+            self.edit_txt.draw()
             self.window.noutrefresh()
             editstring.movecurs()
             curses.doupdate()
@@ -928,7 +928,7 @@ class BLOBMember(BaseMember):
         self._newvalue = ""
         # length of editable field, start with nominal 40
                                # window         text        row                col           length of field
-        self.file_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-55, txtlen=40)
+        self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-55, txtlen=40)
         self.send_btn = Button(window, "Send", 0, self.maxcols-9, 6)
 
         self.fileinput = False
@@ -956,8 +956,8 @@ class BLOBMember(BaseMember):
             return
         self._newvalue = self.member.membervalue
         # draw the value to be edited
-        self.file_txt.text = self.newvalue()
-        self.file_txt.draw()
+        self.edit_txt.text = self.newvalue()
+        self.edit_txt.draw()
 
 
     def draw(self, startline=None):
@@ -980,7 +980,7 @@ class BLOBMember(BaseMember):
 
         # Draw the editable field
         self.window.addstr( self.startline+2, 1, "Filepath to send:" )  # 18 characters
-        self.file_txt.draw()
+        self.edit_txt.draw()
 
         # send button
         self.send_btn.row = self.startline+2
@@ -994,13 +994,13 @@ class BLOBMember(BaseMember):
                 # go to next or previous member widget
                 return key
             if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
-                # name_btn is in focus, set file_txt in focus and return "edit"
+                # name_btn is in focus, set edit_txt in focus and return "edit"
                 # which informs the window to await inputfield
                 self.name_btn.focus = False
                 self.name_btn.draw()
                 # input a text string here
-                self.file_txt.focus = True
-                self.file_txt.draw()
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
@@ -1015,8 +1015,8 @@ class BLOBMember(BaseMember):
                 self.send_btn.focus = False
                 self.send_btn.draw()
                 # input a text string here
-                self.file_txt.focus = True
-                self.file_txt.draw()
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
@@ -1049,7 +1049,7 @@ class BLOBMember(BaseMember):
         "Input text, set it into self._newvalue"
         # set cursor visible
         curses.curs_set(1)
-        editstring = self.file_txt.editstring(self.stdscr)
+        editstring = self.edit_txt.editstring(self.stdscr)
 
         while not self.consoleclient.stop:
             key = await self.keyinput()
@@ -1057,7 +1057,7 @@ class BLOBMember(BaseMember):
                 curses.curs_set(0)
                 return key
             if isinstance(key, tuple):
-                if key in self.file_txt:
+                if key in self.edit_txt:
                     continue
                 else:
                     curses.curs_set(0)
@@ -1066,9 +1066,9 @@ class BLOBMember(BaseMember):
                 curses.curs_set(0)
                 self.send_btn.focus = True
                 self.send_btn.draw()
-                self.file_txt.text = self._newvalue
-                self.file_txt.focus = False
-                self.file_txt.draw()
+                self.edit_txt.text = self._newvalue
+                self.edit_txt.focus = False
+                self.edit_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
                 # goes back to the VectorScreen inputs method
@@ -1077,9 +1077,9 @@ class BLOBMember(BaseMember):
                 return
             value = editstring.gettext(key)
             self._newvalue = value.strip()
-            # set new value back into self.file_txt
-            self.file_txt.text = value
-            self.file_txt.draw()
+            # set new value back into self.edit_txt
+            self.edit_txt.text = value
+            self.edit_txt.draw()
             self.window.noutrefresh()
             editstring.movecurs()
             curses.doupdate()

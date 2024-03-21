@@ -453,8 +453,6 @@ class setSwitchVector(setVector):
                     raise ParseException
             else:
                 raise ParseException
-        if not self.data:
-            raise ParseException
         properties = device.data
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
@@ -478,8 +476,6 @@ class setTextVector(setVector):
                 self.data[membername] = member.text
             else:
                 raise ParseException
-        if not self.data:
-            raise ParseException
         properties = device.data
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
@@ -504,8 +500,6 @@ class setNumberVector(setVector):
                 self.data[membername] = member.text.strip()
             else:
                 raise ParseException
-        if not self.data:
-            raise ParseException
         properties = device.data
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
@@ -530,8 +524,6 @@ class setLightVector(setVector):
                 self.data[membername] = value
             else:
                 raise ParseException
-        if not self.data:
-            raise ParseException
         properties = device.data
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
@@ -570,8 +562,6 @@ class setBLOBVector(setVector):
                 self.sizeformat[membername] = (membersize, memberformat)
             else:
                 raise ParseException
-        if not self.data:
-            raise ParseException
         self.vector = device[self.vectorname]
         # set changed values into self.vector
         self.vector._setvector(self)
