@@ -2651,9 +2651,6 @@ class VectorScreen(ConsoleClientScreen):
         curses.doupdate()
 
 
-
-
-
     def setfocus(self, newfocus):
         """Sets item in focus to newfocus
            If newfocus is one of Vectors, Messages, Quit, Devices, sets the
@@ -2710,7 +2707,7 @@ class VectorScreen(ConsoleClientScreen):
                 self.vectors_btn.focus = True
                 self.vectors_btn.draw()
             self.buttwin.noutrefresh()
-        elif elf.messages_btn.focus and newfocus != "Messages":
+        elif self.messages_btn.focus and newfocus != "Messages":
             self.messages_btn.focus = False
             self.messages_btn.draw()
             if newfocus == "Devices":
@@ -2770,69 +2767,111 @@ class VectorScreen(ConsoleClientScreen):
                         curses.doupdate()
 
 
-# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-
-
     def check_bottom_btn(self, key):
-        """If a bottom btn in focus moves to the next and returns None
-           or if enter pressed returns the button string"""
-        if key in (32, 9, 261, 338, 258):   # go to next button
-            if self.vectors_btn.focus:
-                self.vectors_btn.focus = False
-                self.devices_btn.focus = True
-            elif self.devices_btn.focus:
-                self.devices_btn.focus = False
-                self.messages_btn.focus = True
-            elif self.messages_btn.focus:
-                self.messages_btn.focus = False
-                self.quit_btn.focus = True
-            elif self.quit_btn.focus:
-                self.quit_btn.focus = False
-                self.memberswin.set_topfocus()
-            else:
-                return
-            self.buttwin.clear()
-            self.vectors_btn.draw()
-            self.devices_btn.draw()
-            self.messages_btn.draw()
-            self.quit_btn.draw()
-            self.buttwin.noutrefresh()
-            curses.doupdate()
-            return
-        elif key in (353, 260, 339, 259):   # go to prev button
-            if self.vectors_btn.focus:
-                self.vectors_btn.focus = False
-                self.memberswin.set_botfocus()
-            elif self.devices_btn.focus:
-                self.devices_btn.focus = False
-                self.vectors_btn.focus = True
-            elif self.messages_btn.focus:
-                self.messages_btn.focus = False
-                self.devices_btn.focus = True
-            elif self.quit_btn.focus:
-                self.quit_btn.focus = False
-                self.messages_btn.focus = True
-            else:
-                return
-            self.buttwin.clear()
-            self.vectors_btn.draw()
-            self.devices_btn.draw()
-            self.messages_btn.draw()
-            self.quit_btn.draw()
-            self.buttwin.noutrefresh()
-            curses.doupdate()
-            return
+        """Takes action if a bottom button is pressed
+           returns action Quit etc... if a key action is to be taken
+           returns None if this method has dealt with the action, and the calling
+           routine can continue and obtain another key.
+           Returns the key, if the key has not been handled and
+           has to be checked further"""
 
-        if key == 10:
-            if self.vectors_btn.focus:
-                return "Vectors"
-            elif self.devices_btn.focus:
-                return "Devices"
-            elif self.messages_btn.focus:
-                return "Messages"
-            elif self.quit_btn.focus:
-                return "Quit"
-
+        if isinstance(key, tuple):
+            # mouse pressed, find if its clicked in any
+            # of the bottom buttons
+            if key in self.quit_btn:
+                if self.quit_btn.focus:
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
+                    self.messwin.noutrefresh()
+                    curses.doupdate()
+                    return "Quit"
+                else:
+                    # focus is elsewhere
+                    self.setfocus("Quit")
+                curses.doupdate()
+                return
+            if key in self.messages_btn:
+                if self.messages_btn.focus:
+                    return "Messages"
+                else:
+                    self.setfocus("Messages")
+                curses.doupdate()
+                return
+            if key in self.devices_btn:
+                if self.devices_btn.focus:
+                    return "Devices"
+                else:
+                    self.setfocus("Devices")
+                curses.doupdate()
+                return
+            if key in self.vectors_btn:
+                if self.vectors_btn.focus:
+                    return "Vectors"
+                else:
+                    self.setfocus("Vectors")
+                curses.doupdate()
+                return
+        elif self.vectors_btn.focus or self.devices_btn.focus or self.messages_btn.focus or self.quit_btn.focus:
+            # not a tuple, but one of the buttons is in focus, so check if a relevant key pressed
+            if key in (32, 9, 261, 338, 258):   # go to next button
+                if self.vectors_btn.focus:
+                    self.vectors_btn.focus = False
+                    self.devices_btn.focus = True
+                elif self.devices_btn.focus:
+                    self.devices_btn.focus = False
+                    self.messages_btn.focus = True
+                elif self.messages_btn.focus:
+                    self.messages_btn.focus = False
+                    self.quit_btn.focus = True
+                elif self.quit_btn.focus:
+                    self.quit_btn.focus = False
+                    self.memberswin.set_topfocus()
+                self.buttwin.clear()
+                self.vectors_btn.draw()
+                self.devices_btn.draw()
+                self.messages_btn.draw()
+                self.quit_btn.draw()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
+                return
+            elif key in (353, 260, 339, 259):   # go to prev button
+                if self.vectors_btn.focus:
+                    self.vectors_btn.focus = False
+                    self.memberswin.set_botfocus()
+                elif self.devices_btn.focus:
+                    self.devices_btn.focus = False
+                    self.vectors_btn.focus = True
+                elif self.messages_btn.focus:
+                    self.messages_btn.focus = False
+                    self.devices_btn.focus = True
+                elif self.quit_btn.focus:
+                    self.quit_btn.focus = False
+                    self.messages_btn.focus = True
+                self.buttwin.clear()
+                self.vectors_btn.draw()
+                self.devices_btn.draw()
+                self.messages_btn.draw()
+                self.quit_btn.draw()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
+                return
+            elif key == 10:
+                if self.vectors_btn.focus:
+                    return "Vectors"
+                elif self.devices_btn.focus:
+                    return "Devices"
+                elif self.messages_btn.focus:
+                    return "Messages"
+                elif self.quit_btn.focus:
+                    return "Quit"
+            else:
+                # key is a key press, not a mouse tuple, and a bottom
+                # button is in focus but the key is not one that initiates
+                # any action, so return None to indicate it can be ignored
+                return
+        # if mouse, it is not clicked on any bottom button
+        # if a key, then no bottom button is in focus
+        # so just return the key
+        return key
 
     async def inputs(self):
         "Gets inputs from the screen"
@@ -2844,17 +2883,16 @@ class VectorScreen(ConsoleClientScreen):
                 if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                     return key
 
-                # check for tuple here
+                key = self.check_bottom_btn(key)
+                if not key:
+                    continue
+                if key in ("Vectors", "Devices", "Messages", "Quit"):
+                    return key
 
-
-                # so not a tuple
-
-                if self.vectors_btn.focus or self.devices_btn.focus or self.messages_btn.focus or self.quit_btn.focus:
-                    result = self.check_bottom_btn(key)
-                    if result:
-                        return result
-                    else:
-                        continue
+                # so at this point, key could be a mouse tuple, but not clicked on any of the bottom buttons
+                # and the bottom buttons are not in focus
+                # So could be mouse clicked away from anything, or on something in memberswin
+                # or maybe memberswin has the focus
 
 
                 if self.memberswin.focus:

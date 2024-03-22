@@ -656,6 +656,18 @@ class NumberMember(BaseMember):
                                     # window         text        row col, length of field
         self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
 
+    @property
+    def focus(self):
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if self._focus == value:
+            return
+        self._focus = value
+        self.name_btn.focus = value
+        self.edit_txt.focus = False
+
 
     def newvalue(self):
         value = self._newvalue.strip()
@@ -806,6 +818,17 @@ class TextMember(BaseMember):
                                # window         text        row                col           length of field
         self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-35, txtlen=30)
 
+    @property
+    def focus(self):
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if self._focus == value:
+            return
+        self._focus = value
+        self.name_btn.focus = value
+        self.edit_txt.focus = False
 
     def newvalue(self):
         value = self._newvalue.strip()
@@ -931,7 +954,19 @@ class BLOBMember(BaseMember):
         self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-55, txtlen=40)
         self.send_btn = Button(window, "Send", 0, self.maxcols-9, 6)
 
-        self.fileinput = False
+
+    @property
+    def focus(self):
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        if self._focus == value:
+            return
+        self._focus = value
+        self.name_btn.focus = value
+        self.edit_txt.focus = False
+        self.send_btn.focus = False
 
 
     def filename(self):
