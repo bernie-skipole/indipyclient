@@ -2876,10 +2876,20 @@ class VectorScreen(ConsoleClientScreen):
     async def inputs(self):
         "Gets inputs from the screen"
 
+        # two loops formed here, one for the entire screen
+        # and one for an editable field
+        # result tracks the results of tests to see if an editable field loop is needed
+        result = None
+
         try:
             self.stdscr.nodelay(True)
             while True:
-                key = await self.keyinput()
+                if result:
+                    key = result
+                    result = None
+                else:
+                    key = await self.keyinput()
+
                 if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                     return key
 
@@ -2889,72 +2899,93 @@ class VectorScreen(ConsoleClientScreen):
                 if key in ("Vectors", "Devices", "Messages", "Quit"):
                     return key
 
-                # so at this point, key could be a mouse tuple, but not clicked on any of the bottom buttons
-                # and the bottom buttons are not in focus
+                # At this point, key could be a mouse tuple, or a keystroke
+                # But not clicked on any of the bottom buttons and the bottom buttons are not in focus
                 # So could be mouse clicked away from anything, or on something in memberswin
-                # or maybe memberswin has the focus
+                # or maybe memberswin has the focus, and the keystroke should be handled there
 
-
-                if self.memberswin.focus:
-                    # focus has been given to the MembersWin
-
-                    while True:
-
-                        result = self.memberswin.setkey(key)
-                        if result == "edit":
-                            # An editable field is in focus
-                            inputfield = self.memberswin.inputfield()
-                            if inputfield is None:
-                                break
-                            result = await inputfield()
-                            if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                                return result
-                            if not result:
-                                break
-                            # inputfield has returned a key, typically 9 for next
-                            # which now loops back into self.memberswin.setkey(key)
-                            key = result
-                        else:
-                            # no editable field, so break out of this loop
-                            break
-
+                if isinstance(key, tuple):
+                    # mouse pressed, find if its clicked in any of the MembersWin fields
+                    result = self.memberswin.handlemouse(key)
+                    # result is None if fully handled, or is 'edit' if mouse clicked
+                    # in an editable field in MembersWin
                     if not result:
+                        # Handled, continue with while loop and get next key
                         continue
 
 
-                    if result == "submitted":
-                        self.vector.state = 'Busy'
-                        # The vector has been submitted, draw vector state which is now busy
-                        widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
-                        self.tstatewin.noutrefresh()
-                        self.vectors_btn.focus = True
-                        self.buttwin.clear()
-                        self.vectors_btn.draw()
-                        self.devices_btn.draw()
-                        self.messages_btn.draw()
-                        self.quit_btn.draw()
-                        self.buttwin.noutrefresh()
-                        curses.doupdate()
-                    elif result == "next":   # go to next button
-                        self.memberswin.defocus() # removes focus and calls draw and noutrefresh on memberswin
-                        self.vectors_btn.focus = True
-                        self.buttwin.clear()
-                        self.vectors_btn.draw()
-                        self.devices_btn.draw()
-                        self.messages_btn.draw()
-                        self.quit_btn.draw()
-                        self.buttwin.noutrefresh()
-                        curses.doupdate()
-                    elif result == "previous":   # go to prev button
-                        self.memberswin.defocus() # removes focus and calls draw and noutrefresh on memberswin
-                        self.quit_btn.focus = True
-                        self.buttwin.clear()
-                        self.vectors_btn.draw()
-                        self.devices_btn.draw()
-                        self.messages_btn.draw()
-                        self.quit_btn.draw()
-                        self.buttwin.noutrefresh()
-                        curses.doupdate()
+                # At this point, result is None if key is a keystroke,
+                # or result is 'edit' if an editable field in MembersWin has focus
+
+                if not self.memberswin.focus:
+                    # if keystroke, then only of interest if memberswin has focus
+                    # and if editable field, then memberswin will also have focus
+                    continue
+
+                while True:
+
+                    if not result:
+                        # key is a keystroke, handle it
+                        result = self.memberswin.setkey(key)
+                    if result == "edit":
+                        # An editable field is in focus
+                        inputfield = self.memberswin.inputfield()
+                        if inputfield is None:
+                            break
+                        result = await inputfield()
+                        if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                            return result
+                        if not result:
+                            break
+                        if result in ("submitted", "next", "previous"):
+                            break
+                        if isinstance(result, tuple):
+                            # a mouse press, go to outer loop with result set
+                            break
+                        # inputfield has returned a keystroke, typically 9 for next
+                        # which now loops back into self.memberswin.setkey(key)
+                        key = result
+                    else:
+                        # no editable field, so break out of this loop
+                        break
+
+
+                if result == "submitted":
+                    self.vector.state = 'Busy'
+                    # The vector has been submitted, draw vector state which is now busy
+                    widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
+                    self.tstatewin.noutrefresh()
+                    self.vectors_btn.focus = True
+                    self.buttwin.clear()
+                    self.vectors_btn.draw()
+                    self.devices_btn.draw()
+                    self.messages_btn.draw()
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    result = None
+                elif result == "next":   # go to next button
+                    self.memberswin.defocus() # removes focus and calls draw and noutrefresh on memberswin
+                    self.vectors_btn.focus = True
+                    self.buttwin.clear()
+                    self.vectors_btn.draw()
+                    self.devices_btn.draw()
+                    self.messages_btn.draw()
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    result = None
+                elif result == "previous":   # go to prev button
+                    self.memberswin.defocus() # removes focus and calls draw and noutrefresh on memberswin
+                    self.quit_btn.focus = True
+                    self.buttwin.clear()
+                    self.vectors_btn.draw()
+                    self.devices_btn.draw()
+                    self.messages_btn.draw()
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    result = None
 
 
         except asyncio.CancelledError:
