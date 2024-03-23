@@ -2900,23 +2900,46 @@ class VectorScreen(ConsoleClientScreen):
                     return key
 
                 # At this point, key could be a mouse tuple, or a keystroke
-                # But not clicked on any of the bottom buttons and the bottom buttons are not in focus
+                # But not clicked on any of the bottom buttons
                 # So could be mouse clicked away from anything, or on something in memberswin
                 # or maybe memberswin has the focus, and the keystroke should be handled there
 
                 if isinstance(key, tuple):
                     # mouse pressed, find if its clicked in any of the MembersWin fields
                     result = self.memberswin.handlemouse(key)
-                    # result is None if fully handled, or is 'edit' if mouse clicked
-                    # in an editable field in MembersWin
-                    # could also be one of "submitted", "next", "previous"
+                    # result is None if fully handled,
+                    # or is 'edit' if mouse clicked in an editable field in MembersWin
+                    # or is 'focused' if mouse clicked on a previously unfocused button
+                    # could also be one of "submitted", "next", "previous" if clicked
+                    # on a focused submit, or top or bottom widget
                     if not result:
                         # Handled, continue with while loop and get next key
                         continue
 
-
                 # At this point, result is None if key is a keystroke,
                 # or result is value returned by memberswin.handlemouse(key)
+
+                if result == "focused":
+                    # a button in self.memberswin has been set into focus
+                    # ensure bottom buttons are defocused and continue
+                    self.vectors_btn.focus = False
+                    self.vectors_btn.draw()
+                    self.devices_btn.focus = False
+                    self.devices_btn.draw()
+                    self.messages_btn.focus = False
+                    self.messages_btn.draw()
+                    self.quit_btn.focus = False
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    result = None
+                    continue
+
+                if result == "edit":
+                    # an editable field has been set
+                    # ensure bottom buttons are defocused
+                    self.setfocus("Members")
+                    curses.doupdate()
 
                 if (not result) and (not self.memberswin.focus):
                     # if keystroke, then only of interest if memberswin has focus
@@ -3252,7 +3275,62 @@ class MembersWin(ParentScreen):
 
     def handlemouse(self, key):
         "Handles a mouse input"
-        return
+        if key in self.topmore_btn:
+            if self.topmore_btn.focus:
+                # same as pressing enter on the focused button
+                self.setkey(10)
+                return
+            else:
+                # key is on topmore_btn, but it does not have focus
+                self.defocus()
+                self.focus = True
+                self.topmore_btn.focus = True
+                self.topmore_btn.draw()
+                self.topmorewin.noutrefresh()
+                return "focused"
+
+        if key in self.botmore_btn:
+            if self.botmore_btn.focus:
+                # same as pressing enter on the focused button
+                self.setkey(10)
+                return
+            else:
+                # key is on botmore_btn, but it does not have focus
+                self.defocus()
+                self.focus = True
+                self.botmore_btn.focus = True
+                self.botmore_btn.draw()
+                self.botmorewin.noutrefresh()
+                return "focused"
+
+        if key in self.submit_btn:
+            if self.submit_btn.focus:
+                # same as pressing enter on the focused button
+                result = self.setkey(10)  # this may return "submitted"
+                return result
+            else:
+                # key is on submit_btn, but it does not have focus
+                self.defocus()
+                self.focus = True
+                self.submit_btn.focus = True
+                self.submit_btn.draw()
+                self.submitwin.noutrefresh()
+                return "focused"
+
+        if key in self.cancel_btn:
+            if self.cancel_btn.focus:
+                # same as pressing enter on the focused button
+                self.setkey(10)
+                return
+            else:
+                # key is on cancel_btn, but it does not have focus
+                self.defocus()
+                self.focus = True
+                self.cancel_btn.focus = True
+                self.cancel_btn.draw()
+                self.submitwin.noutrefresh()
+                return "focused"
+
 
 
     def setkey(self, key):
