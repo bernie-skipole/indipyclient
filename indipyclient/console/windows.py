@@ -2909,46 +2909,47 @@ class VectorScreen(ConsoleClientScreen):
                     result = self.memberswin.handlemouse(key)
                     # result is None if fully handled, or is 'edit' if mouse clicked
                     # in an editable field in MembersWin
+                    # could also be one of "submitted", "next", "previous"
                     if not result:
                         # Handled, continue with while loop and get next key
                         continue
 
 
                 # At this point, result is None if key is a keystroke,
-                # or result is 'edit' if an editable field in MembersWin has focus
+                # or result is value returned by memberswin.handlemouse(key)
 
-                if not self.memberswin.focus:
+                if (not result) and (not self.memberswin.focus):
                     # if keystroke, then only of interest if memberswin has focus
-                    # and if editable field, then memberswin will also have focus
                     continue
 
-                while True:
+                if not result:
+                    # key is a keystroke, and memberswin has focus, handle it
+                    result = self.memberswin.setkey(key)
+                    # this returns "edit" if an editable field has been given focus
+                    # could also be "submitted", "next", "previous" or a keystroke such
+                    # as 9 for tab
 
-                    if not result:
-                        # key is a keystroke, handle it
-                        result = self.memberswin.setkey(key)
-                    if result == "edit":
-                        # An editable field is in focus
-                        inputfield = self.memberswin.inputfield()
-                        if inputfield is None:
-                            break
-                        result = await inputfield()
-                        if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                            return result
-                        if not result:
-                            break
-                        if result in ("submitted", "next", "previous"):
-                            break
-                        if isinstance(result, tuple):
-                            # a mouse press, go to outer loop with result set
-                            break
-                        # inputfield has returned a keystroke, typically 9 for next
-                        # which now loops back into self.memberswin.setkey(key)
-                        key = result
-                    else:
-                        # no editable field, so break out of this loop
+                while result == "edit":
+                   # An editable field is in focus
+                    inputfield = self.memberswin.inputfield()
+                    if inputfield is None:
                         break
+                    result = await inputfield()
+                    if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                        return result
+                    if not result:
+                        break
+                    if result in ("submitted", "next", "previous"):
+                        break
+                    if isinstance(result, tuple):
+                        # a mouse press, go to outer loop with result set
+                        break
+                    # inputfield has returned a keystroke, typically 9 for next tab
+                    # which is now tested again with self.memberswin.setkey(key)
+                    result = self.memberswin.setkey(result)
 
+                if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                    return result
 
                 if result == "submitted":
                     self.vector.state = 'Busy'
@@ -3249,8 +3250,13 @@ class MembersWin(ParentScreen):
         return self._inputfield
 
 
-    def setkey(self, key):
+    def handlemouse(self, key):
+        "Handles a mouse input"
+        return
 
+
+    def setkey(self, key):
+        "Handles a key stroke"
         try:
 
             # check if a widget is in focus
