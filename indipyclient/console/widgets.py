@@ -525,6 +525,12 @@ class SwitchMember(BaseMember):
                 if self.vector.perm == "ro":
                     # do nothing
                     return
+                # set on button in focus
+                self.on.focus = True
+                self.on.draw()
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                return "focused"
             else:
                 self._focus = True
                 self.name_btn.focus = True
