@@ -1246,10 +1246,10 @@ class BLOBMember(BaseMember):
     def setkey(self, key):
         "This widget is in focus, and deals with inputs"
         if self.name_btn.focus:
-            if key in (9, 353, 260, 339, 338, 259, 258):  # 9 tab, 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
-            if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
+            if key in (9, 32, 261, 10):     # 9 tab, 32 space, 261 right arrow, 10 return
                 # name_btn is in focus, set edit_txt in focus and return "edit"
                 # which informs the window to await inputfield
                 self.name_btn.focus = False
