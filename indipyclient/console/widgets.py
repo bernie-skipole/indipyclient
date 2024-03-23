@@ -575,12 +575,10 @@ class SwitchMember(BaseMember):
 
 
 
-
-
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
     def setkey(self, key):
-        "This widget is in focus, and deals with inputs"
+        "This widget is in focus, and deals with keystroke inputs"
 
         if self.name_btn.focus:
             if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -689,6 +687,16 @@ class LightMember(BaseMember):
         "This widget is in focus, but is read only"
         return key
 
+    def handlemouse(self, key):
+        "Handles a mouse input"
+        if key in self.name_btn:
+            if not self.name_btn.focus:
+                self._focus = True
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                return "focused"
+
+
 
 #   <!ATTLIST defNumberVector
 #   device %nameValue; #REQUIRED        name of Device
@@ -731,11 +739,13 @@ class NumberMember(BaseMember):
 
     @focus.setter
     def focus(self, value):
-        if self._focus == value:
-            return
         self._focus = value
         self.name_btn.focus = value
-        self.edit_txt.focus = False
+        # and regardless of value, set self.edit_txt to False, but check number ok
+        if self.edit_txt.focus:
+            self.checknumber()
+            self.edit_txt.text = self._newvalue
+            self.edit_txt.focus = False
 
 
     def newvalue(self):
@@ -768,6 +778,43 @@ class NumberMember(BaseMember):
         if self.vector.perm == "ro":
             return
         self.edit_txt.draw()
+
+
+    def handlemouse(self, key):
+        "Handles a mouse input"
+        if key in self.name_btn:
+            if self.name_btn.focus:
+                if self.vector.perm == "ro":
+                    # do nothing
+                    return
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                # input a number here
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
+                return "edit"
+            else:
+                self._focus = True
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                if self.edit_txt.focus:
+                    self.checknumber()
+                    self.edit_txt.text = self._newvalue
+                    self.edit_txt.focus = False
+                    self.edit_txt.draw()
+                return "focused"
+        if key in self.edit_txt:
+            if self.edit_txt.focus:
+                # already in focus, do nothing
+                return
+            else:
+                self._focus = True
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
+                return "edit"
+
 
 
     def setkey(self, key):
