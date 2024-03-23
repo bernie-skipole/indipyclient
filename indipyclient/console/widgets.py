@@ -851,7 +851,7 @@ class NumberMember(BaseMember):
                 else:
                     curses.curs_set(0)
                     return key
-            if key == 10:
+            if key in (10, 9, 353):       # 10 enter, 9 tab, 353 shift tab
                 self.checknumber()
                 curses.curs_set(0)
                 self.name_btn.focus = True
@@ -859,6 +859,10 @@ class NumberMember(BaseMember):
                 self.edit_txt.text = self._newvalue
                 self.edit_txt.focus = False
                 self.edit_txt.draw()
+                if key == 353:
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    return
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9 # tab key for next item
