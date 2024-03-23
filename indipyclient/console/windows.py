@@ -2919,9 +2919,9 @@ class VectorScreen(ConsoleClientScreen):
                 # At this point, result is None if key is a keystroke,
                 # or result is value returned by memberswin.handlemouse(key)
 
-                if result == "focused":
-                    # a button in self.memberswin has been set into focus
-                    # ensure bottom buttons are defocused and continue
+                if (result == "focused") or (result == "edit"):
+                    # a field in self.memberswin has been set into focus
+                    # ensure bottom buttons are defocused
                     self.vectors_btn.focus = False
                     self.vectors_btn.draw()
                     self.devices_btn.focus = False
@@ -2932,14 +2932,12 @@ class VectorScreen(ConsoleClientScreen):
                     self.quit_btn.draw()
                     self.buttwin.noutrefresh()
                     curses.doupdate()
+
+                if result == "focused":
+                    # A button has been set to focus, nothing more to do
+                    # continue and get the next key
                     result = None
                     continue
-
-                if result == "edit":
-                    # an editable field has been set
-                    # ensure bottom buttons are defocused
-                    self.setfocus("Members")
-                    curses.doupdate()
 
                 if (not result) and (not self.memberswin.focus):
                     # if keystroke, then only of interest if memberswin has focus
@@ -3330,6 +3328,41 @@ class MembersWin(ParentScreen):
                 self.cancel_btn.draw()
                 self.submitwin.noutrefresh()
                 return "focused"
+
+        # next check - has the mouse key been pressed on a widget
+        result = None
+        windex = None
+        for index, widget in enumerate(self.displayed):
+            result = widget.handlemouse(key)
+            # result is "focused' or 'edit' if mouse landed on a field
+            if result:
+                windex = index
+                break
+
+        if result:
+            # remove focus from any other button
+            for index, widget in enumerate(self.displayed):
+                if index == windex:
+                    continue
+                if widget.focus:
+                    widget.focus = False
+                    widget.draw()
+                    break
+            # so widget focus has been drawn
+            self.memwin.noutrefresh()
+            for btn in self.controlbtns:
+                if btn.focus:
+                    btn.focus = False
+                    btn.draw()
+                    btn.window.noutrefresh()
+                    break
+            # and indicate this window has focus
+            self.focus = True
+
+        if result == "edit":
+            widget = self.displayed[windex]
+            self._inputfield = widget.inputfield
+        return result
 
 
 

@@ -83,11 +83,6 @@ class Button:
             # no btnlen given
             self.btnlen = len(self.btntext) + 2
 
-        originrow, origincol = self.window.getbegyx()
-        self.fieldrow = originrow+self.row
-        self.startcol = origincol + self.col
-        self.endcol = self.startcol + self.btnlen
-
     def __contains__(self, mouse):
         "Returns True if the mouse y, x are within this field"
         if not self._show:
@@ -99,6 +94,23 @@ class Button:
         if mouse[1] < self.endcol:
             return True
         return False
+
+    @property
+    def fieldrow(self):
+        "Screen row, for checking mouse press"
+        originrow, origincol = self.window.getbegyx()
+        return originrow+self.row
+
+    @property
+    def startcol(self):
+        "Screen start column, for checking mouse press"
+        originrow, origincol = self.window.getbegyx()
+        return origincol + self.col
+
+    @property
+    def endcol(self):
+        "Screen end column, for checking mouse press"
+        return self.startcol + self.btnlen
 
     @property
     def show(self):
@@ -395,6 +407,18 @@ class BaseMember:
         self._focus = value
         self.name_btn.focus = value
 
+    def handlemouse(self, key):
+        "Handles a mouse input"
+        if key in self.name_btn:
+            if self.name_btn.focus:
+                if self.vector.perm == "ro":
+                    # do nothing
+                    return
+            else:
+                self._focus = True
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                return "focused"
 
     @property
     def endline(self):
@@ -507,6 +531,7 @@ class SwitchMember(BaseMember):
         self.name_btn.focus = value
         self.on.focus = False
         self.off.focus = False
+
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
