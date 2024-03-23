@@ -392,18 +392,6 @@ class BaseMember:
         self._focus = value
         self.name_btn.focus = value
 
-    def handlemouse(self, key):
-        "Handles a mouse input"
-        if key in self.name_btn:
-            if self.name_btn.focus:
-                if self.vector.perm == "ro":
-                    # do nothing
-                    return
-            else:
-                self._focus = True
-                self.name_btn.focus = True
-                self.name_btn.draw()
-                return "focused"
 
     @property
     def endline(self):
@@ -1178,6 +1166,81 @@ class BLOBMember(BaseMember):
         # send button
         self.send_btn.row = self.startline+2
         self.send_btn.draw()
+
+
+    def handlemouse(self, key):
+        "Handles a mouse input"
+        if key in self.name_btn:
+            if self.name_btn.focus:
+                if self.vector.perm == "ro":
+                    # do nothing
+                    return
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                # input text here
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
+                return "edit"
+            else:
+                self._focus = True
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                if self.edit_txt.focus:
+                    self.edit_txt.text = self._newvalue
+                    self.edit_txt.focus = False
+                    self.edit_txt.draw()
+                elif self.send_btn.focus:
+                    self.send_btn.focus = False
+                    self.send_btn.draw()
+                return "focused"
+        if key in self.edit_txt:
+            if self.edit_txt.focus:
+                # already in focus, do nothing
+                return
+            else:
+                self._focus = True
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                self.send_btn.focus = False
+                self.send_btn.draw()
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
+                return "edit"
+        if key in self.send_btn:
+            if self.send_btn.focus:
+                # send the vector with this member, and set focus to name_btn
+                self.send_btn.focus = False
+                self.send_btn.draw()
+                try:
+                    filepath = pathlib.Path(self._newvalue).expanduser().resolve()
+                    blobformat = ''.join(filepath.suffixes)
+                    members = {self.name : (filepath, 0, blobformat)}
+                    self.vector.send_newBLOBVector(members=members)
+                except Exception:
+                    self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )
+                else:
+                    self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
+                    self.vector.state = 'Busy'
+                    draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
+                    self.tstatewin.noutrefresh()
+                self.window.noutrefresh()
+                curses.doupdate()
+                time.sleep(0.4)      # blocking, to avoid screen being changed while this time elapses
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                self.window.addstr( self.startline+2, 1, "Filepath to send:" )
+                self.window.noutrefresh()
+                return "focused"
+            else:
+                self._focus = True
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                self.send_btn.focus = True
+                self.send_btn.draw()
+                self.edit_txt.text = self._newvalue
+                self.edit_txt.focus = False
+                self.edit_txt.draw()
+                return "focused"
 
 
     def setkey(self, key):
