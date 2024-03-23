@@ -980,6 +980,40 @@ class TextMember(BaseMember):
             return
         self.edit_txt.draw()
 
+    def handlemouse(self, key):
+        "Handles a mouse input"
+        if key in self.name_btn:
+            if self.name_btn.focus:
+                if self.vector.perm == "ro":
+                    # do nothing
+                    return
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                # input text here
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
+                return "edit"
+            else:
+                self._focus = True
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                if self.edit_txt.focus:
+                    self.edit_txt.text = self._newvalue
+                    self.edit_txt.focus = False
+                    self.edit_txt.draw()
+                return "focused"
+        if key in self.edit_txt:
+            if self.edit_txt.focus:
+                # already in focus, do nothing
+                return
+            else:
+                self._focus = True
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                self.edit_txt.focus = True
+                self.edit_txt.draw()
+                return "edit"
+
 
     def setkey(self, key):
         "This widget is in focus, and deals with inputs"
@@ -1015,13 +1049,17 @@ class TextMember(BaseMember):
                 else:
                     curses.curs_set(0)
                     return key
-            if key == 10:
+            if key in (10, 9, 353):       # 10 enter, 9 tab, 353 shift tab
                 curses.curs_set(0)
                 self.name_btn.focus = True
                 self.name_btn.draw()
                 self.edit_txt.text = self._newvalue
                 self.edit_txt.focus = False
                 self.edit_txt.draw()
+                if key == 353:
+                    self.window.noutrefresh()
+                    curses.doupdate()
+                    return
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9 # tab key for next item
