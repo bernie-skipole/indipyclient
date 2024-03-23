@@ -83,34 +83,19 @@ class Button:
             # no btnlen given
             self.btnlen = len(self.btntext) + 2
 
+
     def __contains__(self, mouse):
         "Returns True if the mouse y, x are within this field"
         if not self._show:
             return False
-        if mouse[0] != self.fieldrow:
+        originrow, origincol = self.window.getbegyx()
+        if mouse[0] != originrow + self.row:
             return False
-        if mouse[1] < self.startcol:
+        if mouse[1] < origincol + self.col:
             return False
-        if mouse[1] < self.endcol:
+        if mouse[1] < origincol + self.col + self.btnlen:
             return True
         return False
-
-    @property
-    def fieldrow(self):
-        "Screen row, for checking mouse press"
-        originrow, origincol = self.window.getbegyx()
-        return originrow+self.row
-
-    @property
-    def startcol(self):
-        "Screen start column, for checking mouse press"
-        originrow, origincol = self.window.getbegyx()
-        return origincol + self.col
-
-    @property
-    def endcol(self):
-        "Screen end column, for checking mouse press"
-        return self.startcol + self.btnlen
 
     @property
     def show(self):
@@ -191,10 +176,7 @@ class Text:
             # no txtlen given
             self._text = text
             self.txtlen = len(self._text) + 2
-        originrow, origincol = self.window.getbegyx()
-        self.fieldrow = originrow+self.row
-        self.startcol = origincol + self.col
-        self.endcol = self.startcol + self.txtlen
+
 
     @property
     def text(self):
@@ -214,13 +196,15 @@ class Text:
         "Returns True if the mouse y, x are within this field"
         if not self._show:
             return False
-        if mouse[0] != self.fieldrow:
+        originrow, origincol = self.window.getbegyx()
+        if mouse[0] != originrow + self.row:
             return False
-        if mouse[1] < self.startcol:
+        if mouse[1] < origincol + self.col:
             return False
-        if mouse[1] < self.endcol:
+        if mouse[1] < origincol + self.col + self.txtlen:
             return True
         return False
+
 
     @property
     def show(self):
@@ -258,11 +242,12 @@ class Text:
 
     def editstring(self, stdscr):
         "Returns an object to edit the string"
+        originrow, origincol = self.window.getbegyx()
         return   EditString(stdscr,
-                            self.fieldrow,                  # row
-                            self.startcol+1,                # start col
-                            self.endcol-2,                  # endcol
-                            self.text )                     # the actual text
+                            originrow + self.row,                     # row
+                            origincol + self.col + 1,                 # start col
+                            origincol + self.col + self.txtlen - 2,   # endcol
+                            self.text )                               # the actual text
 
 
 
