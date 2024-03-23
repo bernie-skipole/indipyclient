@@ -345,7 +345,7 @@ class ConsoleControl:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue
-                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
+                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.groupwin.active)
                         self.screen.show()
                         continue
                     if result == "Quit":
@@ -390,7 +390,7 @@ class ConsoleControl:
                         self.screen.show()
                         continue
                     if result == "Vectors":
-                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
+                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.vector.group)
                         self.screen.show()
                         continue
 

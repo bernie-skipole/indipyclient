@@ -1229,11 +1229,14 @@ class DevicesScreen(ConsoleClientScreen):
 
 class ChooseVectorScreen(ConsoleClientScreen):
 
-    def __init__(self, stdscr, consoleclient, devicename):
+    def __init__(self, stdscr, consoleclient, devicename, group=None):
         super().__init__(stdscr, consoleclient)
 
         # devicename is the actual devicename given by the device (not set to lower case)
         self.devicename = devicename
+
+        # group, if given is the startup group displayed
+
         # start with vectorname None, a vector to view will be chosen by this screen
         self.vectorname = None
 
@@ -1254,7 +1257,7 @@ class ChooseVectorScreen(ConsoleClientScreen):
 
         # groups list
         try:
-            self.groupwin = GroupWin(self.stdscr, self.consoleclient, self.devicename)         # row 4
+            self.groupwin = GroupWin(self.stdscr, self.consoleclient, self.devicename, active=group)         # row 4
             # this creates its own window (1 line, full row, starting at 4,0)
 
             # window showing the vectors of the active group
