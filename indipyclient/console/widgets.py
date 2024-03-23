@@ -518,6 +518,59 @@ class SwitchMember(BaseMember):
         self.off.focus = False
 
 
+    def handlemouse(self, key):
+        "Handles a mouse input"
+        if key in self.name_btn:
+            if self.name_btn.focus:
+                if self.vector.perm == "ro":
+                    # do nothing
+                    return
+            else:
+                self._focus = True
+                self.name_btn.focus = True
+                self.name_btn.draw()
+                self.on.focus = False
+                self.on.draw()
+                self.off.focus = False
+                self.off.draw()
+                return "focused"
+        if key in self.on:
+            if self.on.focus:
+                self.on.bold = True
+                self.off.bold = False
+                self.on.draw()
+                self.off.draw()
+                return "focused"
+            else:
+                self._focus = True
+                self.on.focus = True
+                self.on.draw()
+                self.off.focus = False
+                self.off.draw()
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                return "focused"
+        if key in self.off:
+            if self.off.focus:
+                self.off.bold = True
+                self.on.bold = False
+                self.on.draw()
+                self.off.draw()
+                return "focused"
+            else:
+                self._focus = True
+                self.off.focus = True
+                self.off.draw()
+                self.on.focus = False
+                self.on.draw()
+                self.name_btn.focus = False
+                self.name_btn.draw()
+                return "focused"
+
+
+
+
+
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
     def setkey(self, key):
