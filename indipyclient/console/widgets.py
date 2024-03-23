@@ -1097,10 +1097,23 @@ class BLOBMember(BaseMember):
                 else:
                     curses.curs_set(0)
                     return key
-            if key == 10:
+            if key in (9, 10):      # tab, enter
                 curses.curs_set(0)
                 self.send_btn.focus = True
                 self.send_btn.draw()
+                self.edit_txt.text = self._newvalue
+                self.edit_txt.focus = False
+                self.edit_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                # goes back to the VectorScreen inputs method
+                # which gets a key, and as this widget is still in focus
+                # calls this widgets setkey method
+                return
+            if key == 353:           # shift tab
+                curses.curs_set(0)
+                self.name_btn.focus = True
+                self.name_btn.draw()
                 self.edit_txt.text = self._newvalue
                 self.edit_txt.focus = False
                 self.edit_txt.draw()
