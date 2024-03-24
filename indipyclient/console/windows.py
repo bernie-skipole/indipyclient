@@ -3556,6 +3556,7 @@ class MembersWin(ParentScreen):
                     nextwidget = self.displayed[-1]
                     nextwidget.focus = True
                     self.draw()
+                    self.noutrefresh()
                     curses.doupdate()
                     return
 
@@ -3644,6 +3645,7 @@ class MembersWin(ParentScreen):
                     prevwidget = self.displayed[0]
                     prevwidget.focus = True
                     self.draw()
+                    self.noutrefresh()
                     curses.doupdate()
                     return
 
