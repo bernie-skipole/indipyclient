@@ -765,6 +765,7 @@ class NumberMember(BaseMember):
 
         if self.vector.perm == "ro":
             return
+        self.edit_txt.row = self.startline+2
         self.edit_txt.draw()
 
 
@@ -966,6 +967,7 @@ class TextMember(BaseMember):
 
         if self.vector.perm == "ro":
             return
+        self.edit_txt.row = self.startline+2
         self.edit_txt.draw()
 
     def handlemouse(self, key):
@@ -1161,6 +1163,7 @@ class BLOBMember(BaseMember):
 
         # Draw the editable field
         self.window.addstr( self.startline+2, 1, "Filepath to send:" )  # 18 characters
+        self.edit_txt.row = self.startline+2
         self.edit_txt.draw()
 
         # send button
