@@ -10,7 +10,6 @@ import traceback
 #            traceback.print_exc(file=sys.stderr)
 #            raise
 
-
 def shorten(text, width=0, placeholder="..."):
     "Shorten text"
     if not width:
