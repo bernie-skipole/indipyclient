@@ -22,7 +22,9 @@ MINCOLS = 78
 
 class ConsoleClient(IPyClient):
 
-    "Overrides IPyClient to add any event to an 'eventque'"
+    """Overrides IPyClient
+       On receiving an event, appends it into eventque
+       Which will pass the received event into ConsoleControl"""
 
     async def rxevent(self, event):
         """Add event to eventque"""
@@ -31,7 +33,9 @@ class ConsoleClient(IPyClient):
 
 class ConsoleControl:
 
-    def __init__(self, client, eventque, blobfolder=None):
+    def __init__(self, client, blobfolder=None):
+        """client is an instance of ConsoleClient
+           If given, blobfolder will be the folder where BLOBs will be saved"""
         self.client = client
         self.blobfolder = blobfolder
         if self.blobfolder:
@@ -40,7 +44,7 @@ class ConsoleControl:
             self.blobenabled = False
 
         # this is populated with events as they are received
-        self.eventque = eventque
+        self.eventque = self.client.clientdata['eventque']
 
         # set up screen
         self.stdscr = curses.initscr()
