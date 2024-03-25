@@ -3,12 +3,6 @@ import asyncio, sys
 
 import curses
 
-import traceback
-#        except Exception:
-#            traceback.print_exc(file=sys.stderr)
-#            raise
-
-
 from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message)
@@ -235,7 +229,6 @@ class ConsoleControl:
             self._shutdown = True
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             self._shutdown = True
         finally:
             self.updatescreenstopped = True
@@ -402,7 +395,6 @@ class ConsoleControl:
             self._shutdown = True
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             self._shutdown = True
         finally:
             self.getinputstopped = True

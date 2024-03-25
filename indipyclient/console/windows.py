@@ -1,14 +1,6 @@
 
 import asyncio, curses, sys, os, pathlib, time
 
-import traceback
-#        except Exception:
-#            traceback.print_exc(file=sys.stderr)
-#            raise
-
-
-
-
 from . import widgets
 
 from .. import events
@@ -17,11 +9,11 @@ from .. import events
 
 class ParentScreen:
 
-    def __init__(self, stdscr, consoleclient):
+    def __init__(self, stdscr, control):
         self.stdscr = stdscr
         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-        self.consoleclient = consoleclient
-        self.client = consoleclient.client
+        self.control = control
+        self.client = control.client
         self.fields = []  # list of fields in the screen
         # if close string is set, it becomes the return value from input routines
         self._close = ""
@@ -42,13 +34,13 @@ class ParentScreen:
 
     async def keyinput(self):
         """Waits for a key press,
-           if self.consoleclient.stop is True, returns 'Stop',
+           if self.control.stop is True, returns 'Stop',
            if screen has been resized, returns 'Resize',
            if self._close has been given a value, returns that value
            Otherwise returns the key pressed."""
         while True:
             await asyncio.sleep(0)
-            if self.consoleclient.stop:
+            if self.control.stop:
                 return "Stop"
             if self._close:
                 return self._close
@@ -71,22 +63,22 @@ class ParentScreen:
 
 class ConsoleClientScreen(ParentScreen):
 
-    "Parent to windows which are set in self.consoleclient.screen"
+    "Parent to windows which are set in self.control.screen"
 
-    def __init__(self, stdscr, consoleclient):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control):
+        super().__init__(stdscr, control)
         self.stdscr.clear()
 
     async def keyinput(self):
         """Waits for a key press,
-           if self.consoleclient.screen is not self, returns 'Stop'
-           if self.consoleclient.stop is True, returns 'Stop',
+           if self.control.screen is not self, returns 'Stop'
+           if self.control.stop is True, returns 'Stop',
            if screen has been resized, returns 'Resize',
            if self._close has been given a value, returns that value
            Otherwise returns the key pressed."""
-        while self.consoleclient.screen is self:
+        while self.control.screen is self:
             await asyncio.sleep(0)
-            if self.consoleclient.stop:
+            if self.control.stop:
                 return "Stop"
             if self._close:
                 return self._close
@@ -132,14 +124,13 @@ class TooSmall(ConsoleClientScreen):
         except asyncio.CancelledError:
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 
 class MessagesScreen(ConsoleClientScreen):
 
-    def __init__(self, stdscr, consoleclient):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control):
+        super().__init__(stdscr, control)
 
         self.disconnectionflag = False
 
@@ -160,7 +151,7 @@ class MessagesScreen(ConsoleClientScreen):
 
         self.enable_btn = widgets.Button(self.infowin, "Enabled", 5, 38, onclick="EnableBLOBs")
         self.disable_btn = widgets.Button(self.infowin, "Disabled", 5, 48, onclick="DisableBLOBs")
-        if self.consoleclient.blobenabled:
+        if self.control.blobenabled:
             self.enable_btn.bold = True
             self.disable_btn.bold = False
         else:
@@ -182,11 +173,11 @@ class MessagesScreen(ConsoleClientScreen):
 
     @property
     def connected(self):
-        return self.consoleclient.connected
+        return self.control.connected
 
     def showunconnected(self):
-        "Called by consoleclient on disconnection"
-        if self.consoleclient.connected:
+        "Called by control on disconnection"
+        if self.control.connected:
             self.disconnectionflag = False
             return
         if self.disconnectionflag:
@@ -214,7 +205,7 @@ class MessagesScreen(ConsoleClientScreen):
         self.enable_btn.focus = False
         self.disable_btn.focus = False
 
-        if self.consoleclient.blobenabled:
+        if self.control.blobenabled:
             self.enable_btn.bold = True
             self.disable_btn.bold = False
         else:
@@ -287,9 +278,9 @@ class MessagesScreen(ConsoleClientScreen):
 
 
     async def disableBLOBs(self):
-        self.consoleclient.blobenabled = False
+        self.control.blobenabled = False
         await self.client.report("Warning! BLOBs disabled")
-        self.consoleclient.send_disableBLOB()
+        self.control.send_disableBLOB()
         self.enable_btn.bold = False
         self.disable_btn.bold = True
         self.enable_btn.draw()
@@ -427,14 +418,13 @@ class MessagesScreen(ConsoleClientScreen):
         except asyncio.CancelledError:
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 
 class EnableBLOBsScreen(ConsoleClientScreen):
 
-    def __init__(self, stdscr, consoleclient):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control):
+        super().__init__(stdscr, control)
 
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
@@ -454,10 +444,10 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         self.pathwin.addstr(5, thiscol, "To enable BLOB's ensure the path below is set to a valid")
         self.pathwin.addstr(6, thiscol, "folder where BLOBs will be put, and press submit.")
 
-        if self.consoleclient.blobfolder is None:
+        if self.control.blobfolder is None:
             self._newpath = ''
         else:
-            self._newpath = str(self.consoleclient.blobfolder)
+            self._newpath = str(self.control.blobfolder)
 
                                     # window         text        row col, length of field
         self.path_txt = widgets.Text(self.pathwin, self._newpath, 8, 0, txtlen=self.maxcols-8)
@@ -487,7 +477,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             self.messwin.clear()
             widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
 
-        if self.consoleclient.blobenabled:
+        if self.control.blobenabled:
             self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
         else:
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
@@ -518,30 +508,30 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             try:
                 blobfolder = pathlib.Path(self._newpath).expanduser().resolve()
             except Exception:
-                self.consoleclient.blobenabled = False
-                self.consoleclient.send_disableBLOB()
+                self.control.blobenabled = False
+                self.control.send_disableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
                 await self.client.report("Warning! BLOB folder is invalid")
             else:
                 if blobfolder.is_dir():
-                    self.consoleclient.blobfolder = blobfolder
+                    self.control.blobfolder = blobfolder
                     self._newpath = str(blobfolder)
                     self.path_txt.text = self._newpath
                     self.path_txt.draw()
-                    self.consoleclient.blobenabled = True
-                    self.consoleclient.send_enableBLOB()
+                    self.control.blobenabled = True
+                    self.control.send_enableBLOB()
                     self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
                     await self.client.report("BLOB folder is set")
                 else:
-                    self.consoleclient.blobenabled = False
-                    self.consoleclient.send_disableBLOB()
+                    self.control.blobenabled = False
+                    self.control.send_disableBLOB()
                     self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
                     await self.client.report("Warning! BLOB folder is invalid")
         else:
-            self.consoleclient.blobenabled = False
+            self.control.blobenabled = False
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
             await self.client.report("Warning! BLOB folder is invalid")
-            self.consoleclient.send_disableBLOB()
+            self.control.send_disableBLOB()
         self.submit_btn.focus = False
         self.messages_btn.focus = True
 
@@ -657,7 +647,6 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         except asyncio.CancelledError:
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 
@@ -667,7 +656,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         curses.curs_set(1)
         editstring = self.path_txt.editstring(self.stdscr)
 
-        while not self.consoleclient.stop:
+        while not self.control.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                 curses.curs_set(0)
@@ -695,8 +684,8 @@ class EnableBLOBsScreen(ConsoleClientScreen):
 
 class DevicesScreen(ConsoleClientScreen):
 
-    def __init__(self, stdscr, consoleclient):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control):
+        super().__init__(stdscr, control)
 
         # assume screen 80 x 24                                      # row 0 to 23
         # self.maxrows = 24
@@ -1223,14 +1212,13 @@ class DevicesScreen(ConsoleClientScreen):
         except asyncio.CancelledError:
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 
 class ChooseVectorScreen(ConsoleClientScreen):
 
-    def __init__(self, stdscr, consoleclient, devicename, group=None):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control, devicename, group=None):
+        super().__init__(stdscr, control)
 
         # devicename is the actual devicename given by the device (not set to lower case)
         self.devicename = devicename
@@ -1256,15 +1244,12 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.screenparts = ("Groups", "Vectors", "Devices", "Messages", "Quit")
 
         # groups list
-        try:
-            self.groupwin = GroupWin(self.stdscr, self.consoleclient, self.devicename, active=group)         # row 4
-            # this creates its own window (1 line, full row, starting at 4,0)
+        self.groupwin = GroupWin(self.stdscr, self.control, self.devicename, active=group)         # row 4
+        # this creates its own window (1 line, full row, starting at 4,0)
 
-            # window showing the vectors of the active group
-            self.vectorswin = VectorListWin(self.stdscr, self.consoleclient, self.devicename)    # topmore row 6
-        except Exception:                                                                        # botmore row self.maxrows - 4 row 20
-            traceback.print_exc(file=sys.stderr)
-            raise
+        # window showing the vectors of the active group
+        self.vectorswin = VectorListWin(self.stdscr, self.control, self.devicename)    # topmore row 6
+
 
         # bottom buttons, [Devices] [Messages] [Quit]
 
@@ -1598,7 +1583,6 @@ class ChooseVectorScreen(ConsoleClientScreen):
         except asyncio.CancelledError:
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 
@@ -1699,8 +1683,8 @@ class GroupBtns:
 
 class GroupWin(ParentScreen):
 
-    def __init__(self, stdscr, consoleclient, devicename, active=None):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control, devicename, active=None):
+        super().__init__(stdscr, control)
 
         # window (1 line, full row, starting at 4,0)
         self.window = self.stdscr.subwin(1, self.maxcols, 4, 0)   # this window on row 4
@@ -2118,8 +2102,8 @@ class VectorListWin(ParentScreen):
         # botmore row self.maxrows - 4 row 20
 
 
-    def __init__(self, stdscr, consoleclient, devicename):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control, devicename):
+        super().__init__(stdscr, control)
 
 
         self.groupname = None
@@ -2290,13 +2274,13 @@ class VectorListWin(ParentScreen):
             self.window.addstr(linenumber, 30, lb)  # the shortenned label
             lowerstate = self.vectorstates[vectorname].lower()
             if lowerstate == "idle":
-                self.window.addstr(linenumber, self.maxcols - 20, "  Idle  ", self.consoleclient.color(lowerstate))
+                self.window.addstr(linenumber, self.maxcols - 20, "  Idle  ", self.control.color(lowerstate))
             elif lowerstate == "ok":
-                self.window.addstr(linenumber, self.maxcols - 20, "  OK    ", self.consoleclient.color(lowerstate))
+                self.window.addstr(linenumber, self.maxcols - 20, "  OK    ", self.control.color(lowerstate))
             elif lowerstate == "busy":
-                self.window.addstr(linenumber, self.maxcols - 20, "  Busy  ", self.consoleclient.color(lowerstate))
+                self.window.addstr(linenumber, self.maxcols - 20, "  Busy  ", self.control.color(lowerstate))
             elif lowerstate == "alert":
-                self.window.addstr(linenumber, self.maxcols - 20, "  Alert ", self.consoleclient.color(lowerstate))
+                self.window.addstr(linenumber, self.maxcols - 20, "  Alert ", self.control.color(lowerstate))
             linenumber += 2  # two lines per button
 
         # self.vecbuttons is a vectorname to button dictionary, but only for buttons displayed
@@ -2541,8 +2525,8 @@ class VectorScreen(ConsoleClientScreen):
     "This displays the chosen vector and its members"
 
 
-    def __init__(self, stdscr, consoleclient, devicename, vectorname):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control, devicename, vectorname):
+        super().__init__(stdscr, control)
 
         self.devicename = devicename
         self.vectorname = vectorname
@@ -2565,12 +2549,8 @@ class VectorScreen(ConsoleClientScreen):
         # timestamp and state window (1 line, full row, starting at 4,0)
         self.tstatewin = self.stdscr.subwin(1, self.maxcols, 4, 0)
 
-        try:
-            # window showing the members of the vector
-            self.memberswin = MembersWin(self.stdscr, self.consoleclient, self.tstatewin, self.vector)
-        except Exception:
-            traceback.print_exc(file=sys.stderr)
-            raise
+        # window showing the members of the vector
+        self.memberswin = MembersWin(self.stdscr, self.control, self.tstatewin, self.vector)
 
         # list areas of the screen, one of these areas has the current 'focus'
         # Members being the area showing the members associated with the vector
@@ -2632,7 +2612,7 @@ class VectorScreen(ConsoleClientScreen):
             self.messwin.clear()
             widgets.drawmessage(self.messwin, self.vector.message, maxcols=self.maxcols)
 
-        widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
+        widgets.draw_timestamp_state(self.control, self.tstatewin, self.vector)
 
         # draw the bottom buttons
         self.vectors_btn.draw()
@@ -2978,7 +2958,7 @@ class VectorScreen(ConsoleClientScreen):
                 if result == "submitted":
                     self.vector.state = 'Busy'
                     # The vector has been submitted, draw vector state which is now busy
-                    widgets.draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
+                    widgets.draw_timestamp_state(self.control, self.tstatewin, self.vector)
                     self.tstatewin.noutrefresh()
                     self.vectors_btn.focus = True
                     self.buttwin.clear()
@@ -3016,7 +2996,6 @@ class VectorScreen(ConsoleClientScreen):
         except asyncio.CancelledError:
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 
@@ -3028,8 +3007,8 @@ class MembersWin(ParentScreen):
     "Used to display the vector members"
 
 
-    def __init__(self, stdscr, consoleclient, tstatewin, vector):
-        super().__init__(stdscr, consoleclient)
+    def __init__(self, stdscr, control, tstatewin, vector):
+        super().__init__(stdscr, control)
 
         self.tstatewin = tstatewin
         self.vector = vector
@@ -3069,22 +3048,19 @@ class MembersWin(ParentScreen):
         namelen = max(len(name) for name in self.membernames)
 
         # create the member widgets
-        try:
-            self.memberwidgets = []
-            for name in self.membernames:
-                if self.vector.vectortype == "SwitchVector":
-                    self.memberwidgets.append(widgets.SwitchMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
-                elif self.vector.vectortype == "LightVector":
-                    self.memberwidgets.append(widgets.LightMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
-                elif self.vector.vectortype == "NumberVector":
-                    self.memberwidgets.append(widgets.NumberMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
-                elif self.vector.vectortype == "TextVector":
-                    self.memberwidgets.append(widgets.TextMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
-                elif self.vector.vectortype == "BLOBVector":
-                    self.memberwidgets.append(widgets.BLOBMember(self.stdscr, self.consoleclient, self.memwin, self.tstatewin, self.vector, name, namelen))
-        except Exception:
-            traceback.print_exc(file=sys.stderr)
-            raise
+        self.memberwidgets = []
+        for name in self.membernames:
+            if self.vector.vectortype == "SwitchVector":
+                self.memberwidgets.append(widgets.SwitchMember(self.stdscr, self.control, self.memwin, self.tstatewin, self.vector, name, namelen))
+            elif self.vector.vectortype == "LightVector":
+                self.memberwidgets.append(widgets.LightMember(self.stdscr, self.control, self.memwin, self.tstatewin, self.vector, name, namelen))
+            elif self.vector.vectortype == "NumberVector":
+                self.memberwidgets.append(widgets.NumberMember(self.stdscr, self.control, self.memwin, self.tstatewin, self.vector, name, namelen))
+            elif self.vector.vectortype == "TextVector":
+                self.memberwidgets.append(widgets.TextMember(self.stdscr, self.control, self.memwin, self.tstatewin, self.vector, name, namelen))
+            elif self.vector.vectortype == "BLOBVector":
+                self.memberwidgets.append(widgets.BLOBMember(self.stdscr, self.control, self.memwin, self.tstatewin, self.vector, name, namelen))
+
 
         # Sets list of displayed widgets, self.displayed
         self.displayedwidgets()
@@ -3211,14 +3187,10 @@ class MembersWin(ParentScreen):
         self.memwin.clear()
 
         # draw the member widgets being displayed
-        try:
-            line = 0
-            for memberwidget in self.displayed:
-                memberwidget.draw(line)
-                line = line+memberwidget.linecount
-        except Exception:
-            traceback.print_exc(file=sys.stderr)
-            raise
+        line = 0
+        for memberwidget in self.displayed:
+            memberwidget.draw(line)
+            line = line+memberwidget.linecount
 
         if self.topindex:
             self.topmore_btn.show = True
@@ -3649,11 +3621,9 @@ class MembersWin(ParentScreen):
                     curses.doupdate()
                     return
 
-
         except asyncio.CancelledError:
             raise
         except Exception:
-            traceback.print_exc(file=sys.stderr)
             return "Quit"
 
 

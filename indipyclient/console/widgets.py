@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from curses import ascii
 
-import traceback
+# import traceback
 #        except Exception:
 #            traceback.print_exc(file=sys.stderr)
 #            raise
@@ -41,7 +41,7 @@ def drawmessage(window, message, bold=False, maxcols=None):
         window.addstr(0, 0, messagetoshow)
 
 
-def draw_timestamp_state(consoleclient, window, vector):
+def draw_timestamp_state(control, window, vector):
     "Adds the vector timestamp, and its state to the window"
     maxrows, maxcols = window.getmaxyx()
     window.clear()
@@ -61,7 +61,7 @@ def draw_timestamp_state(consoleclient, window, vector):
         text = "  Alert "
     else:
         return
-    window.addstr(0, maxcols - 20, text, consoleclient.color(state))
+    window.addstr(0, maxcols - 20, text, control.color(state))
 
 
 
@@ -343,11 +343,11 @@ class EditString():
 
 class BaseMember:
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
+    def __init__(self, stdscr, control, window, tstatewin, vector, name, namelen=0):
 
         self.stdscr = stdscr
-        self.consoleclient = consoleclient
-        self.client = consoleclient.client
+        self.control = control
+        self.client = control.client
         self.window = window
         self.tstatewin = tstatewin
         self.vector = vector
@@ -411,13 +411,13 @@ class BaseMember:
 
     async def keyinput(self):
         """Waits for a key press,
-           if self.consoleclient.stop is True, returns 'Stop',
+           if self.control.stop is True, returns 'Stop',
            if screen has been resized, returns 'Resize',
            if self._close has been given a value, returns that value
            Otherwise returns the key pressed."""
         while True:
             await asyncio.sleep(0)
-            if self.consoleclient.stop:
+            if self.control.stop:
                 return "Stop"
             if self._close:
                 return self._close
@@ -441,8 +441,8 @@ class BaseMember:
 
 class SwitchMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
+    def __init__(self, stdscr, control, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, control, window, tstatewin, vector, name, namelen)
         # create  ON, OFF buttons
         self.on = Button(window, 'ON', 0, 0)
         self.on.bold = True if self.value() == "On" else False
@@ -648,8 +648,8 @@ class SwitchMember(BaseMember):
 
 class LightMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
+    def __init__(self, stdscr, control, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, control, window, tstatewin, vector, name, namelen)
         self.linecount = 3
 
 
@@ -668,7 +668,7 @@ class LightMember(BaseMember):
         else:
             return
         # draw the value
-        self.window.addstr(self.startline+1, self.maxcols-20, text, self.consoleclient.color(lowervalue))
+        self.window.addstr(self.startline+1, self.maxcols-20, text, self.control.color(lowervalue))
 
     def setkey(self, key):
         "This widget is in focus, but is read only"
@@ -708,8 +708,8 @@ class LightMember(BaseMember):
 
 class NumberMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
+    def __init__(self, stdscr, control, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, control, window, tstatewin, vector, name, namelen)
         if self.vector.perm == "ro":
             self.linecount = 3
         else:
@@ -828,7 +828,7 @@ class NumberMember(BaseMember):
         curses.curs_set(1)
         editstring = self.edit_txt.editstring(self.stdscr)
 
-        while not self.consoleclient.stop:
+        while not self.control.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                 curses.curs_set(0)
@@ -914,8 +914,8 @@ class NumberMember(BaseMember):
 
 class TextMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
+    def __init__(self, stdscr, control, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, control, window, tstatewin, vector, name, namelen)
         if self.vector.perm == "ro":
             self.linecount = 3
         else:
@@ -1027,7 +1027,7 @@ class TextMember(BaseMember):
         curses.curs_set(1)
         editstring = self.edit_txt.editstring(self.stdscr)
 
-        while not self.consoleclient.stop:
+        while not self.control.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                 curses.curs_set(0)
@@ -1088,8 +1088,8 @@ class TextMember(BaseMember):
 
 class BLOBMember(BaseMember):
 
-    def __init__(self, stdscr, consoleclient, window, tstatewin, vector, name, namelen=0):
-        super().__init__(stdscr, consoleclient, window, tstatewin, vector, name, namelen)
+    def __init__(self, stdscr, control, window, tstatewin, vector, name, namelen=0):
+        super().__init__(stdscr, control, window, tstatewin, vector, name, namelen)
         if self.vector.perm == "ro":
             self.linecount = 3
         else:
@@ -1119,8 +1119,8 @@ class BLOBMember(BaseMember):
     def filename(self):
         "Returns filename of last file received and saved"
         nametuple = (self.vector.devicename, self.vector.name, self.name)
-        if nametuple in self.consoleclient.BLOBfiles:
-            return self.consoleclient.BLOBfiles[nametuple].name
+        if nametuple in self.control.BLOBfiles:
+            return self.control.BLOBfiles[nametuple].name
         else:
             return ""
 
@@ -1223,7 +1223,7 @@ class BLOBMember(BaseMember):
                 else:
                     self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
                     self.vector.state = 'Busy'
-                    draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
+                    draw_timestamp_state(self.control, self.tstatewin, self.vector)
                     self.tstatewin.noutrefresh()
                 self.window.noutrefresh()
                 curses.doupdate()
@@ -1292,7 +1292,7 @@ class BLOBMember(BaseMember):
                 else:
                     self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
                     self.vector.state = 'Busy'
-                    draw_timestamp_state(self.consoleclient, self.tstatewin, self.vector)
+                    draw_timestamp_state(self.control, self.tstatewin, self.vector)
                     self.tstatewin.noutrefresh()
                 self.window.noutrefresh()
                 curses.doupdate()
@@ -1309,7 +1309,7 @@ class BLOBMember(BaseMember):
         curses.curs_set(1)
         editstring = self.edit_txt.editstring(self.stdscr)
 
-        while not self.consoleclient.stop:
+        while not self.control.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                 curses.curs_set(0)
