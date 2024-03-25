@@ -32,10 +32,15 @@ def main():
     """The main routine."""
 
     parser = argparse.ArgumentParser(usage="python3 -m indipyclient [options]",
-        description="INDI client communicating to indi service.")
+                                     description="INDI console client communicating to indi service.",
+                                     epilog="""
+The BLOB's folder can also be set from within the console.
+The -e option ensures any errors output on stderr will be sent
+to a file which may be useful to view exception traces.""")
     parser.add_argument("-p", "--port", type=int, default=7624, help="Port of the indiserver (default 7624).")
     parser.add_argument("--host", default="localhost", help="Hostname of the indi service (default localhost).")
     parser.add_argument("-b", "--blobs", help="Optional folder where BLOB's will be saved.")
+    parser.add_argument("-e", "--errors", help="Optional filepath to which stderr will be directed.")
 
     parser.add_argument("--version", action="version", version=version)
     args = parser.parse_args()
@@ -57,13 +62,15 @@ def main():
 
     # On receiving an event, the client appends it into eventque
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
-    # control monitors eventque and acts on the events
+    # Monitors eventque and acts on the events, creates the console screens
     control = ConsoleControl(client, blobfolder=blobfolder)
 
-    with open('err.txt', 'w') as f:
-        with contextlib.redirect_stderr(f):
-            asyncio.run(runclient(client, control))
-
+    if args.errors:
+        with open(args.errors, 'w') as f:
+            with contextlib.redirect_stderr(f):
+                asyncio.run(runclient(client, control))
+    else:
+        asyncio.run(runclient(client, control))
     return 0
 
 
