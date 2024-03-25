@@ -1,5 +1,5 @@
 
-import collections, sys
+import collections, sys, time
 
 from datetime import datetime, timezone
 
@@ -83,6 +83,30 @@ class PropertyVector(Vector):
         self.device = device
         self.devicename = device.devicename
 
+        self._timer = False   # Set true when a timer is going after a newvector is sent
+                              # set False when a setvector is received
+        self._newtimer = 0    # Set to time.time() when a new vector is sent
+
+
+    def timedout(self, nowtime):
+        "Returns True if a timedout has occured, False otherwise"
+        if not self._client.vector_timeout_enable:
+            self._timer = False
+            return False
+        if not self._timer:
+            return False
+        # so timer is running
+        if self.timeout > self._client.vector_timeout_max:
+            t = self._client.vector_timeout_max
+        elif self.timeout < self._client.vector_timeout_min:
+            t = self._client.vector_timeout_min
+        else:
+            t = self.timeout
+        if nowtime > self._newtimer + t:
+            # timed out
+            self._timer = False
+            return True
+        return False
 
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
@@ -108,6 +132,7 @@ class PropertyVector(Vector):
 
     def _setvector(self, event):
         "Updates this vector with new values after a set... vector has been received"
+        self._timer = False
         if not self.enable:
             # this property does not exist
             return
@@ -123,6 +148,11 @@ class PropertyVector(Vector):
             if membername in self.data:
                 member = self.data[membername]
                 member.membervalue = membervalue
+
+
+    def timedout(self, nowtime):
+        "Return True if this vector has timed out, False otherwise"
+
 
 
     def _snapshot(self):
@@ -184,6 +214,7 @@ class SwitchVector(PropertyVector):
 
     def _defvector(self, event):
         "Updates this vector with new values after a def... vector has been received"
+        self._timer = False
         if event.label:
             self.label = event.label
         if event.group:
@@ -263,6 +294,8 @@ class SwitchVector(PropertyVector):
         xmldata = self._newSwitchVector(timestamp, members)
         if xmldata is None:
             return
+        self._timer = True
+        self._newtimer = time.time()
         self._client.send(xmldata)
 
 
@@ -291,6 +324,9 @@ class LightVector(PropertyVector):
     def perm(self, value):
         pass
 
+    def timedout(self, nowtime):
+        "As ro, always returns False"
+        return False
 
     def _defvector(self, event):
         "Updates this vector with new values after a def... vector has been received"
@@ -348,6 +384,7 @@ class TextVector(PropertyVector):
 
     def _defvector(self, event):
         "Updates this vector with new values after a def... vector has been received"
+        self._timer = False
         if event.label:
             self.label = event.label
         if event.group:
@@ -412,6 +449,8 @@ class TextVector(PropertyVector):
         xmldata = self._newTextVector(timestamp, members)
         if xmldata is None:
             return
+        self._timer = True
+        self._newtimer = time.time()
         self._client.send(xmldata)
 
 
@@ -451,6 +490,7 @@ class NumberVector(PropertyVector):
 
     def _defvector(self, event):
         "Updates this vector with new values after a def... vector has been received"
+        self._timer = False
         if event.label:
             self.label = event.label
         if event.group:
@@ -520,6 +560,8 @@ class NumberVector(PropertyVector):
         xmldata = self._newNumberVector(timestamp, members)
         if xmldata is None:
             return
+        self._timer = True
+        self._newtimer = time.time()
         self._client.send(xmldata)
 
 
@@ -568,6 +610,7 @@ class BLOBVector(PropertyVector):
 
     def _defvector(self, event):
         "Updates this vector with new values after a def... vector has been received"
+        self._timer = False
         if event.label:
             self.label = event.label
         if event.group:
@@ -595,6 +638,7 @@ class BLOBVector(PropertyVector):
 
     def _setvector(self, event):
         "Updates this vector with new values after a setBLOBvector has been received"
+        self._timer = False
         if not self.enable:
             # this property does not exist
             return
@@ -642,4 +686,6 @@ class BLOBVector(PropertyVector):
         xmldata = self._newBLOBVector(timestamp, members)
         if xmldata is None:
             return
+        self._timer = True
+        self._newtimer = time.time()
         self._client.send(xmldata)

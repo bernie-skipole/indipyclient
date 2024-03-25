@@ -122,6 +122,13 @@ class IPyClient(collections.UserDict):
         # If nothing sent or received after idle_timeout reached, then a getProperties is transmitted
         self.idle_timer = time.time()
         self.idle_timeout = 20
+
+        # vector timeouts are used to check that when a new vector is sent
+        # a reply setvector will be received within the given time
+        self.vector_timeout_enable = True
+        self.vector_timeout_min = 2
+        self.vector_timeout_max = 10
+
         # and shutdown routine sets this to True to stop coroutines
         self._stop = False
         # this is set to True when asyncrun is finished
@@ -481,15 +488,24 @@ class IPyClient(collections.UserDict):
         except KeyboardInterrupt:
             self._stop = True
 
+    def set_vector_timeouts(self, timeout_enable=None, timeout_min=None, timeout_max=None):
+        if not timeout_enable is None:
+            self.vector_timeout_enable = timeout_enable
+        if not timeout_min is None:
+            self.vector_timeout_min = timeout_min
+        if not timeout_max is None:
+            self.vector_timeout_max = timeout_max
 
-    async def _autosend_getProperties(self):
+
+    async def _timeout_monitor(self):
         """Sends a getProperties every five seconds if no devices have been learnt
            or every self.idle_timeout seconds if nothing has been transmitted or received"""
         try:
             count = 0
             while (not self._stop):
-                # wait an initial half second for a new connection to settle down
                 await asyncio.sleep(0.5)
+                # This loop tests timeout values every half second
+
                 if not self.connected:
                     count = 0
                 else:
@@ -497,10 +513,20 @@ class IPyClient(collections.UserDict):
                     if len(self.data):
                         # connection is up and devices exist, if nothing has been
                         # sent or received for self.idle_timeout seconds, send a getProperties
-                        telapsed = time.time() - self.idle_timer
+                        nowtime = time.time()
+                        telapsed = nowtime - self.idle_timer
                         if telapsed > self.idle_timeout:
                             self.send_getProperties()
-                            # await self.report("getProperties sent")
+                        elif self.vector_timeout_enable:
+                            # check if any vectors have timed out
+                            for device in self.data.values():
+                                for vector in device.values():
+                                    if not vector.enable:
+                                        continue
+                                    if vector.timedout(nowtime):
+                                        # Creat a VectorTimeOut event
+                                        event = events.VectorTimeOut(device, vector)
+                                        await self.rxevent(event)
                     else:
                         # no devices
                         # then send a getProperties, every five seconds, when count is zero
@@ -556,9 +582,8 @@ class IPyClient(collections.UserDict):
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self._stop = False
-        await asyncio.gather(self._comms(), self._rxhandler(), self._autosend_getProperties(), return_exceptions=True)
+        await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), return_exceptions=True)
         self.stopped = True
-
 
 
 class Device(collections.UserDict):
