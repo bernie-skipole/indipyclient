@@ -88,11 +88,11 @@ class PropertyVector(Vector):
         self._newtimer = 0    # Set to time.time() when a new vector is sent
 
 
-    def timedout(self, nowtime):
+    def checktimedout(self, nowtime):
         "Returns True if a timedout has occured, False otherwise"
+        print(nowtime, file=sys.stderr)
         if not self._client.vector_timeout_enable:
             self._timer = False
-            return False
         if not self._timer:
             return False
         # so timer is running
@@ -148,11 +148,6 @@ class PropertyVector(Vector):
             if membername in self.data:
                 member = self.data[membername]
                 member.membervalue = membervalue
-
-
-    def timedout(self, nowtime):
-        "Return True if this vector has timed out, False otherwise"
-
 
 
     def _snapshot(self):
@@ -324,7 +319,7 @@ class LightVector(PropertyVector):
     def perm(self, value):
         pass
 
-    def timedout(self, nowtime):
+    def checktimedout(self, nowtime):
         "As ro, always returns False"
         return False
 

@@ -1375,6 +1375,15 @@ class ChooseVectorScreen(ConsoleClientScreen):
         self.focus = newfocus
 
 
+    def timeout(self, event):
+        "A timeout event has occurred, update the vector state"
+        if event.vector.state == "Busy":
+            event.vector.state = "Alert"
+            event.vector.timestamp = event.timestamp
+            self.vectorswin.draw(self.devicename, self.groupwin.active )
+            self.vectorswin.noutrefresh()
+            curses.doupdate()
+
 
     def update(self, event):
         "Change anything that has been updated"
@@ -2717,6 +2726,14 @@ class VectorScreen(ConsoleClientScreen):
                 self.vectors_btn.draw()
             self.buttwin.noutrefresh()
 
+    def timeout(self, event):
+        "A timeout event has occurred, update the vector state"
+        if self.vector.state == "Busy":
+            self.vector.state = "Alert"
+            self.vector.timestamp = event.timestamp
+            widgets.draw_timestamp_state(self.control, self.tstatewin, self.vector)
+            self.tstatewin.noutrefresh()
+            curses.doupdate()
 
     def update(self, event):
         "An event affecting this vector has occurred, re-draw the screen"

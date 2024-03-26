@@ -5,7 +5,7 @@ import curses
 
 from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
-                     setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message)
+                     setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message, VectorTimeOut)
 
 from . import windows
 
@@ -155,6 +155,13 @@ class ConsoleControl:
                 except IndexError:
                     # no event received, so do not update screen
                     continue
+                if isinstance(event, VectorTimeOut) and (event.devicename == self.screen.devicename):
+                    if isinstance(self.screen, windows.ChooseVectorScreen):
+                        self.screen.timeout(event)
+                        continue
+                    if isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                        self.screen.timeout(event)
+                        continue
                 if hasattr(event, 'devicename'):
                     # if this is a new device, update it with BLOB status
                     if event.devicename and (event.devicename not in self.devicenames):

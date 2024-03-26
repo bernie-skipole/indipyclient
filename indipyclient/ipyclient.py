@@ -521,9 +521,10 @@ class IPyClient(collections.UserDict):
                             # check if any vectors have timed out
                             for device in self.data.values():
                                 for vector in device.values():
+                                    print(vector.vectorname, file=sys.stderr)
                                     if not vector.enable:
                                         continue
-                                    if vector.timedout(nowtime):
+                                    if vector.checktimedout(nowtime):
                                         # Creat a VectorTimeOut event
                                         event = events.VectorTimeOut(device, vector)
                                         await self.rxevent(event)
