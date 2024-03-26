@@ -27,7 +27,7 @@ class Vector(collections.UserDict):
         self.devicename = None
         self._rule = None
         self._perm = None
-        self.timeout = None
+        self.timeout = 0.0
         # if self.enable is False, this property is 'deleted'
         self.enable = True
 
@@ -90,7 +90,7 @@ class PropertyVector(Vector):
 
     def checktimedout(self, nowtime):
         "Returns True if a timedout has occured, False otherwise"
-        print(nowtime, file=sys.stderr)
+
         if not self._client.vector_timeout_enable:
             self._timer = False
         if not self._timer:
@@ -142,7 +142,7 @@ class PropertyVector(Vector):
             self.timestamp = event.timestamp
         if event.message:
             self.message = event.message
-        if hasattr(event, 'timeout') and event.timeout:
+        if hasattr(event, 'timeout'):
             self.timeout = event.timeout
         for membername, membervalue in event.items():
             if membername in self.data:
@@ -224,8 +224,7 @@ class SwitchVector(PropertyVector):
             self.timestamp = event.timestamp
         if event.message:
             self.message = event.message
-        if event.timeout:
-            self.timeout = event.timeout
+        self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
             if membername in self.data:
@@ -392,8 +391,7 @@ class TextVector(PropertyVector):
             self.timestamp = event.timestamp
         if event.message:
             self.message = event.message
-        if event.timeout:
-            self.timeout = event.timeout
+        self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
             if membername in self.data:
@@ -498,8 +496,7 @@ class NumberVector(PropertyVector):
             self.timestamp = event.timestamp
         if event.message:
             self.message = event.message
-        if event.timeout:
-            self.timeout = event.timeout
+        self.timeout = event.timeout
         # create  members
         for membername, membervalue in event.items():
             if membername in self.data:
@@ -618,8 +615,7 @@ class BLOBVector(PropertyVector):
             self.timestamp = event.timestamp
         if event.message:
             self.message = event.message
-        if event.timeout:
-            self.timeout = event.timeout
+        self.timeout = event.timeout
         # create  members
         for membername, label in event.memberlabels.items():
             if membername in self.data:

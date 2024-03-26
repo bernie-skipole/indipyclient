@@ -1,6 +1,6 @@
 
 
-import os, sys, collections, threading, asyncio, pathlib, time
+import os, sys, collections, threading, asyncio, pathlib, time, traceback
 
 from time import sleep
 
@@ -505,7 +505,6 @@ class IPyClient(collections.UserDict):
             while (not self._stop):
                 await asyncio.sleep(0.5)
                 # This loop tests timeout values every half second
-
                 if not self.connected:
                     count = 0
                 else:
@@ -521,7 +520,6 @@ class IPyClient(collections.UserDict):
                             # check if any vectors have timed out
                             for device in self.data.values():
                                 for vector in device.values():
-                                    print(vector.vectorname, file=sys.stderr)
                                     if not vector.enable:
                                         continue
                                     if vector.checktimedout(nowtime):

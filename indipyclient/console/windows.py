@@ -2732,7 +2732,9 @@ class VectorScreen(ConsoleClientScreen):
             self.vector.state = "Alert"
             self.vector.timestamp = event.timestamp
             widgets.draw_timestamp_state(self.control, self.tstatewin, self.vector)
+            widgets.drawmessage(self.messwin, "Timeout", bold=True) #, maxcols=8)
             self.tstatewin.noutrefresh()
+            self.messwin.noutrefresh()
             curses.doupdate()
 
     def update(self, event):
