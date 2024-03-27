@@ -3,11 +3,14 @@ import asyncio, sys
 
 import curses
 
+from traceback import TracebackException as TBE
+
 from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message, VectorTimeOut)
 
 from . import windows
+from . import widgets
 
 # set limit to terminal size
 MINROWS = 22
@@ -235,7 +238,8 @@ class ConsoleControl:
         except asyncio.CancelledError:
             self._shutdown = True
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             self._shutdown = True
         finally:
             self.updatescreenstopped = True
@@ -260,6 +264,9 @@ class ConsoleControl:
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
+                    if result == "Quit":
+                        self._shutdown = True
+                        break
 
                 if isinstance(self.screen, windows.MessagesScreen):
                     result = await self.screen.inputs()
@@ -401,7 +408,8 @@ class ConsoleControl:
         except asyncio.CancelledError:
             self._shutdown = True
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             self._shutdown = True
         finally:
             self.getinputstopped = True

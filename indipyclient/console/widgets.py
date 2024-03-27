@@ -3,12 +3,11 @@ import asyncio, curses, sys, pathlib, time
 
 from decimal import Decimal
 
+from traceback import TracebackException as TBE
+
 from curses import ascii
 
-# import traceback
-#        except Exception:
-#            traceback.print_exc(file=sys.stderr)
-#            raise
+ERRORDATA = []
 
 def shorten(text, width=0, placeholder="..."):
     "Shorten text"
@@ -25,7 +24,7 @@ def drawmessage(window, message, bold=False, maxcols=None):
     """Shows message, message is either a text string, or a tuple of (timestamp, message text)"""
     window.clear()
     if not maxcols:
-        maxcols = curses.COLS
+        maxrows, maxcols = window.getmaxyx()
     maxcols = maxcols - 5
     if not isinstance(message, str):
         message = message[0].isoformat(sep='T')[11:21] + "  " + message[1]
@@ -62,7 +61,6 @@ def draw_timestamp_state(control, window, vector):
     else:
         return
     window.addstr(0, maxcols - 20, text, control.color(state))
-
 
 
 class Button:
@@ -337,8 +335,6 @@ class EditString():
                 # move cursor right
                 self.stringpos += 1
         return self.text
-
-
 
 
 class BaseMember:

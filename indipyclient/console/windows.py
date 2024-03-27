@@ -1,6 +1,8 @@
 
 import asyncio, curses, sys, os, pathlib, time
 
+from traceback import TracebackException as TBE
+
 from . import widgets
 
 from .. import events
@@ -123,7 +125,8 @@ class TooSmall(ConsoleClientScreen):
                     return key
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             return "Quit"
 
 
@@ -417,7 +420,8 @@ class MessagesScreen(ConsoleClientScreen):
 
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             return "Quit"
 
 
@@ -646,7 +650,8 @@ class EnableBLOBsScreen(ConsoleClientScreen):
 
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             return "Quit"
 
 
@@ -1211,7 +1216,8 @@ class DevicesScreen(ConsoleClientScreen):
 
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             return "Quit"
 
 
@@ -1591,7 +1597,8 @@ class ChooseVectorScreen(ConsoleClientScreen):
                 curses.doupdate()
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             return "Quit"
 
 
@@ -3014,7 +3021,8 @@ class VectorScreen(ConsoleClientScreen):
 
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             return "Quit"
 
 
@@ -3642,7 +3650,8 @@ class MembersWin(ParentScreen):
 
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception as e:
+            widgets.ERRORDATA.append(TBE.from_exception(e))
             return "Quit"
 
 

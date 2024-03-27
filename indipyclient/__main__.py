@@ -13,6 +13,8 @@ from . import version
 
 from .console.consoleclient import ConsoleClient, ConsoleControl
 
+from .console.widgets import ERRORDATA
+
 
 async def runclient(client, control):
     try:
@@ -25,7 +27,6 @@ async def runclient(client, control):
     # wait for tasks to be done
     while (not t1.done()) and (not t2.done()):
         await asyncio.sleep(0)
-
 
 
 def main():
@@ -62,6 +63,17 @@ def main():
     control = ConsoleControl(client, blobfolder=blobfolder)
 
     asyncio.run(runclient(client, control))
+
+    # ERRORDATA is a list of any traceback.TracebackException() objects
+    # which records any exceptions which may have occurred. They are printed
+    # here, after the console has closed down to avoid messing up
+    # the console formatting
+
+    if ERRORDATA:
+        for errortrace in ERRORDATA:
+            print("".join(errortrace.format()))
+            print("------------------")
+
     return 0
 
 
