@@ -1,8 +1,6 @@
 # indipyclient
 INDI console client to communicate to an indi service.
 
-This is under development and not yet ready for use
-
 This is a pure python package, with no dependencies, providing an INDI client terminal
 
 It also provides a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.
@@ -23,9 +21,16 @@ The client can be called with python3 -m indipyclent.
       --logfile LOGFILE     File where logs will be saved
       --version             show program's version number and exit
 
-    The BLOB's folder can also be set from within the console. Setting loglevel and logfile should only be used for brief diagnostic
-    purposes, the logfile could grow very big. loglevel:1 log vector tags without members or contents, loglevel:2 log vectors and
-    members - but not BLOB contents, loglevel:3 log vectors and all contents
+    The BLOB's folder can also be set from within the console.
+    Setting loglevel and logfile should only be used for brief
+    diagnostic purposes, the logfile could grow very big.
+    loglevel:1 log vector tags without members or contents,
+    loglevel:2 log vectors and members - but not BLOB contents,
+    loglevel:3 log vectors and all contents
+
+A typical sesssion would look like:
+
+![Terminal screenshot](./image.png)
 
 
 This is a companion package to 'indipydriver' which can be used to create INDI drivers.
