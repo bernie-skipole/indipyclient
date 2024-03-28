@@ -134,7 +134,58 @@ class IPyClient(collections.UserDict):
         # this is set to True when asyncrun is finished
         self.stopped = False
 
+        # logging level and filepointer to logfile
+        # level, None for no logging, 1 for parsed vector tags only,
+        #                             2 for parsed vectors and members (apart from BLOB's)
+        #                             3 for raw unparsed data
+        self.level = None
+        self.logfile = None
+        self.logfp = None
+
+    def setlogging(self, level, logfile):
+        "Sets the logging level and logfile, returns the level, which will be None on failure"
+        try:
+            if level is None:
+                self.level = None
+                if self.logfp:
+                    self.logfp.close()
+                self.logfp = None
+                self.logfile = None
+                return None
+            if level in (1, 2, 3):
+                self.level = level
+            else:
+                self.level = None
+                if self.logfp:
+                    self.logfp.close()
+                self.logfp = None
+                self.logfile = None
+                return None
+            logfile = pathlib.Path(logfile).expanduser().resolve()
+            self.logfp = open(logfile, "wb")
+            if not self.logfp.writable():
+                self.logfp.close()
+                self.level = None
+                self.logfp = None
+                self.logfile = None
+                return None
+        except:
+            self.level = None
+            if self.logfp:
+                self.logfp.close()
+            self.logfp = None
+            self.logfile = None
+            return None
+        self.logfile = logfile
+        return self.level
+
     def shutdown(self):
+        "Shuts down the client"
+        if self.logfp:
+            self.logfp.close()
+            self.level = None
+            self.logfp = None
+            self.logfile = None
         self._stop = True
 
     async def report(self, message):
@@ -192,7 +243,7 @@ class IPyClient(collections.UserDict):
                     if count >= 10:
                         break
         finally:
-            self._stop = True
+            self.shutdown()
 
 
     def _clear_connection(self):
@@ -238,9 +289,37 @@ class IPyClient(collections.UserDict):
                 await writer.wait_closed()
                 self._clear_connection()
         except KeyboardInterrupt:
-            self._stop = True
+            self.shutdown()
         finally:
             self.connected = False
+
+
+    def _logtx(self, txdata):
+        "log data to file"
+        self.logfp.write(b"\nTX:: ")
+        if self.level == 1:
+            for element in txdata:
+                txdata.remove(element)
+            binarydata = ET.tostring(txdata, short_empty_elements=False)
+            self.logfp.write(binarydata)
+        if self.level == 2:
+            tag = txdata.tag
+            for element in txdata:
+                if tag  == "newBLOBVector":
+                    element.text = "NOT RECORDED"
+            binarydata = ET.tostring(txdata)
+            self.logfp.write(binarydata)
+        if self.level == 3:
+            if txdata.tag == "newBLOBVector" and len(txdata):
+                # txdata is a newBLOBVector containing blobs
+                # the generator blob_xml_bytes yields bytes
+                for binarydata in blob_xml_bytes(txdata):
+                    self.logfp.write(binarydata)
+            else:
+                binarydata = ET.tostring(txdata)
+                self.logfp.write(binarydata)
+
+
 
 
     async def _run_tx(self, writer):
@@ -252,6 +331,7 @@ class IPyClient(collections.UserDict):
                     txdata = self.writerque.popleft()
                 except IndexError:
                     continue
+
                 if txdata.tag == "newBLOBVector" and len(txdata):
                     # txdata is a newBLOBVector containing blobs
                     # the generator blob_xml_bytes yields bytes
@@ -271,8 +351,30 @@ class IPyClient(collections.UserDict):
                 if (self.tx_timer is None) and (txdata.tag != "enableBLOB"):
                     self.tx_timer = time.time()
                 self.idle_timer = time.time()
+
+                if self.level:
+                    self._logtx(txdata)
         except KeyboardInterrupt:
-            self._stop = True
+            self.shutdown()
+
+    def _logrx(self, rxdata):
+        "log data to file"
+        self.logfp.write(b"\nRX:: ")
+        if self.level == 1:
+            for element in rxdata:
+                rxdata.remove(element)
+            binarydata = ET.tostring(rxdata, short_empty_elements=False)
+            self.logfp.write(binarydata)
+        if self.level == 2:
+            tag = rxdata.tag
+            for element in rxdata:
+                if tag  == "newBLOBVector":
+                    element.text = "NOT RECORDED"
+            binarydata = ET.tostring(rxdata)
+            self.logfp.write(binarydata)
+        if self.level == 3:
+            binarydata = ET.tostring(rxdata)
+            self.logfp.write(binarydata)
 
 
     async def _run_rx(self, reader):
@@ -292,11 +394,13 @@ class IPyClient(collections.UserDict):
                         # The queue is full, something may be wrong
                         # discard this data and continue
                         pass
+                if self.level:
+                    self._logrx(rxdata)
         except RuntimeError:
             # catches StopAsyncIteration and stops this coroutine
             pass
         except KeyboardInterrupt:
-            self._stop = True
+            self.shutdown()
 
 
     async def _datasource(self, reader):
@@ -354,7 +458,7 @@ class IPyClient(collections.UserDict):
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
                     except KeyboardInterrupt:
-                        self._stop = True
+                        self.shutdown()
                         break
                     except ET.ParseError as e:
                         message = b''
@@ -366,9 +470,9 @@ class IPyClient(collections.UserDict):
                     message = b''
                     messagetagnumber = None
         except KeyboardInterrupt:
-            self._stop = True
+            self.shutdown()
         except asyncio.CancelledError:
-            self._stop = True
+            self.shutdown()
             raise
 
 
@@ -399,9 +503,9 @@ class IPyClient(collections.UserDict):
                     binarydata += data
                     # could put a max value here to stop this increasing indefinetly
         except KeyboardInterrupt:
-            self._stop = True
+            self.shutdown()
         except asyncio.CancelledError:
-            self._stop = True
+            self.shutdown()
             raise
 
 
@@ -451,7 +555,7 @@ class IPyClient(collections.UserDict):
                 # and an event has been created, call the user event handling function
                 await self.rxevent(event)
         finally:
-            self._stop = True
+            self.shutdown()
 
 
     def snapshot(self):
@@ -486,7 +590,7 @@ class IPyClient(collections.UserDict):
             elif propertyvector.vectortype == "BLOBVector":
                 propertyvector.send_newBLOBVector(timestamp, members)
         except KeyboardInterrupt:
-            self._stop = True
+            self.shutdown()
 
     def set_vector_timeouts(self, timeout_enable=None, timeout_min=None, timeout_max=None):
         if not timeout_enable is None:
@@ -536,9 +640,9 @@ class IPyClient(collections.UserDict):
                         if count >= 10:
                             count = 0
         except KeyboardInterrupt:
-            self._stop = True
+            self.shutdown()
         except asyncio.CancelledError:
-            self._stop = True
+            self.shutdown()
             raise
 
 

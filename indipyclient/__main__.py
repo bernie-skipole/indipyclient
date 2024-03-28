@@ -34,10 +34,18 @@ def main():
 
     parser = argparse.ArgumentParser(usage="python3 -m indipyclient [options]",
                                      description="INDI console client communicating to indi service.",
-                                     epilog="The BLOB's folder can also be set from within the console.")
+                                     epilog="""The BLOB's folder can also be set from within the console.
+Setting loglevel and logfile should only be used for brief
+diagnostic purposes, the logfile could grow very big.
+loglevel:1 log vector tags without members
+loglevel:2 log vectors and members - but not BLOB contents
+loglevel:3 log vectors and all contents
+""")
     parser.add_argument("-p", "--port", type=int, default=7624, help="Port of the indiserver (default 7624).")
     parser.add_argument("--host", default="localhost", help="Hostname of the indi service (default localhost).")
     parser.add_argument("-b", "--blobs", help="Optional folder where BLOB's will be saved.")
+    parser.add_argument("--loglevel", help="Enables logging, value 1, 2 or 3.")
+    parser.add_argument("--logfile", help="File where logs will be saved")
 
     parser.add_argument("--version", action="version", version=version)
     args = parser.parse_args()
@@ -59,13 +67,25 @@ def main():
 
     # On receiving an event, the client appends it into eventque
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
+
+    if args.loglevel and args.logfile:
+        try:
+            loglevel = int(args.loglevel)
+            if loglevel not in (1,2,3):
+                print("Error: If given, the loglevel should be 1, 2 or 3")
+                return 1
+        except:
+            print("Error: If given, the loglevel should be 1, 2 or 3")
+            return 1
+        client.setlogging(loglevel, args.logfile)
+
     # Monitors eventque and acts on the events, creates the console screens
     control = ConsoleControl(client, blobfolder=blobfolder)
 
     asyncio.run(runclient(client, control))
 
     # ERRORDATA is a list of any traceback.TracebackException() objects
-    # which records any exceptions which may have occurred. They are printed
+    # which records exceptions which may have occurred. They are printed
     # here, after the console has closed down to avoid messing up
     # the console formatting
 
