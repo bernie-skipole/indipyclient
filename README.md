@@ -9,9 +9,9 @@ It also provides a set of classes which can be used to create an INDI client. Ei
 
 The client can be called with python3 -m indipyclent.
 
-usage: python3 -m indipyclient [options]
+    usage: python3 -m indipyclient [options]
 
-INDI console client communicating to indi service.
+    INDI console client communicating to indi service.
 
     options:
       -h, --help            show this help message and exit
