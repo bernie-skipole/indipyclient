@@ -1,6 +1,6 @@
 
 
-import os, sys, collections, threading, asyncio, pathlib, time, traceback
+import os, sys, collections, threading, asyncio, pathlib, time, traceback, copy
 
 from time import sleep
 
@@ -300,13 +300,14 @@ class IPyClient(collections.UserDict):
         if self.level == 1:
             for element in txdata:
                 txdata.remove(element)
+            txdata.text = ""
             binarydata = ET.tostring(txdata, short_empty_elements=False)
             self.logfp.write(binarydata)
         if self.level == 2:
             tag = txdata.tag
             for element in txdata:
                 if tag  == "newBLOBVector":
-                    element.text = "NOT RECORDED"
+                    element.text = "NOT LOGGED"
             binarydata = ET.tostring(txdata)
             self.logfp.write(binarydata)
         if self.level == 3:
@@ -359,21 +360,23 @@ class IPyClient(collections.UserDict):
 
     def _logrx(self, rxdata):
         "log data to file"
+        data = copy.deepcopy(rxdata)
         self.logfp.write(b"\nRX:: ")
         if self.level == 1:
-            for element in rxdata:
-                rxdata.remove(element)
-            binarydata = ET.tostring(rxdata, short_empty_elements=False)
+            for element in data:
+                data.remove(element)
+            data.text = ""
+            binarydata = ET.tostring(data, short_empty_elements=False)
             self.logfp.write(binarydata)
         if self.level == 2:
-            tag = rxdata.tag
-            for element in rxdata:
+            tag = data.tag
+            for element in data:
                 if tag  == "newBLOBVector":
-                    element.text = "NOT RECORDED"
-            binarydata = ET.tostring(rxdata)
+                    element.text = "NOT LOGGED"
+            binarydata = ET.tostring(data)
             self.logfp.write(binarydata)
         if self.level == 3:
-            binarydata = ET.tostring(rxdata)
+            binarydata = ET.tostring(data)
             self.logfp.write(binarydata)
 
 

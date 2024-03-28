@@ -37,12 +37,12 @@ def main():
                                      epilog="""The BLOB's folder can also be set from within the console.
 Setting loglevel and logfile should only be used for brief
 diagnostic purposes, the logfile could grow very big.
-loglevel:1 log vector tags without members
-loglevel:2 log vectors and members - but not BLOB contents
+loglevel:1 log vector tags without members or contents,
+loglevel:2 log vectors and members - but not BLOB contents,
 loglevel:3 log vectors and all contents
 """)
-    parser.add_argument("-p", "--port", type=int, default=7624, help="Port of the indiserver (default 7624).")
-    parser.add_argument("--host", default="localhost", help="Hostname of the indi service (default localhost).")
+    parser.add_argument("-p", "--port", type=int, default=7624, help="Port of the indi server (default 7624).")
+    parser.add_argument("--host", default="localhost", help="Hostname/IP of the indi server (default localhost).")
     parser.add_argument("-b", "--blobs", help="Optional folder where BLOB's will be saved.")
     parser.add_argument("--loglevel", help="Enables logging, value 1, 2 or 3.")
     parser.add_argument("--logfile", help="File where logs will be saved")
