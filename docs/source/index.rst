@@ -1,7 +1,7 @@
 
 
-indipyclient = Python tools to create INDI clients
-==================================================
+indipyclient = A pure Python INDI terminal client
+=================================================
 
 .. toctree::
    :maxdepth: 1

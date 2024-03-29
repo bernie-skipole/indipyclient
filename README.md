@@ -1,5 +1,5 @@
 # indipyclient
-INDI console client to communicate to an indi service.
+INDI terminal client to communicate to an indi service.
 
 This is a pure python package, with no dependencies, providing an INDI client terminal
 
@@ -9,7 +9,7 @@ The client can be called with python3 -m indipyclent.
 
     usage: python3 -m indipyclient [options]
 
-    INDI console client communicating to indi service.
+    INDI terminal client communicating to indi service.
 
     options:
       -h, --help            show this help message and exit
@@ -21,7 +21,7 @@ The client can be called with python3 -m indipyclent.
       --logfile LOGFILE     File where logs will be saved
       --version             show program's version number and exit
 
-    The BLOB's folder can also be set from within the console.
+    The BLOB's folder can also be set from within the session.
     Setting loglevel and logfile should only be used for brief
     diagnostic purposes, the logfile could grow very big.
     loglevel:1 log vector tags without members or contents,

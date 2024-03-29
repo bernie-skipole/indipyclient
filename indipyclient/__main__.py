@@ -33,8 +33,8 @@ def main():
     """The main routine."""
 
     parser = argparse.ArgumentParser(usage="python3 -m indipyclient [options]",
-                                     description="INDI console client communicating to indi service.",
-                                     epilog="""The BLOB's folder can also be set from within the console.
+                                     description="INDI terminal client communicating to indi service.",
+                                     epilog="""The BLOB's folder can also be set from within the session.
 Setting loglevel and logfile should only be used for brief
 diagnostic purposes, the logfile could grow very big.
 loglevel:1 log vector tags without members or contents,

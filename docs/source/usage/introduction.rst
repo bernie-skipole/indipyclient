@@ -1,13 +1,39 @@
 Introduction
 ============
 
+INDI terminal client to communicate to an indi service.
 
-This is under development and not yet ready for use
+This is a pure python package, with no dependencies, providing an INDI client terminal
 
-indipyclient
-^^^^^^^^^^^^
+It also provides a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.
 
-This is a pure python package, with no dependencies, providing a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.
+The client can be called with python3 -m indipyclent::
+
+    usage: python3 -m indipyclient [options]
+
+    INDI terminal client communicating to indi service.
+
+    options:
+      -h, --help            show this help message and exit
+      -p PORT, --port PORT  Port of the indi server (default 7624).
+      --host HOST           Hostname/IP of the indi server (default localhost).
+      -b BLOBS, --blobs BLOBS
+                            Optional folder where BLOB's will be saved.
+      --loglevel LOGLEVEL   Enables logging, value 1, 2 or 3.
+      --logfile LOGFILE     File where logs will be saved
+      --version             show program's version number and exit
+
+    The BLOB's folder can also be set from within the session.
+    Setting loglevel and logfile should only be used for brief
+    diagnostic purposes, the logfile could grow very big.
+    loglevel:1 log vector tags without members or contents,
+    loglevel:2 log vectors and members - but not BLOB contents,
+    loglevel:3 log vectors and all contents
+
+A typical sesssion would look like:
+
+.. image:: ./image.png
+
 
 This is a companion package to 'indipydriver' which can be used to create INDI drivers.
 
@@ -21,45 +47,4 @@ The protocol defines the format of the data sent, such as light, number, text, s
 
 INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control providing drivers are available.
 
-The IPyClient object created listens to the data sent from drivers, and creates 'device' objects, each of which contains 'vector' objects, such as a SwitchVector or LightVector. These Vector objects can contain one or more 'members', such as a number of 'switches', or a number of 'lights' and their values.
 
-The package can be installed from:
-
-https://pypi.org/project/indipyclient
-
-I would suggest (on debian derivatives) that you should start with::
-
-    sudo apt-get install python3-venv python3-setuptools python3-pip python3-wheel
-
-Then create a virtual environment, and use pip to install indipyclient, if you need further information on pip and virtual environments, try:
-
-https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
-
-Once installed you would typically create a subclass of IPyClient to handle the received data, and which automatically creates devices, vectors and their members.
-
-The class has a rxevent method which can be overwritten.
-
-async def rxevent(self, event)
-
-This is called whenever data is received, typically describing an instrument parameter. The event object describes the received data, and you provide any code which, if required, responds to the received data.
-
-You would also create your own coroutines to read the client attributes and display them if a GUI client is being created, or to act on them appropriately if you are creating a script to control the instrument. Your coroutine would usually take the IPyClient subclass instance as an argument, so you could use its attributes and methods to read the received vector values, and transmit new values.
-
-Having created an instance of your IPyClient subclass (ie MyClient), and your own co-routines you would typically run them using something like::
-
-    async def main():
-
-        client = MyClient(indihost="localhost", indiport=7624)
-        t1 = client.asyncrun()          # runs the client which connects to the indi service
-        t2 = control(client)            # assuming your own co-routine is called 'control'
-        await asyncio.gather(t1, t2)
-
-
-    asyncio.run(main())
-
-
-
-Issues
-^^^^^^
-
-When transmitting or receiving BLOBS the entire BLOB is loaded into memory, which may cause issues if the BLOB is large. It is suggested that very large binary objects should be transferred by some other method.
