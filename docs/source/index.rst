@@ -7,6 +7,7 @@ indipyclient = A pure Python INDI terminal client
    :maxdepth: 1
 
    usage/introduction
+   usage/installation
    usage/references
 
 Indices and tables

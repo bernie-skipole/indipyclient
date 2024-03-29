@@ -5,9 +5,16 @@ This is a pure python package, with no dependencies, providing an INDI client te
 
 It also provides a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.
 
-The client can be called with python3 -m indipyclent.
+The client can be run with
 
-    usage: python3 -m indipyclient [options]
+indipyclient [options]
+
+or with
+
+python3 -m indipyclient [options]
+
+
+    usage: indipyclient [options]
 
     INDI terminal client communicating to indi service.
 
@@ -48,3 +55,7 @@ INDI is often used with astronomical instruments, but is a general purpose proto
 Further documentation is available at:
 
 https://indipyclient.readthedocs.io
+
+The package can be installed from:
+
+https://pypi.org/project/indipyclient

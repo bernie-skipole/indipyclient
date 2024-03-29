@@ -7,9 +7,17 @@ This is a pure python package, with no dependencies, providing an INDI client te
 
 It also provides a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.
 
-The client can be called with python3 -m indipyclent::
+The client can be run with
 
-    usage: python3 -m indipyclient [options]
+indipyclient [options]
+
+or with
+
+python3 -m indipyclient [options]
+
+The package help is::
+
+    usage: indipyclient [options]
 
     INDI terminal client communicating to indi service.
 
@@ -46,5 +54,3 @@ The INDI protocol is defined so that drivers should operate with any INDI client
 The protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object) and the client can send commands to control the instrument.  The client can be general purpose, taking the format of switches, numbers etc., from the protocol.
 
 INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control providing drivers are available.
-
-

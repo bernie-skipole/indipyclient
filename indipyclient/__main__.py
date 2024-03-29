@@ -32,7 +32,7 @@ async def runclient(client, control):
 def main():
     """The main routine."""
 
-    parser = argparse.ArgumentParser(usage="python3 -m indipyclient [options]",
+    parser = argparse.ArgumentParser(usage="indipyclient [options]",
                                      description="INDI terminal client communicating to indi service.",
                                      epilog="""The BLOB's folder can also be set from within the session.
 Setting loglevel and logfile should only be used for brief
