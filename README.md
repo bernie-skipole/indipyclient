@@ -13,6 +13,7 @@ or with
 
 python3 -m indipyclient [options]
 
+The package help is:
 
     usage: indipyclient [options]
 
@@ -59,3 +60,13 @@ https://indipyclient.readthedocs.io
 The package can be installed from:
 
 https://pypi.org/project/indipyclient
+
+indipyclient requires python 3.10 or later.
+
+If you are only using the terminal client, I recommend pipx, so to install you would use:
+
+pipx install indipyclient
+
+or if you want to run it, without installing:
+
+pipx run indipyclient

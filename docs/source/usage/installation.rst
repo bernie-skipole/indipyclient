@@ -5,7 +5,7 @@ Installation
 indipyclient requires python 3.10 or later.
 
 
-If you are only using the terminal client, I recommed pipx, so to install you would use:
+If you are only using the terminal client, I recommend pipx, so to install you would use:
 
 pipx install indipyclient
 
