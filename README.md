@@ -1,5 +1,5 @@
 # indipyclient
-INDI terminal client to communicate to an indi service.
+Terminal client to communicate to an INDI service.
 
 This is a pure python package, with no dependencies, providing an INDI client terminal
 
