@@ -19,12 +19,12 @@ The package help is::
 
     usage: indipyclient [options]
 
-    INDI terminal client communicating to indi service.
+    Terminal client to communicate to an INDI service.
 
     options:
       -h, --help            show this help message and exit
-      -p PORT, --port PORT  Port of the indi server (default 7624).
-      --host HOST           Hostname/IP of the indi server (default localhost).
+      -p PORT, --port PORT  Port of the INDI server (default 7624).
+      --host HOST           Hostname/IP of the INDI server (default localhost).
       -b BLOBS, --blobs BLOBS
                             Optional folder where BLOB's will be saved.
       --loglevel LOGLEVEL   Enables logging, value 1, 2 or 3.

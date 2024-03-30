@@ -15,6 +15,8 @@ The associated indipydriver development site:
 
 https://github.com/bernie-skipole/indipydriver
 
+https://indipydriver.readthedocs.io
+
 Further relevant sites:
 
 Please note: The author has no relationship with indilib, these indipyclient and indipydriver packages are independently developed implementations. However they were developed with reference to the INDI version 1.7 specification, and are intended to interwork with other implementations that also meets that spec.
