@@ -86,6 +86,14 @@ def blob_xml_bytes(xmldata):
 
 class IPyClient(collections.UserDict):
 
+    """This class can be used to create your own scripts or client, and provides
+       a connection to an INDI service, with parsing of the XML protocol.
+       You should create your own class, inheriting from this, and overriding the
+       rxevent method.  Use asyncio.run() to run the asyncrun() method and a call
+       will be made to the given indihost and indiport.
+       clientdata provides any named arguments you may wish to pass into the object
+       when instantiating it."""
+
 
     def __init__(self, indihost="localhost", indiport=7624, **clientdata):
         "An instance of this is a mapping of devicename to device object"
@@ -143,7 +151,8 @@ class IPyClient(collections.UserDict):
         self.logfp = None
 
     def setlogging(self, level, logfile):
-        "Sets the logging level and logfile, returns the level, which will be None on failure"
+        """Sets the logging level and logfile, returns the level, which will be None on failure.
+           As default, the level is None, indicating no logging."""
         try:
             if level is None:
                 self.level = None
@@ -189,6 +198,10 @@ class IPyClient(collections.UserDict):
         self._stop = True
 
     async def report(self, message):
+        """This injects a message into the received data, which will be
+           picked up by the rxevent method. It is a way to set a message
+           on to your client, in the same way messages come from the INDI
+           service."""
         timestamp = datetime.now(tz=timezone.utc)
         timestamp = timestamp.replace(tzinfo=None)
         root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
@@ -266,7 +279,8 @@ class IPyClient(collections.UserDict):
 
 
     def send(self, xmldata):
-        "Transmits xmldata, this is an internal method, not normally called by a user."
+        """Transmits xmldata, this is an internal method, not normally called by a user.
+           xmldata is an xml.etree.ElementTree object"""
         if self.connected:
             self.writerque.append(xmldata)
 
@@ -562,9 +576,15 @@ class IPyClient(collections.UserDict):
 
 
     def snapshot(self):
-        "Take snapshot of the devices"
+        """Take a snapshot of the devices and returns a a dictionary of device
+           names to objects which are copies of the current state of devices and
+           vectors.
+           These copies will not be updated. This is provided so that you can
+           handle the device data in another thread, without fear of their
+           values changing."""
         with threading.Lock():
             # other threads cannot change the client.data dictionary
+            # while the snapshot is being taken
             snap = {}
             if self.data:
                 for devicename, device in self.data.items():
@@ -575,8 +595,9 @@ class IPyClient(collections.UserDict):
 
 
     def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
-        """Send a new Vector, note members is a membername to value dictionary,
-           It could also be a vector, which is itself a membername to value mapping"""
+        """Send a Vector with updated member values, members is a membername
+           to value dictionary. It could also be a vector, which is itself a
+           membername to value mapping"""
         if devicename not in self.data:
             return
         device = self.data[devicename]
@@ -596,6 +617,15 @@ class IPyClient(collections.UserDict):
             self.shutdown()
 
     def set_vector_timeouts(self, timeout_enable=None, timeout_min=None, timeout_max=None):
+        """Whenever you transmit a new vector to update values, a timer is started
+           and if a timeout occurs before the server responds with a new vector setting,
+           a VectorTimeOut event will be created, which you could choose to ignore, or take
+           action such as setting a vector Alert flag.
+           The protocol allows the server to set a timeout for each vector, this method
+           allows you to set minimum and maximum timeouts, which should be given as integer
+           values. If any parameter is not provided (left at None) then that value will not be
+           changed. If timeout_enable is set to False, no VectorTimeOut events will occur.
+           As default, timeouts are enabled, minimum is set to 2 seconds, maximum 10 seconds."""
         if not timeout_enable is None:
             self.vector_timeout_enable = timeout_enable
         if not timeout_min is None:
@@ -679,14 +709,14 @@ class IPyClient(collections.UserDict):
             self.send(xmldata)
 
     async def rxevent(self, event):
-        """Override this if this client is operating a script to act on received data.
+        """Override this.
            On receiving data, this is called, and should handle any necessary actions.
            event is an object with attributes according to the data received."""
         pass
 
 
     async def asyncrun(self):
-        """Gathers tasks to be run simultaneously"""
+        """Runs this object to start communications."""
         self._stop = False
         await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), return_exceptions=True)
         self.stopped = True
