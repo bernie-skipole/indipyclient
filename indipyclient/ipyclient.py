@@ -91,8 +91,10 @@ class IPyClient(collections.UserDict):
        You should create your own class, inheriting from this, and overriding the
        rxevent method.  Use asyncio.run() to run the asyncrun() method and a call
        will be made to the given indihost and indiport.
-       clientdata provides any named arguments you may wish to pass into the object
-       when instantiating it."""
+       The argument clientdata provides any named arguments you may wish to pass
+       into the object when instantiating it.
+       This object is also a mapping of devicename to device object, populated
+       as devices and their vectors are learned from the INDI protocol."""
 
 
     def __init__(self, indihost="localhost", indiport=7624, **clientdata):
@@ -200,8 +202,8 @@ class IPyClient(collections.UserDict):
     async def report(self, message):
         """This injects a message into the received data, which will be
            picked up by the rxevent method. It is a way to set a message
-           on to your client, in the same way messages come from the INDI
-           service."""
+           on to your client display, in the same way messages come from
+           the INDI service."""
         timestamp = datetime.now(tz=timezone.utc)
         timestamp = timestamp.replace(tzinfo=None)
         root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
@@ -335,8 +337,6 @@ class IPyClient(collections.UserDict):
                 self.logfp.write(binarydata)
 
 
-
-
     async def _run_tx(self, writer):
         "Monitors self.writerque and if it has data, uses writer to send it"
         try:
@@ -421,7 +421,7 @@ class IPyClient(collections.UserDict):
 
 
     async def _datasource(self, reader):
-        # get received data, parse it, and yield it as xml.etree.ElementTree object
+        "get received data, parse it, and yield it as xml.etree.ElementTree object"
         data_in = self._datainput(reader)
         message = b''
         messagetagnumber = None
@@ -526,7 +526,6 @@ class IPyClient(collections.UserDict):
             raise
 
 
-
     async def _rxhandler(self):
         """Populates the events using data from self.readerque"""
         try:
@@ -576,7 +575,7 @@ class IPyClient(collections.UserDict):
 
 
     def snapshot(self):
-        """Take a snapshot of the devices and returns a a dictionary of device
+        """Take a snapshot of the devices and returns a dictionary of device
            names to objects which are copies of the current state of devices and
            vectors.
            These copies will not be updated. This is provided so that you can
@@ -617,10 +616,10 @@ class IPyClient(collections.UserDict):
             self.shutdown()
 
     def set_vector_timeouts(self, timeout_enable=None, timeout_min=None, timeout_max=None):
-        """Whenever you transmit a new vector to update values, a timer is started
-           and if a timeout occurs before the server responds with a new vector setting,
-           a VectorTimeOut event will be created, which you could choose to ignore, or take
-           action such as setting a vector Alert flag.
+        """Whenever you send updated values, a timer is started and if a timeout occurs
+           before the server responds with a new vector setting, a VectorTimeOut event
+           will be created, which you could choose to ignore, or take action such as
+           setting a vector Alert flag.
            The protocol allows the server to set a timeout for each vector, this method
            allows you to set minimum and maximum timeouts, which should be given as integer
            values. If any parameter is not provided (left at None) then that value will not be
