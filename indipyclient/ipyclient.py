@@ -93,7 +93,7 @@ class IPyClient(collections.UserDict):
        will be made to the given indihost and indiport.
        The argument clientdata provides any named arguments you may wish to pass
        into the object when instantiating it.
-       This object is also a mapping of devicename to device object, populated
+       The IPyClient object is also a mapping of devicename to device object, populated
        as devices and their vectors are learned from the INDI protocol."""
 
 
@@ -154,7 +154,8 @@ class IPyClient(collections.UserDict):
 
     def setlogging(self, level, logfile):
         """Sets the logging level and logfile, returns the level, which will be None on failure.
-           As default, the level is None, indicating no logging."""
+           As default, the level is None, indicating no logging. Apart from None, level should
+           be an integer, one of 1, 2 or 3"""
         try:
             if level is None:
                 self.level = None
@@ -680,7 +681,9 @@ class IPyClient(collections.UserDict):
 
 
     def send_getProperties(self, devicename=None, vectorname=None):
-        """Sends a getProperties request."""
+        """Sends a getProperties request. On startup the IPyClient object
+           will automatically send getProperties, so typically you will
+           not have to use this method."""
         if self.connected:
             xmldata = ET.Element('getProperties')
             xmldata.set("version", "1.7")
@@ -693,7 +696,7 @@ class IPyClient(collections.UserDict):
             self.send(xmldata)
 
     def send_enableBLOB(self, value, devicename, vectorname=None):
-        """Sends an enableBLOB instruction."""
+        """Sends an enableBLOB instruction. The value should be one of "Never", "Also", "Only"."""
         if self.connected:
             if value not in ("Never", "Also", "Only"):
                 return
@@ -723,6 +726,8 @@ class IPyClient(collections.UserDict):
 
 class Device(collections.UserDict):
 
+    "Each device is a mapping of vector name to vector object."
+
     def __init__(self, devicename):
         super().__init__()
 
@@ -735,7 +740,6 @@ class Device(collections.UserDict):
     @property
     def enable(self):
         "Returns True if any vector of this device has enable True, otherwise False"
-        ebl = False
         for vector in self.data.values():
             if vector.enable:
                 return True
