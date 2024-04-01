@@ -205,11 +205,17 @@ class IPyClient(collections.UserDict):
            picked up by the rxevent method. It is a way to set a message
            on to your client display, in the same way messages come from
            the INDI service."""
-        timestamp = datetime.now(tz=timezone.utc)
-        timestamp = timestamp.replace(tzinfo=None)
-        root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
-        event = events.Message(root, None, self)
-        await self.rxevent(event)
+        try:
+            timestamp = datetime.now(tz=timezone.utc)
+            timestamp = timestamp.replace(tzinfo=None)
+            root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
+            event = events.Message(root, None, self)
+            await self.rxevent(event)
+        except Exception as e:
+            if self.level:
+                bytex = "".join(traceback.format_exception(e)).encode()
+                self.logfp.write(bytex)
+
 
     def enabledlen(self):
         "Returns the number of enabled devices"
@@ -575,6 +581,8 @@ class IPyClient(collections.UserDict):
                 # and to get here, continue has not been called
                 # and an event has been created, call the user event handling function
                 await self.rxevent(event)
+        except asyncio.CancelledError:
+            raise
         except Exception as e:
             if self.level:
                 bytex = "".join(traceback.format_exception(e)).encode()
@@ -680,11 +688,14 @@ class IPyClient(collections.UserDict):
                         count += 1
                         if count >= 10:
                             count = 0
-        except KeyboardInterrupt:
-            self.shutdown()
         except asyncio.CancelledError:
+             raise
+        except Exception as e:
+            if self.level:
+                bytex = "".join(traceback.format_exception(e)).encode()
+                self.logfp.write(bytex)
+        finally:
             self.shutdown()
-            raise
 
 
 
