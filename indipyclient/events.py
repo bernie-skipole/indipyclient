@@ -173,6 +173,8 @@ class defSwitchVector(defVector):
                     raise ParseException
                 label = member.get("label", membername)
                 self.memberlabels[membername] = label
+                if not member.text:
+                    raise ParseException
                 value = member.text.strip()
                 if value == "On":
                     self.data[membername] = "On"
@@ -233,7 +235,11 @@ class defTextVector(defVector):
                     raise ParseException
                 label = member.get("label", membername)
                 self.memberlabels[membername] = label
-                self.data[membername] = member.text
+                if not member.text:
+                    value = ""
+                else:
+                    value = member.text.strip()
+                self.data[membername] = value
             else:
                 raise ParseException
         if not self.data:
@@ -302,6 +308,8 @@ class defNumberVector(defVector):
                 if not memberstep:
                     raise ParseException
                 self.memberlabels[membername] = (label, memberformat, membermin, membermax, memberstep)
+                if not member.text:
+                    raise ParseException
                 self.data[membername] = member.text.strip()
             else:
                 raise ParseException
@@ -344,6 +352,8 @@ class defLightVector(defVector):
                     raise ParseException
                 label = member.get("label", membername)
                 self.memberlabels[membername] = label
+                if not member.text:
+                    raise ParseException
                 value = member.text.strip()
                 if not value in ('Idle','Ok','Busy','Alert'):
                     raise ParseException
@@ -489,6 +499,8 @@ class setSwitchVector(setVector):
                 membername = member.get("name")
                 if not membername:
                     raise ParseException
+                if not member.text:
+                    raise ParseException
                 value = member.text.strip()
                 if value == "On":
                     self.data[membername] = "On"
@@ -524,7 +536,11 @@ class setTextVector(setVector):
                 membername = member.get("name")
                 if not membername:
                     raise ParseException
-                self.data[membername] = member.text
+                if not member.text:
+                    value = ""
+                else:
+                    value = member.text.strip()
+                self.data[membername] = value
             else:
                 raise ParseException
         properties = device.data
@@ -554,6 +570,8 @@ class setNumberVector(setVector):
                 membername = member.get("name")
                 if not membername:
                     raise ParseException
+                if not member.text:
+                    raise ParseException
                 self.data[membername] = member.text.strip()
             else:
                 raise ParseException
@@ -574,6 +592,8 @@ class setLightVector(setVector):
             if member.tag == "oneLight":
                 membername = member.get("name")
                 if not membername:
+                    raise ParseException
+                if not member.text:
                     raise ParseException
                 value = member.text.strip()
                 if not value in ('Idle','Ok','Busy','Alert'):
@@ -616,6 +636,8 @@ class setBLOBVector(setVector):
                     raise ParseException
                 memberformat = member.get("format")
                 if not memberformat:
+                    raise ParseException
+                if not member.text:
                     raise ParseException
                 try:
                     self.data[membername] = standard_b64decode(member.text.encode('ascii'))
