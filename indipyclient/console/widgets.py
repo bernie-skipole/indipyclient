@@ -11,13 +11,14 @@ ERRORDATA = []
 
 def shorten(text, width=0, placeholder="..."):
     "Shorten text"
+    txt = text.replace("\n", " ")
     if not width:
-        return text
-    if len(text)<=width:
-        return text
+        return txt
+    if len(txt)<=width:
+        return txt
     if width <= len(placeholder):
         return placeholder[:width]
-    return text[:width - len(placeholder)] + placeholder
+    return txt[:width - len(placeholder)] + placeholder
 
 
 def drawmessage(window, message, bold=False, maxcols=None):
