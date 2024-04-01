@@ -258,6 +258,10 @@ class IPyClient(collections.UserDict):
                     count += 1
                     if count >= 10:
                         break
+        except Exception as e:
+            if self.level:
+                bytex = "".join(traceback.format_exception(e)).encode()
+                self.logfp.write(bytex)
         finally:
             self.shutdown()
 
@@ -571,6 +575,10 @@ class IPyClient(collections.UserDict):
                 # and to get here, continue has not been called
                 # and an event has been created, call the user event handling function
                 await self.rxevent(event)
+        except Exception as e:
+            if self.level:
+                bytex = "".join(traceback.format_exception(e)).encode()
+                self.logfp.write(bytex)
         finally:
             self.shutdown()
 
@@ -770,7 +778,7 @@ class _Device(Device):
         """Handle received data, sets new propertyvector into self.data,
            or updates existing property vector and returns an event"""
         if root.tag == "delProperty":
-            return events.delProperty(root, self._client)
+            return events.delProperty(root, self, self._client)
         elif root.tag == "message":
             return events.Message(root, self, self._client)
         elif root.tag == "defSwitchVector":

@@ -3,6 +3,8 @@ Introduction
 
 Terminal client to communicate to an INDI service.
 
+NOTE: CURRENTLY STILL UNDER DEVELOPMENT
+
 This is a pure python package, with no dependencies, providing an INDI client terminal
 
 It also provides a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.

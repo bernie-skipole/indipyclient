@@ -8,6 +8,7 @@ python3 -m indipyclient
 
 import os, sys, argparse, asyncio, collections, contextlib, pathlib
 
+from traceback import TracebackException as TBE
 
 from . import version
 
@@ -21,9 +22,10 @@ async def runclient(client, control):
         t1 = asyncio.create_task(client.asyncrun())
         t2 = asyncio.create_task(control.asyncrun())
         await asyncio.gather(t1, t2)
-    except Exception:
+    except Exception as e:
          t1.cancel()
          t2.cancel()
+         ERRORDATA.append(TBE.from_exception(e))
     # wait for tasks to be done
     while (not t1.done()) and (not t2.done()):
         await asyncio.sleep(0)
