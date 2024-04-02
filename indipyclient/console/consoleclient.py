@@ -3,8 +3,6 @@ import asyncio, sys
 
 import curses
 
-from traceback import TracebackException as TBE
-
 from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message, VectorTimeOut)
@@ -239,7 +237,6 @@ class ConsoleControl:
             self._shutdown = True
             raise
         except Exception as e:
-            widgets.ERRORDATA.append(TBE.from_exception(e))
             self._shutdown = True
         finally:
             self.updatescreenstopped = True
@@ -409,7 +406,6 @@ class ConsoleControl:
             self._shutdown = True
             raise
         except Exception as e:
-            widgets.ERRORDATA.append(TBE.from_exception(e))
             self._shutdown = True
         finally:
             self.getinputstopped = True

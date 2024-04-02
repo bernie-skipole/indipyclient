@@ -145,9 +145,10 @@ class IPyClient(collections.UserDict):
         self.stopped = False
 
         # logging level and filepointer to logfile
-        # level, None for no logging, 1 for parsed vector tags only,
-        #                             2 for parsed vectors and members (apart from BLOB's)
-        #                             3 for raw unparsed data
+        # level, None for no logging, 1 for informtion and errors only,
+        #                             2 for transmitted/received vector tags only,
+        #                             3 for transmitted/received vectors, members and contents (apart from BLOB's)
+        #                             4 for all transmitted/received data
         self.level = None
         self.logfile = None
         self.logfp = None
@@ -155,7 +156,7 @@ class IPyClient(collections.UserDict):
     def setlogging(self, level, logfile):
         """Sets the logging level and logfile, returns the level, which will be None on failure.
            As default, the level is None, indicating no logging. Apart from None, level should
-           be an integer, one of 1, 2 or 3"""
+           be an integer, one of 1, 2, 3 or 4"""
         try:
             if level is None:
                 self.level = None
@@ -164,7 +165,7 @@ class IPyClient(collections.UserDict):
                 self.logfp = None
                 self.logfile = None
                 return None
-            if level in (1, 2, 3):
+            if level in (1, 2, 3, 4):
                 self.level = level
             else:
                 self.level = None
@@ -204,10 +205,14 @@ class IPyClient(collections.UserDict):
         """This injects a message into the received data, which will be
            picked up by the rxevent method. It is a way to set a message
            on to your client display, in the same way messages come from
-           the INDI service."""
+           the INDI service. If logging is enabled the message will be
+           written to the logfile"""
         try:
             timestamp = datetime.now(tz=timezone.utc)
             timestamp = timestamp.replace(tzinfo=None)
+            if self.level:
+                reportmessage  = f"\n{timestamp.isoformat(sep='T')} {message}" 
+                self.logfp.write(reportmessage.encode())
             root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
             event = events.Message(root, None, self)
             await self.rxevent(event)
@@ -323,21 +328,23 @@ class IPyClient(collections.UserDict):
 
     def _logtx(self, txdata):
         "log data to file"
+        if (not self.level) or (self.level == 1):
+            return
         self.logfp.write(b"\nTX:: ")
-        if self.level == 1:
+        if self.level == 2:
             for element in txdata:
                 txdata.remove(element)
             txdata.text = ""
             binarydata = ET.tostring(txdata, short_empty_elements=False)
             self.logfp.write(binarydata)
-        if self.level == 2:
+        if self.level == 3:
             tag = txdata.tag
             for element in txdata:
                 if tag  == "newBLOBVector":
                     element.text = "NOT LOGGED"
             binarydata = ET.tostring(txdata)
             self.logfp.write(binarydata)
-        if self.level == 3:
+        if self.level == 4:
             if txdata.tag == "newBLOBVector" and len(txdata):
                 # txdata is a newBLOBVector containing blobs
                 # the generator blob_xml_bytes yields bytes
@@ -385,22 +392,24 @@ class IPyClient(collections.UserDict):
 
     def _logrx(self, rxdata):
         "log data to file"
+        if (not self.level) or (self.level == 1):
+            return
         data = copy.deepcopy(rxdata)
         self.logfp.write(b"\nRX:: ")
-        if self.level == 1:
+        if self.level == 2:
             for element in data:
                 data.remove(element)
             data.text = ""
             binarydata = ET.tostring(data, short_empty_elements=False)
             self.logfp.write(binarydata)
-        if self.level == 2:
+        if self.level == 3:
             tag = data.tag
             for element in data:
                 if tag  == "newBLOBVector":
                     element.text = "NOT LOGGED"
             binarydata = ET.tostring(data)
             self.logfp.write(binarydata)
-        if self.level == 3:
+        if self.level == 4:
             binarydata = ET.tostring(data)
             self.logfp.write(binarydata)
 

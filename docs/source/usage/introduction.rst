@@ -29,16 +29,18 @@ The package help is::
       --host HOST           Hostname/IP of the INDI server (default localhost).
       -b BLOBS, --blobs BLOBS
                             Optional folder where BLOB's will be saved.
-      --loglevel LOGLEVEL   Enables logging, value 1, 2 or 3.
+      --loglevel LOGLEVEL   Enables logging, value 1, 2, 3 or 4.
       --logfile LOGFILE     File where logs will be saved
       --version             show program's version number and exit
 
-    The BLOB's folder can also be set from within the session.
-    Setting loglevel and logfile should only be used for brief
-    diagnostic purposes, the logfile could grow very big.
-    loglevel:1 log vector tags without members or contents,
-    loglevel:2 log vectors and members - but not BLOB contents,
-    loglevel:3 log vectors and all contents
+    The BLOB's folder can also be set from within the session. Setting loglevel
+    and logfile should only be used for brief diagnostic purposes, the logfile
+    could grow very big.
+    loglevel:1 Information and error messages only,
+    loglevel:2 log vector tags without members or contents,
+    loglevel:3 log vectors and members - but not BLOB contents,
+    loglevel:4 log vectors and all contents
+
 
 A typical sesssion would look like:
 

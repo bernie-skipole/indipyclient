@@ -3,11 +3,7 @@ import asyncio, curses, sys, pathlib, time
 
 from decimal import Decimal
 
-from traceback import TracebackException as TBE
-
 from curses import ascii
-
-ERRORDATA = []
 
 def shorten(text, width=0, placeholder="..."):
     "Shorten text"

@@ -8,24 +8,15 @@ python3 -m indipyclient
 
 import os, sys, argparse, asyncio, collections, contextlib, pathlib
 
-from traceback import TracebackException as TBE
-
 from . import version
 
 from .console.consoleclient import ConsoleClient, ConsoleControl
 
-from .console.widgets import ERRORDATA
-
 
 async def runclient(client, control):
-    try:
-        t1 = asyncio.create_task(client.asyncrun())
-        t2 = asyncio.create_task(control.asyncrun())
-        await asyncio.gather(t1, t2)
-    except Exception as e:
-         t1.cancel()
-         t2.cancel()
-         ERRORDATA.append(TBE.from_exception(e))
+    t1 = asyncio.create_task(client.asyncrun())
+    t2 = asyncio.create_task(control.asyncrun())
+    await asyncio.gather(t1, t2)
     # wait for tasks to be done
     while (not t1.done()) and (not t2.done()):
         await asyncio.sleep(0)
@@ -39,14 +30,15 @@ def main():
                                      epilog="""The BLOB's folder can also be set from within the session.
 Setting loglevel and logfile should only be used for brief
 diagnostic purposes, the logfile could grow very big.
-loglevel:1 log vector tags without members or contents,
-loglevel:2 log vectors and members - but not BLOB contents,
-loglevel:3 log vectors and all contents
+loglevel:1 Information and error messages only,
+loglevel:2 log vector tags without members or contents,
+loglevel:3 log vectors and members - but not BLOB contents,
+loglevel:4 log vectors and all contents
 """)
     parser.add_argument("-p", "--port", type=int, default=7624, help="Port of the INDI server (default 7624).")
     parser.add_argument("--host", default="localhost", help="Hostname/IP of the INDI server (default localhost).")
     parser.add_argument("-b", "--blobs", help="Optional folder where BLOB's will be saved.")
-    parser.add_argument("--loglevel", help="Enables logging, value 1, 2 or 3.")
+    parser.add_argument("--loglevel", help="Enables logging, value 1, 2, 3 or 4.")
     parser.add_argument("--logfile", help="File where logs will be saved")
 
     parser.add_argument("--version", action="version", version=version)
@@ -73,11 +65,11 @@ loglevel:3 log vectors and all contents
     if args.loglevel and args.logfile:
         try:
             loglevel = int(args.loglevel)
-            if loglevel not in (1,2,3):
-                print("Error: If given, the loglevel should be 1, 2 or 3")
+            if loglevel not in (1,2,3,4):
+                print("Error: If given, the loglevel should be 1, 2, 3 or 4")
                 return 1
         except:
-            print("Error: If given, the loglevel should be 1, 2 or 3")
+            print("Error: If given, the loglevel should be 1, 2, 3 or 4")
             return 1
         client.setlogging(loglevel, args.logfile)
 
@@ -85,16 +77,6 @@ loglevel:3 log vectors and all contents
     control = ConsoleControl(client, blobfolder=blobfolder)
 
     asyncio.run(runclient(client, control))
-
-    # ERRORDATA is a list of any traceback.TracebackException() objects
-    # which records exceptions which may have occurred. They are printed
-    # here, after the console has closed down to avoid messing up
-    # the console formatting
-
-    if ERRORDATA:
-        for errortrace in ERRORDATA:
-            print("".join(errortrace.format()))
-            print("------------------")
 
     return 0
 
