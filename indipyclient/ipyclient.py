@@ -832,7 +832,7 @@ class _Device(Device):
         elif root.tag == "setBLOBVector":
             return events.setBLOBVector(root, self, self._client)
         else:
-            raise ParseException("Error: Unrecognised tag received")
+            raise ParseException("Unrecognised tag received")
 
     def _snapshot(self):
         snapdevice = Device(self.devicename)
