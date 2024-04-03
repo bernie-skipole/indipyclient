@@ -1,5 +1,5 @@
 
-import asyncio, sys
+import asyncio, sys, traceback
 
 import curses
 
@@ -109,8 +109,13 @@ class ConsoleControl:
         return self.client.connected
 
 
-    def shutdown(self):
+    def shutdown(self, exc=None):
+        """If exc is an exception, and logs are enabled, logs it.
+           Sets self._shutdown to True which shuts down the client"""
         self._shutdown = True
+        if self.client.level and not(exc is None):
+            bytex = "".join(traceback.format_exception(exc)).encode()
+            self.client.logfp.write(b"\n"+bytex)
 
 
     async def _checkshutdown(self):
@@ -234,10 +239,10 @@ class ConsoleControl:
                     self.screen.update(event)
 
         except asyncio.CancelledError:
-            self._shutdown = True
+            self.shutdown()
             raise
         except Exception as e:
-            self._shutdown = True
+            self.shutdown(e)
         finally:
             self.updatescreenstopped = True
 
@@ -262,7 +267,7 @@ class ConsoleControl:
                         self.screen.show()
                         continue
                     if result == "Quit":
-                        self._shutdown = True
+                        self.shutdown()
                         break
 
                 if isinstance(self.screen, windows.MessagesScreen):
@@ -280,7 +285,7 @@ class ConsoleControl:
                         self.screen.show()
                         continue
                     if result == "Quit":
-                        self._shutdown = True
+                        self.shutdown()
                         break
                     if result == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
@@ -305,7 +310,7 @@ class ConsoleControl:
                         self.screen.show()
                         continue
                     if result == "Quit":
-                        self._shutdown = True
+                        self.shutdown()
                         break
                     if result == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
@@ -330,7 +335,7 @@ class ConsoleControl:
                         self.screen.show()
                         continue
                     if result == "Quit":
-                        self._shutdown = True
+                        self.shutdown()
                         break
                     if result == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
@@ -357,7 +362,7 @@ class ConsoleControl:
                         self.screen.show()
                         continue
                     if result == "Quit":
-                        self._shutdown = True
+                        self.shutdown()
                         break
                     if result == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
@@ -387,7 +392,7 @@ class ConsoleControl:
                         self.screen.show()
                         continue
                     if result == "Quit":
-                        self._shutdown = True
+                        self.shutdown()
                         break
                     if result == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
@@ -403,10 +408,10 @@ class ConsoleControl:
                         continue
 
         except asyncio.CancelledError:
-            self._shutdown = True
+            self.shutdown()
             raise
         except Exception as e:
-            self._shutdown = True
+            self.shutdown(e)
         finally:
             self.getinputstopped = True
 

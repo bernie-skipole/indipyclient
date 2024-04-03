@@ -94,10 +94,10 @@ class delProperty(Event):
     def __init__(self, root, device, client):
         super().__init__(root, device, client)
         if self.devicename is None:
-            raise ParseException
+            raise ParseException("Error: delProperty has no devicename")
         if not self.device.enable:
             # already deleted
-            raise ParseException
+            raise ParseException("Error: device already deleted")
         self.vectorname = root.get("name")
         self.message = root.get("message", "")
         # properties is a dictionary of property name to propertyvector this device owns
@@ -121,14 +121,14 @@ class defVector(Event, UserDict):
         UserDict.__init__(self)
         self.vectorname = root.get("name")
         if self.vectorname is None:
-            raise ParseException
+            raise ParseException("Error: defVector has no vector name")
         self.label = root.get("label", self.vectorname)
         self.group = root.get("group", "DEFAULT GROUP")
         state = root.get("state")
         if not state:
-            raise ParseException
+            raise ParseException("Error: defVector has no state given")
         if not state in ('Idle','Ok','Busy','Alert'):
-            raise ParseException
+            raise ParseException("Error: defVector has invalid state")
         self.state = state
         self.message = root.get("message", "")
 
@@ -147,14 +147,14 @@ class defSwitchVector(defVector):
         defVector.__init__(self, root, device, client)
         self.perm = root.get("perm")
         if self.perm is None:
-            raise ParseException
+            raise ParseException("Error: defSwitchVector has no perm given")
         if self.perm not in ('ro', 'wo', 'rw'):
-            raise ParseException
+            raise ParseException("Error: defSwitchVector has invalid perm")
         self.rule = root.get("rule")
         if self.rule is None:
-            raise ParseException
+            raise ParseException("Error: defSwitchVector has no rule given")
         if self.rule not in ('OneOfMany', 'AtMostOne', 'AnyOfMany'):
-            raise ParseException
+            raise ParseException("Error: defSwitchVector has invalid rule")
         try:
             timeout = root.get("timeout")
             if not timeout:
@@ -170,22 +170,22 @@ class defSwitchVector(defVector):
             if member.tag == "defSwitch":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Error: defSwitch member has no name")
                 label = member.get("label", membername)
                 self.memberlabels[membername] = label
                 if not member.text:
-                    raise ParseException
+                    raise ParseException("Error: defSwitch member has invalid value")
                 value = member.text.strip()
                 if value == "On":
                     self.data[membername] = "On"
                 elif value == "Off":
                     self.data[membername] = "Off"
                 else:
-                    raise ParseException
+                    raise ParseException("Error: defSwitch member has invalid value")
             else:
-                raise ParseException
+                raise ParseException("Error: defSwitchVector member has invalid tag")
         if not self.data:
-            raise ParseException
+            raise ParseException("Error: defSwitchVector has no valid contents")
 
         # properties is a dictionary of property name to propertyvector this device owns
         # This method updates a property vector and sets it into properties

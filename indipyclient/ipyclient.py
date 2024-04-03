@@ -149,56 +149,66 @@ class IPyClient(collections.UserDict):
         #                             2 for transmitted/received vector tags only,
         #                             3 for transmitted/received vectors, members and contents (apart from BLOB's)
         #                             4 for all transmitted/received data
-        self.level = None
-        self.logfile = None
-        self.logfp = None
+        self._level = None
+        self._logfile = None
+        self._logfp = None
+
+    @property
+    def level(self):
+        "Can be read, but only set via setlogging method"
+        return self._level
+
+    @property
+    def logfile(self):
+        "Can be read, but only set via setlogging method"
+        return self._logfile
+
+    @property
+    def logfp(self):
+        "Can be read, but only set via setlogging method"
+        return self._logfp
 
     def setlogging(self, level, logfile):
         """Sets the logging level and logfile, returns the level, which will be None on failure.
            As default, the level is None, indicating no logging. Apart from None, level should
            be an integer, one of 1, 2, 3 or 4"""
         try:
-            if level is None:
-                self.level = None
-                if self.logfp:
-                    self.logfp.close()
-                self.logfp = None
-                self.logfile = None
-                return None
+            if self._logfp:
+                self._logfp.close()
+                self._logfp = None
+
             if level in (1, 2, 3, 4):
-                self.level = level
+                self._level = level
             else:
-                self.level = None
-                if self.logfp:
-                    self.logfp.close()
-                self.logfp = None
-                self.logfile = None
+                self._level = None
+                self._logfile = None
                 return None
+
             logfile = pathlib.Path(logfile).expanduser().resolve()
-            self.logfp = open(logfile, "wb")
-            if not self.logfp.writable():
-                self.logfp.close()
-                self.level = None
-                self.logfp = None
-                self.logfile = None
+            self._logfp = open(logfile, "wb")
+            if not self._logfp.writable():
+                self._logfp.close()
+                self._level = None
+                self._logfp = None
+                self._logfile = None
                 return None
         except:
-            self.level = None
-            if self.logfp:
-                self.logfp.close()
-            self.logfp = None
-            self.logfile = None
+            self._level = None
+            if self._logfp:
+                self._logfp.close()
+            self._logfp = None
+            self._logfile = None
             return None
-        self.logfile = logfile
-        return self.level
+        self._logfile = logfile
+        return self._level
 
     def shutdown(self):
         "Shuts down the client"
-        if self.logfp:
-            self.logfp.close()
-            self.level = None
-            self.logfp = None
-            self.logfile = None
+        if self._logfp:
+            self._logfp.close()
+            self._level = None
+            self._logfp = None
+            self._logfile = None
         self._stop = True
 
     async def report(self, message):
@@ -210,16 +220,16 @@ class IPyClient(collections.UserDict):
         try:
             timestamp = datetime.now(tz=timezone.utc)
             timestamp = timestamp.replace(tzinfo=None)
-            if self.level:
+            if self._level:
                 reportmessage  = f"\n{timestamp.isoformat(sep='T')} {message}" 
-                self.logfp.write(reportmessage.encode())
+                self._logfp.write(reportmessage.encode())
             root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
             event = events.Message(root, None, self)
             await self.rxevent(event)
         except Exception as e:
-            if self.level:
+            if self._level:
                 bytex = "".join(traceback.format_exception(e)).encode()
-                self.logfp.write(bytex)
+                self._logfp.write(bytex)
 
 
     def enabledlen(self):
@@ -270,9 +280,9 @@ class IPyClient(collections.UserDict):
                     if count >= 10:
                         break
         except Exception as e:
-            if self.level:
+            if self._level:
                 bytex = "".join(traceback.format_exception(e)).encode()
-                self.logfp.write(bytex)
+                self._logfp.write(bytex)
         finally:
             self.shutdown()
 
@@ -328,31 +338,31 @@ class IPyClient(collections.UserDict):
 
     def _logtx(self, txdata):
         "log data to file"
-        if (not self.level) or (self.level == 1):
+        if (not self._level) or (self._level == 1):
             return
-        self.logfp.write(b"\nTX:: ")
-        if self.level == 2:
+        self._logfp.write(b"\nTX:: ")
+        if self._level == 2:
             for element in txdata:
                 txdata.remove(element)
             txdata.text = ""
             binarydata = ET.tostring(txdata, short_empty_elements=False)
-            self.logfp.write(binarydata)
-        if self.level == 3:
+            self._logfp.write(binarydata)
+        if self._level == 3:
             tag = txdata.tag
             for element in txdata:
                 if tag  == "newBLOBVector":
                     element.text = "NOT LOGGED"
             binarydata = ET.tostring(txdata)
-            self.logfp.write(binarydata)
-        if self.level == 4:
+            self._logfp.write(binarydata)
+        if self._level == 4:
             if txdata.tag == "newBLOBVector" and len(txdata):
                 # txdata is a newBLOBVector containing blobs
                 # the generator blob_xml_bytes yields bytes
                 for binarydata in blob_xml_bytes(txdata):
-                    self.logfp.write(binarydata)
+                    self._logfp.write(binarydata)
             else:
                 binarydata = ET.tostring(txdata)
-                self.logfp.write(binarydata)
+                self._logfp.write(binarydata)
 
 
     async def _run_tx(self, writer):
@@ -385,33 +395,33 @@ class IPyClient(collections.UserDict):
                     self.tx_timer = time.time()
                 self.idle_timer = time.time()
 
-                if self.level:
+                if self._level:
                     self._logtx(txdata)
         except KeyboardInterrupt:
             self.shutdown()
 
     def _logrx(self, rxdata):
         "log data to file"
-        if (not self.level) or (self.level == 1):
+        if (not self._level) or (self._level == 1):
             return
         data = copy.deepcopy(rxdata)
-        self.logfp.write(b"\nRX:: ")
-        if self.level == 2:
+        self._logfp.write(b"\nRX:: ")
+        if self._level == 2:
             for element in data:
                 data.remove(element)
             data.text = ""
             binarydata = ET.tostring(data, short_empty_elements=False)
-            self.logfp.write(binarydata)
-        if self.level == 3:
+            self._logfp.write(binarydata)
+        if self._level == 3:
             tag = data.tag
             for element in data:
                 if tag  == "newBLOBVector":
                     element.text = "NOT LOGGED"
             binarydata = ET.tostring(data)
-            self.logfp.write(binarydata)
-        if self.level == 4:
+            self._logfp.write(binarydata)
+        if self._level == 4:
             binarydata = ET.tostring(data)
-            self.logfp.write(binarydata)
+            self._logfp.write(binarydata)
 
 
     async def _run_rx(self, reader):
@@ -431,7 +441,7 @@ class IPyClient(collections.UserDict):
                         # The queue is full, something may be wrong
                         # discard this data and continue
                         pass
-                if self.level:
+                if self._level:
                     self._logrx(rxdata)
         except RuntimeError:
             # catches StopAsyncIteration and stops this coroutine
@@ -593,9 +603,9 @@ class IPyClient(collections.UserDict):
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            if self.level:
+            if self._level:
                 bytex = "".join(traceback.format_exception(e)).encode()
-                self.logfp.write(bytex)
+                self._logfp.write(bytex)
         finally:
             self.shutdown()
 
@@ -700,9 +710,9 @@ class IPyClient(collections.UserDict):
         except asyncio.CancelledError:
              raise
         except Exception as e:
-            if self.level:
+            if self._level:
                 bytex = "".join(traceback.format_exception(e)).encode()
-                self.logfp.write(bytex)
+                self._logfp.write(bytex)
         finally:
             self.shutdown()
 
@@ -822,7 +832,7 @@ class _Device(Device):
         elif root.tag == "setBLOBVector":
             return events.setBLOBVector(root, self, self._client)
         else:
-            raise ParseException
+            raise ParseException("Error: Unrecognised tag received")
 
     def _snapshot(self):
         snapdevice = Device(self.devicename)

@@ -111,7 +111,7 @@ class PropertyVector(Vector):
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
         if value not in allowed:
-            raise ParseException
+            raise ParseException(f"Error: Invalid value:{value}")
         return value
 
     @property

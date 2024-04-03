@@ -60,7 +60,6 @@ class ParentScreen:
             return key
 
 
-
 class ConsoleClientScreen(ParentScreen):
 
     "Parent to windows which are set in self.control.screen"
@@ -115,16 +114,12 @@ class TooSmall(ConsoleClientScreen):
 
     async def inputs(self):
         "Gets inputs from the screen"
-        try:
-            self.stdscr.nodelay(True)
-            while True:
-                key = await self.keyinput()
-                if key in ("Resize", "Stop"):
-                    return key
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            return "Quit"
+        self.stdscr.nodelay(True)
+        while True:
+            key = await self.keyinput()
+            if key in ("Resize", "Stop"):
+                return key
+
 
 
 class MessagesScreen(ConsoleClientScreen):
@@ -291,134 +286,129 @@ class MessagesScreen(ConsoleClientScreen):
 
     async def inputs(self):
         "Gets inputs from the screen"
-        try:
-            self.stdscr.nodelay(True)
-            while True:
-                key = await self.keyinput()
 
-                if key == "Resize":
-                    return key
+        self.stdscr.nodelay(True)
+        while True:
+            key = await self.keyinput()
 
-                if not self.connected:
-                    # only accept quit
-                    if not self.quit_btn.focus:
-                        # defocus everything
-                        self.defocus()
-                        # and set quit into focus
-                        self.quit_btn.focus = True
-                        self.quit_btn.draw()
-                        self.buttwin.noutrefresh()
-                        self.infowin.noutrefresh()
-                        curses.doupdate()
-                    elif key == 10:
-                        return "Quit"
-                    elif isinstance(key, tuple) and (key in self.quit_btn):
-                        return "Quit"
-                    continue
+            if key == "Resize":
+                return key
 
-                if key in ("Devices", "Vectors", "Stop"):
-                    return key
-
-                if isinstance(key, tuple):
-                    for fld in self.fields:
-                        if key in fld:
-                            if fld.focus:
-                                # focus already set - return the button onclick
-                                value = fld.onclick
-                                if value == "DisableBLOBs":
-                                    await self.disableBLOBs()
-                                    break
-                                else:
-                                    return value
-                            # focus not set, defocus the one currently
-                            # in focus
-                            self.defocus()
-                            # and set this into focus
-                            fld.focus = True
-                            fld.draw()
-                            self.buttwin.noutrefresh()
-                            self.infowin.noutrefresh()
-                            curses.doupdate()
-                            break
-                    continue
-
-                # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-
-                if key in (32, 9, 261, 338, 258):
-                    # go to next button
-                    if self.devices_btn.focus:
-                        self.devices_btn.focus = False
-                        self.quit_btn.focus = True
-                        self.devices_btn.draw()
-                        self.quit_btn.draw()
-                        self.buttwin.noutrefresh()
-                    elif self.quit_btn.focus:
-                        self.quit_btn.focus = False
-                        self.quit_btn.draw()
-                        self.buttwin.noutrefresh()
-                        self.enable_btn.focus = True
-                        self.enable_btn.draw()
-                        self.infowin.noutrefresh()
-                    elif self.enable_btn.focus:
-                        self.enable_btn.focus = False
-                        self.disable_btn.focus = True
-                        self.enable_btn.draw()
-                        self.disable_btn.draw()
-                        self.infowin.noutrefresh()
-                    elif self.disable_btn.focus:
-                        self.disable_btn.focus = False
-                        self.disable_btn.draw()
-                        self.infowin.noutrefresh()
-                        self.devices_btn.focus = True
-                        self.devices_btn.draw()
-                        self.buttwin.noutrefresh()
+            if not self.connected:
+                # only accept quit
+                if not self.quit_btn.focus:
+                    # defocus everything
+                    self.defocus()
+                    # and set quit into focus
+                    self.quit_btn.focus = True
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                    self.infowin.noutrefresh()
                     curses.doupdate()
-
-                elif key in (353, 260, 339, 259):
-                    # go to the previous button
-                    if self.quit_btn.focus:
-                        self.quit_btn.focus = False
-                        self.devices_btn.focus = True
-                        self.devices_btn.draw()
-                        self.quit_btn.draw()
-                        self.buttwin.noutrefresh()
-                    elif self.devices_btn.focus:
-                        self.devices_btn.focus = False
-                        self.devices_btn.draw()
-                        self.buttwin.noutrefresh()
-                        self.disable_btn.focus = True
-                        self.disable_btn.draw()
-                        self.infowin.noutrefresh()
-                    elif self.disable_btn.focus:
-                        self.disable_btn.focus = False
-                        self.disable_btn.draw()
-                        self.enable_btn.focus = True
-                        self.enable_btn.draw()
-                        self.infowin.noutrefresh()
-                    elif self.enable_btn.focus:
-                        self.enable_btn.focus = False
-                        self.enable_btn.draw()
-                        self.infowin.noutrefresh()
-                        self.quit_btn.focus = True
-                        self.quit_btn.draw()
-                        self.buttwin.noutrefresh()
-                    curses.doupdate()
-
                 elif key == 10:
-                    # Enter has been pressed, check which field has focus
-                    for fld in self.fields:
+                    return "Quit"
+                elif isinstance(key, tuple) and (key in self.quit_btn):
+                    return "Quit"
+                continue
+
+            if key in ("Devices", "Vectors", "Stop"):
+                return key
+
+            if isinstance(key, tuple):
+                for fld in self.fields:
+                    if key in fld:
                         if fld.focus:
+                            # focus already set - return the button onclick
                             value = fld.onclick
                             if value == "DisableBLOBs":
                                 await self.disableBLOBs()
                                 break
                             else:
                                 return value
+                        # focus not set, defocus the one currently
+                        # in focus
+                        self.defocus()
+                        # and set this into focus
+                        fld.focus = True
+                        fld.draw()
+                        self.buttwin.noutrefresh()
+                        self.infowin.noutrefresh()
+                        curses.doupdate()
+                        break
+                continue
 
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            return "Quit"
+            # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+
+            if key in (32, 9, 261, 338, 258):
+                # go to next button
+                if self.devices_btn.focus:
+                    self.devices_btn.focus = False
+                    self.quit_btn.focus = True
+                    self.devices_btn.draw()
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                elif self.quit_btn.focus:
+                    self.quit_btn.focus = False
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                    self.enable_btn.focus = True
+                    self.enable_btn.draw()
+                    self.infowin.noutrefresh()
+                elif self.enable_btn.focus:
+                    self.enable_btn.focus = False
+                    self.disable_btn.focus = True
+                    self.enable_btn.draw()
+                    self.disable_btn.draw()
+                    self.infowin.noutrefresh()
+                elif self.disable_btn.focus:
+                    self.disable_btn.focus = False
+                    self.disable_btn.draw()
+                    self.infowin.noutrefresh()
+                    self.devices_btn.focus = True
+                    self.devices_btn.draw()
+                    self.buttwin.noutrefresh()
+                curses.doupdate()
+
+            elif key in (353, 260, 339, 259):
+                # go to the previous button
+                if self.quit_btn.focus:
+                    self.quit_btn.focus = False
+                    self.devices_btn.focus = True
+                    self.devices_btn.draw()
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                elif self.devices_btn.focus:
+                    self.devices_btn.focus = False
+                    self.devices_btn.draw()
+                    self.buttwin.noutrefresh()
+                    self.disable_btn.focus = True
+                    self.disable_btn.draw()
+                    self.infowin.noutrefresh()
+                elif self.disable_btn.focus:
+                    self.disable_btn.focus = False
+                    self.disable_btn.draw()
+                    self.enable_btn.focus = True
+                    self.enable_btn.draw()
+                    self.infowin.noutrefresh()
+                elif self.enable_btn.focus:
+                    self.enable_btn.focus = False
+                    self.enable_btn.draw()
+                    self.infowin.noutrefresh()
+                    self.quit_btn.focus = True
+                    self.quit_btn.draw()
+                    self.buttwin.noutrefresh()
+                curses.doupdate()
+
+            elif key == 10:
+                # Enter has been pressed, check which field has focus
+                for fld in self.fields:
+                    if fld.focus:
+                        value = fld.onclick
+                        if value == "DisableBLOBs":
+                            await self.disableBLOBs()
+                            break
+                        else:
+                            return value
 
 
 class EnableBLOBsScreen(ConsoleClientScreen):
@@ -539,115 +529,110 @@ class EnableBLOBsScreen(ConsoleClientScreen):
     async def inputs(self):
         "Gets inputs from the screen"
 
-        try:
-            self.stdscr.nodelay(True)
-            while True:
-                if self.path_txt.focus:
-                    # text input here
-                    key = await self.textinput()
-                else:
-                    key = await self.keyinput()
+        self.stdscr.nodelay(True)
+        while True:
+            if self.path_txt.focus:
+                # text input here
+                key = await self.textinput()
+            else:
+                key = await self.keyinput()
 
-                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                    return key
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                return key
 
-                if isinstance(key, tuple):
-                    for fld in self.fields:
-                        if key in fld:
-                            if fld.focus:
-                                # focus already set - return the button onclick
-                                value = fld.onclick
-                                if value == "Submit":
-                                    await self.submit()
-                                    self.submit_btn.draw()
-                                    self.messages_btn.draw()
-                                    self.buttwin.noutrefresh()
-                                    self.pathwin.noutrefresh()
-                                    curses.doupdate()
-                                    break
-                                else:
-                                    return value
-                            # focus not set, defocus the one currently
-                            # in focus
-                            self.defocus()
-                            # and set this into focus
-                            fld.focus = True
-                            fld.draw()
-                            self.pathwin.noutrefresh()
-                            self.buttwin.noutrefresh()
-                            curses.doupdate()
-                            break
-                    continue
-
-                if key == 10:
-                    if self.quit_btn.focus:
-                        widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
-                        self.messwin.noutrefresh()
+            if isinstance(key, tuple):
+                for fld in self.fields:
+                    if key in fld:
+                        if fld.focus:
+                            # focus already set - return the button onclick
+                            value = fld.onclick
+                            if value == "Submit":
+                                await self.submit()
+                                self.submit_btn.draw()
+                                self.messages_btn.draw()
+                                self.buttwin.noutrefresh()
+                                self.pathwin.noutrefresh()
+                                curses.doupdate()
+                                break
+                            else:
+                                return value
+                        # focus not set, defocus the one currently
+                        # in focus
+                        self.defocus()
+                        # and set this into focus
+                        fld.focus = True
+                        fld.draw()
+                        self.pathwin.noutrefresh()
+                        self.buttwin.noutrefresh()
                         curses.doupdate()
-                        return "Quit"
-                    elif self.messages_btn.focus:
-                        return "Messages"
-                    elif self.devices_btn.focus:
-                        return "Messages"
-                    elif self.submit_btn.focus:
-                        await self.submit()
+                        break
+                continue
 
-                elif key in (32, 9, 261, 338, 258):
-                    # go to the next button
-                    if self.path_txt.focus:
-                        self.path_txt.focus = False
-                        self.submit_btn.focus = True
-                        self.path_txt.draw()
-                    elif self.submit_btn.focus:
-                        self.submit_btn.focus = False
-                        self.devices_btn.focus = True
-                    elif self.devices_btn.focus:
-                        self.devices_btn.focus = False
-                        self.messages_btn.focus = True
-                    elif self.messages_btn.focus:
-                        self.messages_btn.focus = False
-                        self.quit_btn.focus = True
-                    elif self.quit_btn.focus:
-                        self.quit_btn.focus = False
-                        self.path_txt.focus = True
-                        self.path_txt.draw()
+            if key == 10:
+                if self.quit_btn.focus:
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
+                    self.messwin.noutrefresh()
+                    curses.doupdate()
+                    return "Quit"
+                elif self.messages_btn.focus:
+                    return "Messages"
+                elif self.devices_btn.focus:
+                    return "Messages"
+                elif self.submit_btn.focus:
+                    await self.submit()
 
-                elif key in (353, 260, 339, 259):
-                    # go to previous button
-                    if self.quit_btn.focus:
-                        self.quit_btn.focus = False
-                        self.messages_btn.focus = True
-                    elif self.messages_btn.focus:
-                        self.messages_btn.focus = False
-                        self.devices_btn.focus = True
-                    elif self.devices_btn.focus:
-                        self.devices_btn.focus = False
-                        self.submit_btn.focus = True
-                    elif self.submit_btn.focus:
-                        self.submit_btn.focus = False
-                        self.path_txt.focus = True
-                        self.path_txt.draw()
-                    elif self.path_txt.focus:
-                        self.path_txt.focus = False
-                        self.quit_btn.focus = True
-                        self.path_txt.draw()
-                else:
-                    # button not recognised
-                    continue
+            elif key in (32, 9, 261, 338, 258):
+                # go to the next button
+                if self.path_txt.focus:
+                    self.path_txt.focus = False
+                    self.submit_btn.focus = True
+                    self.path_txt.draw()
+                elif self.submit_btn.focus:
+                    self.submit_btn.focus = False
+                    self.devices_btn.focus = True
+                elif self.devices_btn.focus:
+                    self.devices_btn.focus = False
+                    self.messages_btn.focus = True
+                elif self.messages_btn.focus:
+                    self.messages_btn.focus = False
+                    self.quit_btn.focus = True
+                elif self.quit_btn.focus:
+                    self.quit_btn.focus = False
+                    self.path_txt.focus = True
+                    self.path_txt.draw()
 
-                # draw buttons
-                self.submit_btn.draw()
-                self.messages_btn.draw()
-                self.devices_btn.draw()
-                self.quit_btn.draw()
-                self.buttwin.noutrefresh()
-                self.pathwin.noutrefresh()
-                curses.doupdate()
+            elif key in (353, 260, 339, 259):
+                # go to previous button
+                if self.quit_btn.focus:
+                    self.quit_btn.focus = False
+                    self.messages_btn.focus = True
+                elif self.messages_btn.focus:
+                    self.messages_btn.focus = False
+                    self.devices_btn.focus = True
+                elif self.devices_btn.focus:
+                    self.devices_btn.focus = False
+                    self.submit_btn.focus = True
+                elif self.submit_btn.focus:
+                    self.submit_btn.focus = False
+                    self.path_txt.focus = True
+                    self.path_txt.draw()
+                elif self.path_txt.focus:
+                    self.path_txt.focus = False
+                    self.quit_btn.focus = True
+                    self.path_txt.draw()
+            else:
+                # button not recognised
+                continue
 
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            return "Quit"
+            # draw buttons
+            self.submit_btn.draw()
+            self.messages_btn.draw()
+            self.devices_btn.draw()
+            self.quit_btn.draw()
+            self.buttwin.noutrefresh()
+            self.pathwin.noutrefresh()
+            curses.doupdate()
+
 
 
     async def textinput(self):
@@ -979,240 +964,233 @@ class DevicesScreen(ConsoleClientScreen):
 
     async def inputs(self):
         "Gets inputs from the screen"
-        try:
-            self.stdscr.nodelay(True)
 
+        self.stdscr.nodelay(True)
+        names = list(self.devices.keys())
+        lastidx = len(names)-1            # index of last device
 
-            names = list(self.devices.keys())
-            lastidx = len(names)-1            # index of last device
+        while True:
+            key = await self.keyinput()
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                return key
+            displayedbtns = list(self.devbuttons.values())
+            displayednames = list(self.devbuttons.keys())
+            bottomidx = self.botindex()       # index of last displayed device
 
-            while True:
-                key = await self.keyinput()
-                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                    return key
-                displayedbtns = list(self.devbuttons.values())
-                displayednames = list(self.devbuttons.keys())
-                bottomidx = self.botindex()       # index of last displayed device
-
-                if isinstance(key, tuple):
-                    # mouse pressed, find if its clicked in any field
-                    if key in self.quit_btn:
-                        if self.quit_btn.focus:
-                            widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
-                            self.messwin.noutrefresh()
-                            curses.doupdate()
-                            return "Quit"
-                        elif self.messages_btn.focus:
-                            self.messages_btn.focus = False
-                            self.quit_btn.focus = True
-                            self.messages_btn.draw()
-                            self.quit_btn.draw()
-                            self.buttwin.noutrefresh()
-                        else:
-                            # either a top or bottom more button or a device has focus
-                            self.defocus()
-                            self.devwinrefresh()
-                            self.quit_btn.focus = True
-                            self.quit_btn.draw()
-                            self.buttwin.noutrefresh()
-                        curses.doupdate()
-                        continue
-                    if key in self.messages_btn:
-                        if self.messages_btn.focus:
-                            return "Messages"
-                        elif self.quit_btn.focus:
-                            self.quit_btn.focus = False
-                            self.messages_btn.focus = True
-                            self.messages_btn.draw()
-                            self.quit_btn.draw()
-                            self.buttwin.noutrefresh()
-                        else:
-                            # either a top or bottom more button or a device has focus
-                            self.defocus()
-                            self.devwinrefresh()
-                            self.messages_btn.focus = True
-                            self.messages_btn.draw()
-                            self.buttwin.noutrefresh()
-                        curses.doupdate()
-                        continue
-                    if key in self.topmore_btn:
-                        if self.topmore_btn.focus:
-                            self.topmorechosen()
-                        else:
-                            self.defocus()
-                            self.topmore_btn.focus = True
-                            self.topmore_btn.draw()
-                            self.devwinrefresh()
-                            self.buttwin.noutrefresh()
-                        curses.doupdate()
-                        continue
-                    if key in self.botmore_btn:
-                        if self.botmore_btn.focus:
-                            self.botmorechosen()
-                        else:
-                            self.defocus()
-                            self.botmore_btn.focus = True
-                            self.botmore_btn.draw()
-                            self.devwinrefresh()
-                            self.buttwin.noutrefresh()
-                        curses.doupdate()
-                        continue
-
-                    # so now must check if mouse position is in any of the devices
-                    if key[0] > self.devwinbot:
-                        # no chance of device button being pressed as mouse point
-                        # is at a row greater than bottom line of the device window
-                        continue
-
-                    # displayedbtns button list, but only for buttons displayed
-
-                    for idx, btn in enumerate(displayedbtns):
-                        if key in btn:
-                            if btn.focus:
-                                return btn.onclick
-                            else:
-                                # button not in focus, so set it
-                                self.defocus()
-                                btn.focus = True
-                                btn.draw()
-                                self.focus = displayednames[idx]
-                                self.devwinrefresh()
-                                self.buttwin.noutrefresh()
-                                curses.doupdate()
-                                break
-                    continue
-
-                # so not a tuple/mouse press, its a key press
-
-                # which button has focus
-                if key == 10:
+            if isinstance(key, tuple):
+                # mouse pressed, find if its clicked in any field
+                if key in self.quit_btn:
                     if self.quit_btn.focus:
                         widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
                         self.messwin.noutrefresh()
                         curses.doupdate()
                         return "Quit"
+                    elif self.messages_btn.focus:
+                        self.messages_btn.focus = False
+                        self.quit_btn.focus = True
+                        self.messages_btn.draw()
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                    else:
+                        # either a top or bottom more button or a device has focus
+                        self.defocus()
+                        self.devwinrefresh()
+                        self.quit_btn.focus = True
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    continue
+                if key in self.messages_btn:
                     if self.messages_btn.focus:
                         return "Messages"
+                    elif self.quit_btn.focus:
+                        self.quit_btn.focus = False
+                        self.messages_btn.focus = True
+                        self.messages_btn.draw()
+                        self.quit_btn.draw()
+                        self.buttwin.noutrefresh()
+                    else:
+                        # either a top or bottom more button or a device has focus
+                        self.defocus()
+                        self.devwinrefresh()
+                        self.messages_btn.focus = True
+                        self.messages_btn.draw()
+                        self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    continue
+                if key in self.topmore_btn:
                     if self.topmore_btn.focus:
                         self.topmorechosen()
-                        curses.doupdate()
-                        continue
+                    else:
+                        self.defocus()
+                        self.topmore_btn.focus = True
+                        self.topmore_btn.draw()
+                        self.devwinrefresh()
+                        self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    continue
+                if key in self.botmore_btn:
                     if self.botmore_btn.focus:
                         self.botmorechosen()
-                        curses.doupdate()
-                        continue
-
-                    # If not Quit or Messages, return the lower case name
-                    # of the device in focus
-                    if self.focus:
-                        return self.focus.lower()
-                    continue
-
-
-                if key in (32, 9, 261, 338, 258):   # 32 space, 9 tab, 261 right arrow, 338 page down, 258 down arrow
-                    # go to the next button
-                    if self.quit_btn.focus:
-                        self.quit_btn.focus = False
-                        if self.topindex:
-                            # that is, if top button does not have index zero
-                            self.topmore_btn.focus = True
-                        else:
-                            self.focus = displayednames[0]
-                    elif self.messages_btn.focus:
-                        self.messages_btn.focus = False
-                        self.quit_btn.focus = True
-                        self.drawbuttons()
-                        self.buttwin.noutrefresh()
-                        curses.doupdate()
-                        continue
-                    elif self.topmore_btn.focus:
-                        self.topmore_btn.focus = False
-                        self.focus = displayednames[0]
-                        self.drawdevices()
+                    else:
+                        self.defocus()
+                        self.botmore_btn.focus = True
+                        self.botmore_btn.draw()
                         self.devwinrefresh()
-                        curses.doupdate()
-                        continue
-                    elif self.botmore_btn.focus:
-                        self.botmore_btn.focus = False
-                        self.messages_btn.focus = True
-                    else:
-                        # one of the devices has focus
-                        try:
-                            indx = names.index(self.focus)
-                        except ValueError:
-                            continue
-                        # indx here is the index on the list of all devices, not just those displayed
-                        if indx == lastidx:
-                            # very last device, the botmore_btn should not be shown
-                            self.focus = None
-                            self.messages_btn.focus = True
-                        elif indx == bottomidx:
-                            # last displayed device
-                            if key in (338, 258):      # 338 page down, 258 down arrow
-                                # display next device
-                                self.topindex += 1
-                                self.focus = names[indx+1]
-                            else:
-                                # last device on display
-                                self.focus = None
-                                self.botmore_btn.focus = True
-                        else:
-                            self.focus = names[indx+1]
-
-                elif key in (353, 260, 339, 259):  # 353 shift tab, 260 left arrow, 339 page up, 259 up arrow
-                    # go to previous button
-                    if self.quit_btn.focus:
-                        self.quit_btn.focus = False
-                        self.messages_btn.focus = True
-                        self.drawbuttons()
                         self.buttwin.noutrefresh()
-                        curses.doupdate()
-                        continue
-                    elif self.messages_btn.focus:
-                        self.messages_btn.focus = False
-                        if self.botmore_btn.show:
-                            self.botmore_btn.focus = True
-                        else:
-                            self.focus = displayednames[-1]
-                    elif self.botmore_btn.focus:
-                        self.botmore_btn.focus = False
-                        self.focus = displayednames[-1]
-                    elif self.topmore_btn.focus:
-                        self.topmore_btn.focus = False
-                        self.quit_btn.focus = True
-                    elif self.focus == names[0]:
-                        self.focus = None
-                        self.quit_btn.focus = True
-                    else:
-                        try:
-                            indx = names.index(self.focus)
-                        except ValueError:
-                            continue
-                        if indx == self.topindex:
-                            if key in (339, 259): # 339 page up, 259 up arrow
-                                self.topindex -= 1
-                                self.focus = names[indx-1]
-                            else:
-                                self.focus = None
-                                self.topmore_btn.focus = True
-                        else:
-                            self.focus = names[indx-1]
-
-                else:
-                    # button not recognised
+                    curses.doupdate()
                     continue
 
-                # draw devices and buttons
-                self.drawdevices()
-                self.drawbuttons()
-                self.devwinrefresh()
-                self.buttwin.noutrefresh()
-                curses.doupdate()
+                # so now must check if mouse position is in any of the devices
+                if key[0] > self.devwinbot:
+                    # no chance of device button being pressed as mouse point
+                    # is at a row greater than bottom line of the device window
+                    continue
 
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            return "Quit"
+                # displayedbtns button list, but only for buttons displayed
+
+                for idx, btn in enumerate(displayedbtns):
+                    if key in btn:
+                        if btn.focus:
+                            return btn.onclick
+                        else:
+                            # button not in focus, so set it
+                            self.defocus()
+                            btn.focus = True
+                            btn.draw()
+                            self.focus = displayednames[idx]
+                            self.devwinrefresh()
+                            self.buttwin.noutrefresh()
+                            curses.doupdate()
+                            break
+                continue
+
+            # so not a tuple/mouse press, its a key press
+
+            # which button has focus
+            if key == 10:
+                if self.quit_btn.focus:
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
+                    self.messwin.noutrefresh()
+                    curses.doupdate()
+                    return "Quit"
+                if self.messages_btn.focus:
+                    return "Messages"
+                if self.topmore_btn.focus:
+                    self.topmorechosen()
+                    curses.doupdate()
+                    continue
+                if self.botmore_btn.focus:
+                    self.botmorechosen()
+                    curses.doupdate()
+                    continue
+
+                # If not Quit or Messages, return the lower case name
+                # of the device in focus
+                if self.focus:
+                    return self.focus.lower()
+                continue
+
+
+            if key in (32, 9, 261, 338, 258):   # 32 space, 9 tab, 261 right arrow, 338 page down, 258 down arrow
+                # go to the next button
+                if self.quit_btn.focus:
+                    self.quit_btn.focus = False
+                    if self.topindex:
+                        # that is, if top button does not have index zero
+                        self.topmore_btn.focus = True
+                    else:
+                        self.focus = displayednames[0]
+                elif self.messages_btn.focus:
+                    self.messages_btn.focus = False
+                    self.quit_btn.focus = True
+                    self.drawbuttons()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    continue
+                elif self.topmore_btn.focus:
+                    self.topmore_btn.focus = False
+                    self.focus = displayednames[0]
+                    self.drawdevices()
+                    self.devwinrefresh()
+                    curses.doupdate()
+                    continue
+                elif self.botmore_btn.focus:
+                    self.botmore_btn.focus = False
+                    self.messages_btn.focus = True
+                else:
+                    # one of the devices has focus
+                    try:
+                        indx = names.index(self.focus)
+                    except ValueError:
+                        continue
+                    # indx here is the index on the list of all devices, not just those displayed
+                    if indx == lastidx:
+                        # very last device, the botmore_btn should not be shown
+                        self.focus = None
+                        self.messages_btn.focus = True
+                    elif indx == bottomidx:
+                        # last displayed device
+                        if key in (338, 258):      # 338 page down, 258 down arrow
+                            # display next device
+                            self.topindex += 1
+                            self.focus = names[indx+1]
+                        else:
+                            # last device on display
+                            self.focus = None
+                            self.botmore_btn.focus = True
+                    else:
+                        self.focus = names[indx+1]
+
+            elif key in (353, 260, 339, 259):  # 353 shift tab, 260 left arrow, 339 page up, 259 up arrow
+                # go to previous button
+                if self.quit_btn.focus:
+                    self.quit_btn.focus = False
+                    self.messages_btn.focus = True
+                    self.drawbuttons()
+                    self.buttwin.noutrefresh()
+                    curses.doupdate()
+                    continue
+                elif self.messages_btn.focus:
+                    self.messages_btn.focus = False
+                    if self.botmore_btn.show:
+                        self.botmore_btn.focus = True
+                    else:
+                        self.focus = displayednames[-1]
+                elif self.botmore_btn.focus:
+                    self.botmore_btn.focus = False
+                    self.focus = displayednames[-1]
+                elif self.topmore_btn.focus:
+                    self.topmore_btn.focus = False
+                    self.quit_btn.focus = True
+                elif self.focus == names[0]:
+                    self.focus = None
+                    self.quit_btn.focus = True
+                else:
+                    try:
+                        indx = names.index(self.focus)
+                    except ValueError:
+                        continue
+                    if indx == self.topindex:
+                        if key in (339, 259): # 339 page up, 259 up arrow
+                            self.topindex -= 1
+                            self.focus = names[indx-1]
+                        else:
+                            self.focus = None
+                            self.topmore_btn.focus = True
+                    else:
+                        self.focus = names[indx-1]
+
+            else:
+                # button not recognised
+                continue
+
+            # draw devices and buttons
+            self.drawdevices()
+            self.drawbuttons()
+            self.devwinrefresh()
+            self.buttwin.noutrefresh()
+            curses.doupdate()
 
 
 class ChooseVectorScreen(ConsoleClientScreen):
@@ -1406,193 +1384,189 @@ class ChooseVectorScreen(ConsoleClientScreen):
     async def inputs(self):
         "Gets inputs from the screen"
 
-        try:
-            self.stdscr.nodelay(True)
-            while True:
-                key = await self.keyinput()
-                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                    return key
+        self.stdscr.nodelay(True)
+        while True:
+            key = await self.keyinput()
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                return key
 
-                if isinstance(key, tuple):
-                    # mouse pressed, find if its clicked in any field
-                    # check all areas of the screen
-                    if key in self.quit_btn:
-                        if self.quit_btn.focus:
-                            widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
-                            self.messwin.noutrefresh()
-                            curses.doupdate()
-                            return "Quit"
-                        else:
-                            # focus is elsewhere
-                            self.setfocus("Quit")
-                        curses.doupdate()
-                        continue
-                    if key in self.messages_btn:
-                        if self.messages_btn.focus:
-                            return "Messages"
-                        else:
-                            self.setfocus("Messages")
-                        curses.doupdate()
-                        continue
-                    if key in self.devices_btn:
-                        if self.devices_btn.focus:
-                            return "Devices"
-                        else:
-                            self.setfocus("Devices")
-                        curses.doupdate()
-                        continue
-
-                    # check if mouse key in groupwin
-                    result = self.groupwin.setkey(key)
-                    if result == "Newfocus":
-                        # focus has been set onto a new group
-                        # must remove focus from other parts of the screen
-                        self.setfocus("Groups")
-                        curses.doupdate()
-                        continue
-                    if result == "NewGroup":
-                        # must update the screen with a new group
-                        self.show()
-                        continue
-
-                    if not result:
-                        continue
-                    # otherwise mouse not pressed in a group, so self.groupwin.setkey(key)
-                    # just returns the key
-                    key = result
-
-                    # check if mouse key pressed in vectorswin
-                    result = self.vectorswin.setkey(key)
-                    if result == "Newfocus":
-                        # focus has been set onto a new vector
-                        # must remove focus from other parts of the screen
-                        self.setfocus("Vectors")
-                        curses.doupdate()
-                        continue
-                    if result == "NewVector":
-                        newvector = self.vectorswin.active
-                        if newvector in self.device:
-                            # newvector is a vector name, check if it is enabled
-                            if self.device[newvector].enable:
-                                self.vectorname = newvector
-                                return "Vectors"
-
-                    # mouse press not on a field
-                    continue
-
-                # so not a tuple/mouse press, its a key press
-
-                if self.focus == "Groups":
-                    # focus has been given to the GroupWin
-                    result = self.groupwin.setkey(key)
-                    if result == "NewGroup":
-                        # must update the screen with a new group
-                        # which is available as self.groupwin.active
-                        self.show()
-                        continue
-                    if not result:
-                        continue
-                    key = result
-                    # key could be a down arrow for next item
-                    # but will not be 10 as Enter will be actioned within self.groupwin.setkey(key)
-
-                elif self.focus == "Vectors":
-                    # focus has been given to VectorListWin
-                    result = self.vectorswin.setkey(key)
-                    if not result:
-                        continue
-                    if result == "NewVector":
-                        newvector = self.vectorswin.active
-                        if newvector in self.device:
-                            # newvector is a vector name, check if it is enabled
-                            if self.device[newvector].enable:
-                                self.vectorname = newvector
-                                return "Vectors"
-                            else:
-                                continue
-                        else:
-                            continue
-                    key = result
-                    # key could be a down arrow for next item
-                    # but will not be 10 as Enter will be actioned within self.vectorswin.setkey(key)
-
-                if key == 10:
-                    # enter key pressed
-                    if self.focus == "Quit":
+            if isinstance(key, tuple):
+                # mouse pressed, find if its clicked in any field
+                # check all areas of the screen
+                if key in self.quit_btn:
+                    if self.quit_btn.focus:
                         widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
                         self.messwin.noutrefresh()
                         curses.doupdate()
-                    # return the focus value of whichever item was in focus when enter was pressed
-                    return self.focus
-
-                if key in (32, 9, 261, 338, 258):
-                    # go to the next widget
-                    if self.focus == "Quit":
-                        if len(self.groupwin.groups()) == 1:
-                            newfocus = "Vectors"
-                        else:
-                            newfocus = "Groups"
+                        return "Quit"
                     else:
-                        indx = self.screenparts.index(self.focus)
-                        newfocus = self.screenparts[indx+1]
-                elif key in (353, 260, 339, 259):
-                    # go to previous button
-                    if self.focus == "Groups":
-                        newfocus = "Quit"
-                    elif self.focus == "Vectors":
-                        if len(self.groupwin.groups()) == 1:
-                            newfocus = "Quit"
-                        else:
-                            newfocus = "Groups"
+                        # focus is elsewhere
+                        self.setfocus("Quit")
+                    curses.doupdate()
+                    continue
+                if key in self.messages_btn:
+                    if self.messages_btn.focus:
+                        return "Messages"
                     else:
-                        indx = self.screenparts.index(self.focus)
-                        newfocus = self.screenparts[indx-1]
-                else:
-                    # key not recognised
+                        self.setfocus("Messages")
+                    curses.doupdate()
+                    continue
+                if key in self.devices_btn:
+                    if self.devices_btn.focus:
+                        return "Devices"
+                    else:
+                        self.setfocus("Devices")
+                    curses.doupdate()
                     continue
 
-                if self.focus == "Vectors":
-                    self.vectorswin.defocus()
-                elif self.focus == "Groups":
-                    self.groupwin.defocus()
-                elif self.focus == "Devices":
-                    self.devices_btn.focus = False
-                elif self.focus == "Messages":
-                    self.messages_btn.focus = False
-                elif self.focus == "Quit":
-                    self.quit_btn.focus = False
-                if newfocus == "Vectors":
-                    if key in (32, 9, 261, 338, 258):
-                        # next button
-                        self.vectorswin.set_top_focus()
+                # check if mouse key in groupwin
+                result = self.groupwin.setkey(key)
+                if result == "Newfocus":
+                    # focus has been set onto a new group
+                    # must remove focus from other parts of the screen
+                    self.setfocus("Groups")
+                    curses.doupdate()
+                    continue
+                if result == "NewGroup":
+                    # must update the screen with a new group
+                    self.show()
+                    continue
+
+                if not result:
+                    continue
+                # otherwise mouse not pressed in a group, so self.groupwin.setkey(key)
+                # just returns the key
+                key = result
+
+                # check if mouse key pressed in vectorswin
+                result = self.vectorswin.setkey(key)
+                if result == "Newfocus":
+                    # focus has been set onto a new vector
+                    # must remove focus from other parts of the screen
+                    self.setfocus("Vectors")
+                    curses.doupdate()
+                    continue
+                if result == "NewVector":
+                    newvector = self.vectorswin.active
+                    if newvector in self.device:
+                        # newvector is a vector name, check if it is enabled
+                        if self.device[newvector].enable:
+                            self.vectorname = newvector
+                            return "Vectors"
+
+                # mouse press not on a field
+                continue
+
+            # so not a tuple/mouse press, its a key press
+
+            if self.focus == "Groups":
+                # focus has been given to the GroupWin
+                result = self.groupwin.setkey(key)
+                if result == "NewGroup":
+                    # must update the screen with a new group
+                    # which is available as self.groupwin.active
+                    self.show()
+                    continue
+                if not result:
+                    continue
+                key = result
+                # key could be a down arrow for next item
+                # but will not be 10 as Enter will be actioned within self.groupwin.setkey(key)
+
+            elif self.focus == "Vectors":
+                # focus has been given to VectorListWin
+                result = self.vectorswin.setkey(key)
+                if not result:
+                    continue
+                if result == "NewVector":
+                    newvector = self.vectorswin.active
+                    if newvector in self.device:
+                        # newvector is a vector name, check if it is enabled
+                        if self.device[newvector].enable:
+                            self.vectorname = newvector
+                            return "Vectors"
+                        else:
+                            continue
                     else:
-                        self.vectorswin.set_bot_focus()
-                elif newfocus == "Groups":
-                    self.groupwin.set_left_focus()
-                elif newfocus == "Devices":
-                    self.devices_btn.focus = True
-                elif newfocus == "Messages":
-                    self.messages_btn.focus = True
-                elif newfocus == "Quit":
-                    self.quit_btn.focus = True
-                self.focus = newfocus
+                        continue
+                key = result
+                # key could be a down arrow for next item
+                # but will not be 10 as Enter will be actioned within self.vectorswin.setkey(key)
 
-                # so buttons have been set with the appropriate focus
-                # now draw them
-                self.groupwin.draw(self.devicename)
-                self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
-                self.devices_btn.draw()
-                self.messages_btn.draw()
-                self.quit_btn.draw()
+            if key == 10:
+                # enter key pressed
+                if self.focus == "Quit":
+                    widgets.drawmessage(self.messwin, "Quit chosen ... Please wait", bold = True, maxcols=self.maxcols)
+                    self.messwin.noutrefresh()
+                    curses.doupdate()
+                # return the focus value of whichever item was in focus when enter was pressed
+                return self.focus
 
-                self.vectorswin.noutrefresh()
-                self.groupwin.noutrefresh()
-                self.buttwin.noutrefresh()
-                curses.doupdate()
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            return "Quit"
+            if key in (32, 9, 261, 338, 258):
+                # go to the next widget
+                if self.focus == "Quit":
+                    if len(self.groupwin.groups()) == 1:
+                        newfocus = "Vectors"
+                    else:
+                        newfocus = "Groups"
+                else:
+                    indx = self.screenparts.index(self.focus)
+                    newfocus = self.screenparts[indx+1]
+            elif key in (353, 260, 339, 259):
+                # go to previous button
+                if self.focus == "Groups":
+                    newfocus = "Quit"
+                elif self.focus == "Vectors":
+                    if len(self.groupwin.groups()) == 1:
+                        newfocus = "Quit"
+                    else:
+                        newfocus = "Groups"
+                else:
+                    indx = self.screenparts.index(self.focus)
+                    newfocus = self.screenparts[indx-1]
+            else:
+                # key not recognised
+                continue
+
+            if self.focus == "Vectors":
+                self.vectorswin.defocus()
+            elif self.focus == "Groups":
+                self.groupwin.defocus()
+            elif self.focus == "Devices":
+                self.devices_btn.focus = False
+            elif self.focus == "Messages":
+                self.messages_btn.focus = False
+            elif self.focus == "Quit":
+                self.quit_btn.focus = False
+            if newfocus == "Vectors":
+                if key in (32, 9, 261, 338, 258):
+                    # next button
+                    self.vectorswin.set_top_focus()
+                else:
+                    self.vectorswin.set_bot_focus()
+            elif newfocus == "Groups":
+                self.groupwin.set_left_focus()
+            elif newfocus == "Devices":
+                self.devices_btn.focus = True
+            elif newfocus == "Messages":
+                self.messages_btn.focus = True
+            elif newfocus == "Quit":
+                self.quit_btn.focus = True
+            self.focus = newfocus
+
+            # so buttons have been set with the appropriate focus
+            # now draw them
+            self.groupwin.draw(self.devicename)
+            self.vectorswin.draw(self.devicename, self.groupwin.active, change=True)
+            self.devices_btn.draw()
+            self.messages_btn.draw()
+            self.quit_btn.draw()
+
+            self.vectorswin.noutrefresh()
+            self.groupwin.noutrefresh()
+            self.buttwin.noutrefresh()
+            curses.doupdate()
+
 
 
 # This class GroupBtns defines the position of group buttons on the row
@@ -2883,139 +2857,132 @@ class VectorScreen(ConsoleClientScreen):
         # result tracks the results of tests to see if an editable field loop is needed
         result = None
 
-        try:
-            self.stdscr.nodelay(True)
-            while True:
-                if result:
-                    key = result
-                    result = None
-                else:
-                    key = await self.keyinput()
+        self.stdscr.nodelay(True)
+        while True:
+            if result:
+                key = result
+                result = None
+            else:
+                key = await self.keyinput()
 
-                if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                    return key
+            if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                return key
 
-                key = self.check_bottom_btn(key)
-                if not key:
-                    continue
-                if key in ("Vectors", "Devices", "Messages", "Quit"):
-                    return key
+            key = self.check_bottom_btn(key)
+            if not key:
+                continue
+            if key in ("Vectors", "Devices", "Messages", "Quit"):
+                return key
 
-                # At this point, key could be a mouse tuple, or a keystroke
-                # But not clicked on any of the bottom buttons
-                # So could be mouse clicked away from anything, or on something in memberswin
-                # or maybe memberswin has the focus, and the keystroke should be handled there
+            # At this point, key could be a mouse tuple, or a keystroke
+            # But not clicked on any of the bottom buttons
+            # So could be mouse clicked away from anything, or on something in memberswin
+            # or maybe memberswin has the focus, and the keystroke should be handled there
 
-                if isinstance(key, tuple):
-                    # mouse pressed, find if its clicked in any of the MembersWin fields
-                    result = self.memberswin.handlemouse(key)
-                    # result is None if fully handled,
-                    # or is 'edit' if mouse clicked in an editable field in MembersWin
-                    # or is 'focused' if mouse clicked on a previously unfocused button
-                    # could also be one of "submitted", "next", "previous" if clicked
-                    # on a focused submit, or top or bottom widget
-                    if not result:
-                        # Handled, continue with while loop and get next key
-                        continue
-
-                # At this point, result is None if key is a keystroke,
-                # or result is value returned by memberswin.handlemouse(key)
-
-                if (result == "focused") or (result == "edit"):
-                    # a field in self.memberswin has been set into focus
-                    # ensure bottom buttons are defocused
-                    self.vectors_btn.focus = False
-                    self.vectors_btn.draw()
-                    self.devices_btn.focus = False
-                    self.devices_btn.draw()
-                    self.messages_btn.focus = False
-                    self.messages_btn.draw()
-                    self.quit_btn.focus = False
-                    self.quit_btn.draw()
-                    self.buttwin.noutrefresh()
-                    curses.doupdate()
-
-                if result == "focused":
-                    # A button has been set to focus, nothing more to do
-                    # continue and get the next key
-                    result = None
-                    continue
-
-                if (not result) and (not self.memberswin.focus):
-                    # if keystroke, then only of interest if memberswin has focus
-                    continue
-
+            if isinstance(key, tuple):
+                # mouse pressed, find if its clicked in any of the MembersWin fields
+                result = self.memberswin.handlemouse(key)
+                # result is None if fully handled,
+                # or is 'edit' if mouse clicked in an editable field in MembersWin
+                # or is 'focused' if mouse clicked on a previously unfocused button
+                # could also be one of "submitted", "next", "previous" if clicked
+                # on a focused submit, or top or bottom widget
                 if not result:
-                    # key is a keystroke, and memberswin has focus, handle it
-                    result = self.memberswin.setkey(key)
-                    # this returns "edit" if an editable field has been given focus
-                    # could also be "submitted", "next", "previous" or a keystroke such
-                    # as 9 for tab
+                    # Handled, continue with while loop and get next key
+                    continue
 
-                while result == "edit":
-                   # An editable field is in focus
-                    inputfield = self.memberswin.inputfield()
-                    if inputfield is None:
-                        break
-                    result = await inputfield()
-                    if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                        return result
-                    if not result:
-                        break
-                    if result in ("submitted", "next", "previous"):
-                        break
-                    if isinstance(result, tuple):
-                        # a mouse press, go to outer loop with result set
-                        break
-                    # inputfield has returned a keystroke, typically 9 for next tab
-                    # which is now tested again with self.memberswin.setkey(key)
-                    result = self.memberswin.setkey(result)
+            # At this point, result is None if key is a keystroke,
+            # or result is value returned by memberswin.handlemouse(key)
 
+            if (result == "focused") or (result == "edit"):
+                # a field in self.memberswin has been set into focus
+                # ensure bottom buttons are defocused
+                self.vectors_btn.focus = False
+                self.vectors_btn.draw()
+                self.devices_btn.focus = False
+                self.devices_btn.draw()
+                self.messages_btn.focus = False
+                self.messages_btn.draw()
+                self.quit_btn.focus = False
+                self.quit_btn.draw()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
+
+            if result == "focused":
+                # A button has been set to focus, nothing more to do
+                # continue and get the next key
+                result = None
+                continue
+
+            if (not result) and (not self.memberswin.focus):
+                # if keystroke, then only of interest if memberswin has focus
+                continue
+
+            if not result:
+                # key is a keystroke, and memberswin has focus, handle it
+                result = self.memberswin.setkey(key)
+                # this returns "edit" if an editable field has been given focus
+                # could also be "submitted", "next", "previous" or a keystroke such
+                # as 9 for tab
+
+            while result == "edit":
+               # An editable field is in focus
+                inputfield = self.memberswin.inputfield()
+                if inputfield is None:
+                    break
+                result = await inputfield()
                 if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                     return result
+                if not result:
+                    break
+                if result in ("submitted", "next", "previous"):
+                    break
+                if isinstance(result, tuple):
+                    # a mouse press, go to outer loop with result set
+                    break
+                # inputfield has returned a keystroke, typically 9 for next tab
+                # which is now tested again with self.memberswin.setkey(key)
+                result = self.memberswin.setkey(result)
 
-                if result == "submitted":
-                    self.vector.state = 'Busy'
-                    # The vector has been submitted, draw vector state which is now busy
-                    widgets.draw_timestamp_state(self.control, self.tstatewin, self.vector)
-                    self.tstatewin.noutrefresh()
-                    self.vectors_btn.focus = True
-                    self.buttwin.clear()
-                    self.vectors_btn.draw()
-                    self.devices_btn.draw()
-                    self.messages_btn.draw()
-                    self.quit_btn.draw()
-                    self.buttwin.noutrefresh()
-                    curses.doupdate()
-                    result = None
-                elif result == "next":   # go to next button
-                    self.memberswin.defocus() # removes focus and calls draw and noutrefresh on memberswin
-                    self.vectors_btn.focus = True
-                    self.buttwin.clear()
-                    self.vectors_btn.draw()
-                    self.devices_btn.draw()
-                    self.messages_btn.draw()
-                    self.quit_btn.draw()
-                    self.buttwin.noutrefresh()
-                    curses.doupdate()
-                    result = None
-                elif result == "previous":   # go to prev button
-                    self.memberswin.defocus() # removes focus and calls draw and noutrefresh on memberswin
-                    self.quit_btn.focus = True
-                    self.buttwin.clear()
-                    self.vectors_btn.draw()
-                    self.devices_btn.draw()
-                    self.messages_btn.draw()
-                    self.quit_btn.draw()
-                    self.buttwin.noutrefresh()
-                    curses.doupdate()
-                    result = None
+            if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                return result
 
-
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            return "Quit"
+            if result == "submitted":
+                self.vector.state = 'Busy'
+                # The vector has been submitted, draw vector state which is now busy
+                widgets.draw_timestamp_state(self.control, self.tstatewin, self.vector)
+                self.tstatewin.noutrefresh()
+                self.vectors_btn.focus = True
+                self.buttwin.clear()
+                self.vectors_btn.draw()
+                self.devices_btn.draw()
+                self.messages_btn.draw()
+                self.quit_btn.draw()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
+                result = None
+            elif result == "next":   # go to next button
+                self.memberswin.defocus() # removes focus and calls draw and noutrefresh on memberswin
+                self.vectors_btn.focus = True
+                self.buttwin.clear()
+                self.vectors_btn.draw()
+                self.devices_btn.draw()
+                self.messages_btn.draw()
+                self.quit_btn.draw()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
+                result = None
+            elif result == "previous":   # go to prev button
+                self.memberswin.defocus() # removes focus and calls draw and noutrefresh on memberswin
+                self.quit_btn.focus = True
+                self.buttwin.clear()
+                self.vectors_btn.draw()
+                self.devices_btn.draw()
+                self.messages_btn.draw()
+                self.quit_btn.draw()
+                self.buttwin.noutrefresh()
+                curses.doupdate()
+                result = None
 
 
 # MembersWin is created within VectorScreen
@@ -3362,288 +3329,283 @@ class MembersWin(ParentScreen):
 
     def setkey(self, key):
         "Handles a key stroke"
-        try:
 
-            # check if a widget is in focus
-            if self.vector.perm != "ro":
-                # if ro, nothing to set on widgets
-                for widget in self.displayed:
-                    if widget.focus:
-                        # a widget is in focus
-                        result = widget.setkey(key)
-                        if result == "edit":
-                            # this sets an input awaitable
-                            self._inputfield = widget.inputfield
-                            return result
-                        else:
-                            self._inputfield = None
-                        if result:
-                            # if the widget returns a key. then continue with
-                            # checking it
-                            key = result
-                            break
-                        # the widget has handled the key, and returns None
-                        # to indicate no further checks required.
-                        return
-
-            if key == 10:
-                # Enter key pressed
-                if self.topmore_btn.focus:
-                    # scroll the window down
-                    self.topindex -= 1
-                    self.displayedwidgets()
-                    if not self.topindex:
-                        # self.topindex is now zero, so self.topmore_btn will not be shown
-                        # and the top widget should get focus
-                        topwidget = self.displayed[0]
-                        topwidget.focus = True
-                    self.draw()
-                    self.noutrefresh()
-                    curses.doupdate()
-                    return
-                elif self.botmore_btn.focus:
-                    # scroll the window up
-                    self.topindex += 1
-                    self.displayedwidgets()
-                    # displayedindex of last widget displayed
-                    displayedindex = len(self.displayed) - 1
-                    memberwidgetsindex = displayedindex + self.topindex
-                    if memberwidgetsindex == len(self.memberwidgets) -1:
-                        # the last widget is being displayed, so self.botmore_btn will not be shown
-                        # and the bottom widget should get focus
-                        botwidget = self.memberwidgets[-1]
-                        botwidget.focus = True
-                    self.draw()
-                    self.noutrefresh()
-                    curses.doupdate()
-                    return
-                elif self.vector.perm == "ro":
-                    # can scroll up or down, with more buttons,
-                    # but nothing to submit, so Enter key ignored
-                    return
-                elif self.submit_btn.focus:
-                    if submitvector(self.vector, self.memberwidgets):
-                        # vector has been submitted, remove focus from this window
-                        self.focus = False
-                        self.submit_btn.focus = False
-                        self.submit_btn.ok()   # draw submit button in green with ok
-                        self.submitwin.noutrefresh()
-                        curses.doupdate()
-                        time.sleep(0.3)      # blocking, to avoid screen being changed while this time elapses
-                        self.submitwin.clear()
-                        self.submit_btn.draw()
-                        self.cancel_btn.draw()
-                        self.submitwin.noutrefresh()
-                        # curses.doupdate() - not needed, called by vector window on submission
-                        return "submitted"
+        # check if a widget is in focus
+        if self.vector.perm != "ro":
+            # if ro, nothing to set on widgets
+            for widget in self.displayed:
+                if widget.focus:
+                    # a widget is in focus
+                    result = widget.setkey(key)
+                    if result == "edit":
+                        # this sets an input awaitable
+                        self._inputfield = widget.inputfield
+                        return result
                     else:
-                        # error condition
-                        self.submit_btn.alert()
-                        self.submitwin.noutrefresh()
-                        curses.doupdate()
-                        time.sleep(0.3)        # blocking, to avoid screen being changed while this time elapses
-                        self.submitwin.clear()
-                        self.submit_btn.draw()
-                        self.cancel_btn.draw()
-                        self.submitwin.noutrefresh()
-                        curses.doupdate()
-                        return
-                elif self.cancel_btn.focus:
-                    # Cancel chosen, reset all widgets, removing any value changes
-                    for memberwidget in self.displayed:
-                        memberwidget.reset()
-                    self.memwin.noutrefresh()
+                        self._inputfield = None
+                    if result:
+                        # if the widget returns a key. then continue with
+                        # checking it
+                        key = result
+                        break
+                    # the widget has handled the key, and returns None
+                    # to indicate no further checks required.
+                    return
+
+        if key == 10:
+            # Enter key pressed
+            if self.topmore_btn.focus:
+                # scroll the window down
+                self.topindex -= 1
+                self.displayedwidgets()
+                if not self.topindex:
+                    # self.topindex is now zero, so self.topmore_btn will not be shown
+                    # and the top widget should get focus
+                    topwidget = self.displayed[0]
+                    topwidget.focus = True
+                self.draw()
+                self.noutrefresh()
+                curses.doupdate()
+                return
+            elif self.botmore_btn.focus:
+                # scroll the window up
+                self.topindex += 1
+                self.displayedwidgets()
+                # displayedindex of last widget displayed
+                displayedindex = len(self.displayed) - 1
+                memberwidgetsindex = displayedindex + self.topindex
+                if memberwidgetsindex == len(self.memberwidgets) -1:
+                    # the last widget is being displayed, so self.botmore_btn will not be shown
+                    # and the bottom widget should get focus
+                    botwidget = self.memberwidgets[-1]
+                    botwidget.focus = True
+                self.draw()
+                self.noutrefresh()
+                curses.doupdate()
+                return
+            elif self.vector.perm == "ro":
+                # can scroll up or down, with more buttons,
+                # but nothing to submit, so Enter key ignored
+                return
+            elif self.submit_btn.focus:
+                if submitvector(self.vector, self.memberwidgets):
+                    # vector has been submitted, remove focus from this window
+                    self.focus = False
+                    self.submit_btn.focus = False
+                    self.submit_btn.ok()   # draw submit button in green with ok
+                    self.submitwin.noutrefresh()
+                    curses.doupdate()
+                    time.sleep(0.3)      # blocking, to avoid screen being changed while this time elapses
+                    self.submitwin.clear()
+                    self.submit_btn.draw()
+                    self.cancel_btn.draw()
+                    self.submitwin.noutrefresh()
+                    # curses.doupdate() - not needed, called by vector window on submission
+                    return "submitted"
+                else:
+                    # error condition
+                    self.submit_btn.alert()
+                    self.submitwin.noutrefresh()
+                    curses.doupdate()
+                    time.sleep(0.3)        # blocking, to avoid screen being changed while this time elapses
+                    self.submitwin.clear()
+                    self.submit_btn.draw()
+                    self.cancel_btn.draw()
+                    self.submitwin.noutrefresh()
+                    curses.doupdate()
+                    return
+            elif self.cancel_btn.focus:
+                # Cancel chosen, reset all widgets, removing any value changes
+                for memberwidget in self.displayed:
+                    memberwidget.reset()
+                self.memwin.noutrefresh()
+                curses.doupdate()
+                return
+            else:
+                # Enter pressed, but none of the above have handled it
+                return
+
+# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+
+        if key in (32, 9, 261, 338, 258):   # go to next button
+            if self.cancel_btn.focus:
+                # last in this window
+                return "next"
+            if self.submit_btn.focus:
+                self.submit_btn.focus = False
+                self.cancel_btn.focus = True
+                self.submit_btn.draw()
+                self.cancel_btn.draw()
+                self.submitwin.noutrefresh()
+                curses.doupdate()
+                return
+            if self.botmore_btn.focus:
+                if self.submit_btn.show:
+                    self.botmore_btn.focus = False
+                    self.botmore_btn.draw()
+                    self.submit_btn.focus = True
+                    self.submit_btn.draw()
+                    self.botmorewin.noutrefresh()
+                    self.submitwin.noutrefresh()
                     curses.doupdate()
                     return
                 else:
-                    # Enter pressed, but none of the above have handled it
-                    return
-
-# 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
-
-            if key in (32, 9, 261, 338, 258):   # go to next button
-                if self.cancel_btn.focus:
-                    # last in this window
                     return "next"
-                if self.submit_btn.focus:
-                    self.submit_btn.focus = False
-                    self.cancel_btn.focus = True
-                    self.submit_btn.draw()
-                    self.cancel_btn.draw()
-                    self.submitwin.noutrefresh()
+            # get the top widget being displayed
+            if self.topmore_btn.focus:
+                self.topmore_btn.focus = False
+                self.topmore_btn.draw()
+                nextwidget = self.displayed[0]
+                nextwidget.focus = True
+                nextwidget.draw()
+                self.topmorewin.noutrefresh()
+                self.memwin.noutrefresh()
+                curses.doupdate()
+                return
+
+            if (displayedindex := self.displayed_widgetindex_in_focus()) is not None:
+                # A widget is in focus
+                widget = self.displayed[displayedindex]
+                if displayedindex != len(self.displayed) - 1:
+                    # the displayed widget is not the last widget on the list of displayed widgets
+                    # so simply set the next widget into focus
+                    widget.focus = False
+                    widget.draw()
+                    nextwidget = self.displayed[displayedindex+1]
+                    nextwidget.focus = True
+                    nextwidget.draw()
+                    self.memwin.noutrefresh()
                     curses.doupdate()
                     return
-                if self.botmore_btn.focus:
+                # The widget in focus is the last of the displayed widgets
+                # Either scroll up, or jump to more ....
+                widgetindex = displayedindex + self.topindex
+                if widgetindex == len(self.memberwidgets) -1:
+                    # This is the last widget, the more button will not be shown, but the submit button may be
                     if self.submit_btn.show:
-                        self.botmore_btn.focus = False
-                        self.botmore_btn.draw()
+                        widget.focus = False
+                        widget.draw()
                         self.submit_btn.focus = True
                         self.submit_btn.draw()
-                        self.botmorewin.noutrefresh()
+                        self.memwin.noutrefresh()
                         self.submitwin.noutrefresh()
                         curses.doupdate()
                         return
-                    else:
-                        return "next"
-                # get the top widget being displayed
-                if self.topmore_btn.focus:
-                    self.topmore_btn.focus = False
-                    self.topmore_btn.draw()
-                    nextwidget = self.displayed[0]
-                    nextwidget.focus = True
-                    nextwidget.draw()
-                    self.topmorewin.noutrefresh()
-                    self.memwin.noutrefresh()
-                    curses.doupdate()
-                    return
-
-                if (displayedindex := self.displayed_widgetindex_in_focus()) is not None:
-                    # A widget is in focus
-                    widget = self.displayed[displayedindex]
-                    if displayedindex != len(self.displayed) - 1:
-                        # the displayed widget is not the last widget on the list of displayed widgets
-                        # so simply set the next widget into focus
-                        widget.focus = False
-                        widget.draw()
-                        nextwidget = self.displayed[displayedindex+1]
-                        nextwidget.focus = True
-                        nextwidget.draw()
-                        self.memwin.noutrefresh()
-                        curses.doupdate()
-                        return
-                    # The widget in focus is the last of the displayed widgets
-                    # Either scroll up, or jump to more ....
-                    widgetindex = displayedindex + self.topindex
-                    if widgetindex == len(self.memberwidgets) -1:
-                        # This is the last widget, the more button will not be shown, but the submit button may be
-                        if self.submit_btn.show:
-                            widget.focus = False
-                            widget.draw()
-                            self.submit_btn.focus = True
-                            self.submit_btn.draw()
-                            self.memwin.noutrefresh()
-                            self.submitwin.noutrefresh()
-                            curses.doupdate()
-                            return
-                        # last widget and the submit is not shown
-                        return "next"
-                    # last displayed widgets, but there are further widgets to be shown
-                    if key == 9:
-                        # tab key pressed, set the botmore button in focus
-                        widget.focus = False
-                        widget.draw()
-                        self.botmore_btn.focus = True
-                        self.botmore_btn.draw()
-                        self.memwin.noutrefresh()
-                        self.botmorewin.noutrefresh()
-                        curses.doupdate()
-                        return
-                    # next required, but not tab and not last widget,
-                    # so scroll the window up
+                    # last widget and the submit is not shown
+                    return "next"
+                # last displayed widgets, but there are further widgets to be shown
+                if key == 9:
+                    # tab key pressed, set the botmore button in focus
                     widget.focus = False
                     widget.draw()
-                    self.topindex += 1
-                    self.displayedwidgets()
-                    nextwidget = self.displayed[-1]
-                    nextwidget.focus = True
-                    self.draw()
-                    self.noutrefresh()
+                    self.botmore_btn.focus = True
+                    self.botmore_btn.draw()
+                    self.memwin.noutrefresh()
+                    self.botmorewin.noutrefresh()
                     curses.doupdate()
                     return
+                # next required, but not tab and not last widget,
+                # so scroll the window up
+                widget.focus = False
+                widget.draw()
+                self.topindex += 1
+                self.displayedwidgets()
+                nextwidget = self.displayed[-1]
+                nextwidget.focus = True
+                self.draw()
+                self.noutrefresh()
+                curses.doupdate()
+                return
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
-            if key in (353, 260, 339, 259):   # go to prev button
+        if key in (353, 260, 339, 259):   # go to prev button
 
-                if self.cancel_btn.focus:
-                    # go to submit button
-                    self.cancel_btn.focus = False
-                    self.submit_btn.focus = True
-                    self.cancel_btn.draw()
-                    self.submit_btn.draw()
-                    self.submitwin.noutrefresh()
-                    curses.doupdate()
-                    return
-                if self.submit_btn.focus:
-                    self.submit_btn.focus = False
-                    self.submit_btn.draw()
-                    self.submitwin.noutrefresh()
-                    if self.botmore_btn.show:
-                        self.botmore_btn.focus = True
-                        self.botmore_btn.draw()
-                        self.botmorewin.noutrefresh()
-                        curses.doupdate()
-                        return
-                    # set bottom displayed widget into focus
-                    widget = self.displayed[-1]
-                    widget.focus = True
-                    widget.draw()
-                    self.memwin.noutrefresh()
-                    curses.doupdate()
-                    return
-                if self.botmore_btn.focus:
-                    # set bottom displayed widget into focus
-                    self.botmore_btn.focus = False
+            if self.cancel_btn.focus:
+                # go to submit button
+                self.cancel_btn.focus = False
+                self.submit_btn.focus = True
+                self.cancel_btn.draw()
+                self.submit_btn.draw()
+                self.submitwin.noutrefresh()
+                curses.doupdate()
+                return
+            if self.submit_btn.focus:
+                self.submit_btn.focus = False
+                self.submit_btn.draw()
+                self.submitwin.noutrefresh()
+                if self.botmore_btn.show:
+                    self.botmore_btn.focus = True
                     self.botmore_btn.draw()
                     self.botmorewin.noutrefresh()
-                    widget = self.displayed[-1]
-                    widget.focus = True
+                    curses.doupdate()
+                    return
+                # set bottom displayed widget into focus
+                widget = self.displayed[-1]
+                widget.focus = True
+                widget.draw()
+                self.memwin.noutrefresh()
+                curses.doupdate()
+                return
+            if self.botmore_btn.focus:
+                # set bottom displayed widget into focus
+                self.botmore_btn.focus = False
+                self.botmore_btn.draw()
+                self.botmorewin.noutrefresh()
+                widget = self.displayed[-1]
+                widget.focus = True
+                widget.draw()
+                self.memwin.noutrefresh()
+                curses.doupdate()
+                return
+            if self.topmore_btn.focus:
+                # top button of this window
+                return "previous"
+            # So now check if a member button is in focus
+            if (displayedindex := self.displayed_widgetindex_in_focus()) is not None:
+                # A widget is in focus
+                widget = self.displayed[displayedindex]
+                if displayedindex:
+                    # not zero, so focus can just move up one
+                    widget.focus = False
                     widget.draw()
+                    prevwidget = self.displayed[displayedindex-1]
+                    prevwidget.focus = True
+                    prevwidget.draw()
                     self.memwin.noutrefresh()
                     curses.doupdate()
                     return
-                if self.topmore_btn.focus:
-                    # top button of this window
+                # showing top widget of the displayed widgets
+                # Either scroll down, or jump to more ....
+                # self.topindex is the widget index
+                if not self.topindex:
+                    # This is the first widget, the more button will not be shown
                     return "previous"
-                # So now check if a member button is in focus
-                if (displayedindex := self.displayed_widgetindex_in_focus()) is not None:
-                    # A widget is in focus
-                    widget = self.displayed[displayedindex]
-                    if displayedindex:
-                        # not zero, so focus can just move up one
-                        widget.focus = False
-                        widget.draw()
-                        prevwidget = self.displayed[displayedindex-1]
-                        prevwidget.focus = True
-                        prevwidget.draw()
-                        self.memwin.noutrefresh()
-                        curses.doupdate()
-                        return
-                    # showing top widget of the displayed widgets
-                    # Either scroll down, or jump to more ....
-                    # self.topindex is the widget index
-                    if not self.topindex:
-                        # This is the first widget, the more button will not be shown
-                        return "previous"
-                    # top displayed widgets, but more can be shown, if shift-tab pressed,
-                    # jump to topmore
-                    if key == 353:
-                        # shift tab key pressed, set the topmore button in focus
-                        widget.focus = False
-                        widget.draw()
-                        self.topmore_btn.focus = True
-                        self.topmore_btn.draw()
-                        self.memwin.noutrefresh()
-                        self.topmorewin.noutrefresh()
-                        curses.doupdate()
-                        return
-                    # prev required, but not shift-tab and not first widget,
-                    # so scroll the window down
+                # top displayed widgets, but more can be shown, if shift-tab pressed,
+                # jump to topmore
+                if key == 353:
+                    # shift tab key pressed, set the topmore button in focus
                     widget.focus = False
                     widget.draw()
-                    self.topindex -= 1
-                    self.displayedwidgets()
-                    prevwidget = self.displayed[0]
-                    prevwidget.focus = True
-                    self.draw()
-                    self.noutrefresh()
+                    self.topmore_btn.focus = True
+                    self.topmore_btn.draw()
+                    self.memwin.noutrefresh()
+                    self.topmorewin.noutrefresh()
                     curses.doupdate()
                     return
+                # prev required, but not shift-tab and not first widget,
+                # so scroll the window down
+                widget.focus = False
+                widget.draw()
+                self.topindex -= 1
+                self.displayedwidgets()
+                prevwidget = self.displayed[0]
+                prevwidget.focus = True
+                self.draw()
+                self.noutrefresh()
+                curses.doupdate()
+                return
 
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            return "Quit"
 
 
 def submitvector(vector, memberwidgets):
