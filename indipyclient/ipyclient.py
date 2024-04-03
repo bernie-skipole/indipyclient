@@ -345,8 +345,8 @@ class IPyClient(collections.UserDict):
             for element in txdata:
                 txdata.remove(element)
             txdata.text = ""
-            binarydata = ET.tostring(txdata, short_empty_elements=False)
-            self._logfp.write(binarydata)
+            binarydata = ET.tostring(txdata, short_empty_elements=False).split(b">")
+            self._logfp.write(binarydata[0]+b">")
         if self._level == 3:
             tag = txdata.tag
             for element in txdata:
@@ -410,8 +410,8 @@ class IPyClient(collections.UserDict):
             for element in data:
                 data.remove(element)
             data.text = ""
-            binarydata = ET.tostring(data, short_empty_elements=False)
-            self._logfp.write(binarydata)
+            binarydata = ET.tostring(data, short_empty_elements=False).split(b">")
+            self._logfp.write(binarydata[0]+b">")
         if self._level == 3:
             tag = data.tag
             for element in data:
