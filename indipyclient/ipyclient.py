@@ -89,12 +89,11 @@ class IPyClient(collections.UserDict):
     """This class can be used to create your own scripts or client, and provides
        a connection to an INDI service, with parsing of the XML protocol.
        You should create your own class, inheriting from this, and overriding the
-       rxevent method.  Use asyncio.run() to run the asyncrun() method and a call
-       will be made to the given indihost and indiport.
+       rxevent method.
        The argument clientdata provides any named arguments you may wish to pass
        into the object when instantiating it.
-       The IPyClient object is also a mapping of devicename to device object, populated
-       as devices and their vectors are learned from the INDI protocol."""
+       The IPyClient object is also a mapping of devicename to device object, which
+       is populated as devices and their vectors are learned from the INDI protocol."""
 
 
     def __init__(self, indihost="localhost", indiport=7624, **clientdata):
@@ -215,13 +214,13 @@ class IPyClient(collections.UserDict):
         """This injects a message into the received data, which will be
            picked up by the rxevent method. It is a way to set a message
            on to your client display, in the same way messages come from
-           the INDI service. If logging is enabled the message will be
-           written to the logfile"""
+           the INDI service. If logging is enabled the message will also
+           be written to the logfile"""
         try:
             timestamp = datetime.now(tz=timezone.utc)
             timestamp = timestamp.replace(tzinfo=None)
             if self._level:
-                reportmessage  = f"\n{timestamp.isoformat(sep='T')} {message}" 
+                reportmessage  = f"\n{timestamp.isoformat(sep='T')} {message}"
                 self._logfp.write(reportmessage.encode())
             root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
             event = events.Message(root, None, self)
@@ -653,10 +652,9 @@ class IPyClient(collections.UserDict):
 
     def set_vector_timeouts(self, timeout_enable=None, timeout_min=None, timeout_max=None):
         """Whenever you send updated values, a timer is started and if a timeout occurs
-           before the server responds with a new vector setting, a VectorTimeOut event
-           will be created, which you could choose to ignore, or take action such as
-           setting a vector Alert flag.
-           The protocol allows the server to set a timeout for each vector, this method
+           before the server responds, a VectorTimeOut event will be created, which you
+           could choose to ignore, or take action such as setting an Alert flag.
+           The protocol allows the server to suggest a timeout for each vector. This method
            allows you to set minimum and maximum timeouts, which should be given as integer
            values. If any parameter is not provided (left at None) then that value will not be
            changed. If timeout_enable is set to False, no VectorTimeOut events will occur.
@@ -717,7 +715,6 @@ class IPyClient(collections.UserDict):
             self.shutdown()
 
 
-
     def send_getProperties(self, devicename=None, vectorname=None):
         """Sends a getProperties request. On startup the IPyClient object
            will automatically send getProperties, so typically you will
@@ -756,7 +753,7 @@ class IPyClient(collections.UserDict):
 
 
     async def asyncrun(self):
-        """Runs this object to start communications."""
+        "Await this method to run the client."
         self._stop = False
         await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), return_exceptions=True)
         self.stopped = True

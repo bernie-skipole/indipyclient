@@ -16,6 +16,7 @@ The rest of this documentation details the classes, methods and attributes avail
 
 .. autoclass:: indipyclient.IPyClient
    :members:
+   :exclude-members: level, logfile, logfp
 
 
 The IPyClient object is a mapping of device name to device object. These objects are automatically created as data comes from the INDI server.
