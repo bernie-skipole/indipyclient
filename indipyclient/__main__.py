@@ -26,6 +26,7 @@ def main():
     """The main routine."""
 
     parser = argparse.ArgumentParser(usage="indipyclient [options]",
+                                     formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description="Terminal client to communicate to an INDI service.",
                                      epilog="""The BLOB's folder can also be set from within the session.
 Setting loglevel and logfile should only be used for brief
