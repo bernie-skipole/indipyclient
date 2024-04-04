@@ -3300,6 +3300,19 @@ class MembersWin(ParentScreen):
                 windex = index
                 break
 
+
+        if result == "set_on":  ###
+            # special case of a switch widget being turned on
+            # set all other widgets Off
+            for widget in self.memberwidgets:
+                if not widget.focus:
+                    widget.on.bold = False
+                    widget.off.bold = True
+                    widget.on.draw()
+                    widget.off.draw()
+            self.memwin.noutrefresh()
+            return "focused"
+
         if result:
             # remove focus from any other button
             for index, widget in enumerate(self.displayed):

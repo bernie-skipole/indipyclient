@@ -527,6 +527,8 @@ class SwitchMember(BaseMember):
                 self.off.bold = False
                 self.on.draw()
                 self.off.draw()
+                if self.vector.rule != 'AnyOfMany':  ### 'OneOfMany','AtMostOne' both require this to be the only on button
+                    return "set_on"
                 return "focused"
             else:
                 self._focus = True
