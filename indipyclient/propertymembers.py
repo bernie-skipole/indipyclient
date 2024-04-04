@@ -183,7 +183,7 @@ class ParentNumberMember(Member):
 
 
     def getformattedvalue(self):
-        """This method returns this members value as a float."""
+        """This method returns this members value as a string float."""
         return self.getformattedstring(self._membervalue)
 
 

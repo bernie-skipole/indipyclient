@@ -713,7 +713,7 @@ class NumberMember(BaseMember):
         else:
             self.linecount = 4
         # the newvalue to be edited and sent
-        self._newvalue = self.vector.getformattedvalue(self.name)
+        self._newvalue = self.member.getformattedvalue().strip()
 
                                     # window         text        row col, length of field
         self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
@@ -744,7 +744,7 @@ class NumberMember(BaseMember):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
             return
-        self._newvalue = self.member.getformattedvalue()
+        self._newvalue = self.member.getformattedvalue().strip()
         # draw the value to be edited
         self.edit_txt.text = self.newvalue()
         self.edit_txt.draw()
