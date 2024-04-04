@@ -157,6 +157,7 @@ class Text:
         self.col = col
         self._focus = False
         self._show = True
+        text = text.strip()
         if txtlen:
             # txtlen includes the two [ ] brackets
             if len(text) > txtlen-2:
@@ -864,7 +865,7 @@ class NumberMember(BaseMember):
             newfloat = self.member.getfloat(self._newvalue)
         except (ValueError, TypeError):
             # reset self._newvalue
-            self._newvalue = self.member.getformattedvalue()
+            self._newvalue = self.member.getformattedvalue().strip()
             return
         # check step, and round newfloat to nearest step value
         stepvalue = self.member.getfloat(self.member.step)
@@ -876,16 +877,16 @@ class NumberMember(BaseMember):
         # check not less than minimum
         if newfloat < minvalue:
             # reset self._newvalue to be the minimum, and accept this
-            self._newvalue = self.member.getformattedstring(minvalue)
+            self._newvalue = self.member.getformattedstring(minvalue).strip()
             return
         if self.member.max != self.member.min:
             maxvalue = self.member.getfloat(self.member.max)
             if newfloat > maxvalue:
                 # reset self._newvalue to be the maximum, and accept this
-                self._newvalue = self.member.getformattedstring(maxvalue)
+                self._newvalue = self.member.getformattedstring(maxvalue).strip()
                 return
         # reset self._newvalue to the correct format, and accept this
-        self._newvalue = self.member.getformattedstring(newfloat)
+        self._newvalue = self.member.getformattedstring(newfloat).strip()
 
 
 # <!ATTLIST defTextVector

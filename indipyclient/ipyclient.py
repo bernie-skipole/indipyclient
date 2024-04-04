@@ -170,7 +170,9 @@ class IPyClient(collections.UserDict):
     def setlogging(self, level, logfile):
         """Sets the logging level and logfile, returns the level, which will be None on failure.
            As default, the level is None, indicating no logging. Apart from None, level should
-           be an integer, one of 1, 2, 3 or 4"""
+           be an integer, one of 1, 2, 3 or 4
+           Be warned, there is no logfile ration, files can become large.
+           Note: it may be useful in another terminal to try tail -f logfile"""
         try:
             if self._logfp:
                 self._logfp.close()
@@ -184,7 +186,7 @@ class IPyClient(collections.UserDict):
                 return None
 
             logfile = pathlib.Path(logfile).expanduser().resolve()
-            self._logfp = open(logfile, "wb")
+            self._logfp = open(logfile, "wb", buffering=0)
             if not self._logfp.writable():
                 self._logfp.close()
                 self._level = None
