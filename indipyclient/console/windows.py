@@ -3343,6 +3343,18 @@ class MembersWin(ParentScreen):
                         return result
                     else:
                         self._inputfield = None
+                    if result == "set_on":  ###
+                        # special case of a switch widget being turned on
+                        # set all other widgets Off
+                        for widget in self.memberwidgets:
+                            if not widget.focus:
+                                widget.on.bold = False
+                                widget.off.bold = True
+                                widget.on.draw()
+                                widget.off.draw()
+                        self.memwin.noutrefresh()
+                        curses.doupdate()
+                        return
                     if result:
                         # if the widget returns a key. then continue with
                         # checking it

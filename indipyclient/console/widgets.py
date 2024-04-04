@@ -582,6 +582,8 @@ class SwitchMember(BaseMember):
                 self.off.bold = False
                 self.on.draw()
                 self.off.draw()
+                if self.vector.rule != 'AnyOfMany':  ### 'OneOfMany','AtMostOne' both require this to be the only on button
+                    return "set_on"
             elif key in (338, 339, 258, 259):   # 338 page down, 258 down arrow, 339 page up, 259 up arrow
                 # go to next or previous member widget
                 self.on.focus = False
