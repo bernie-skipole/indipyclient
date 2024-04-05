@@ -357,6 +357,8 @@ class BaseMember:
         self._focus = False
         # if close string is set, it becomes the return value from input routines
         self._close = ""
+        # self._newvalue is the value edited
+        self._newvalue = ""
 
     def close(self, value):
         self._close = value
@@ -392,6 +394,9 @@ class BaseMember:
         self.window.addstr( self.startline, 1, displaylabel, curses.A_BOLD )
         self.name_btn.row = self.startline+1
         self.name_btn.draw()
+
+    def newvalue(self):
+        return self._newvalue
 
 
     def setkey(self, key):
@@ -707,7 +712,7 @@ class NumberMember(BaseMember):
         else:
             self.linecount = 4
         # the newvalue to be edited and sent
-        self._newvalue = self.member.getformattedvalue().strip()
+        self._newvalue = self.member.getformattedvalue()
 
                                     # window         text        row col, length of field
         self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
@@ -718,6 +723,7 @@ class NumberMember(BaseMember):
 
     @focus.setter
     def focus(self, value):
+        "Sets focus to be either False, or if True, set the name_btn focus as True"
         self._focus = value
         self.name_btn.focus = value
         # and regardless of value, set self.edit_txt to False, but check number ok
@@ -727,20 +733,13 @@ class NumberMember(BaseMember):
             self.edit_txt.focus = False
 
 
-    def newvalue(self):
-        value = self._newvalue.strip()
-        if len(value) > 16:
-            value = value[:16]
-        return value
-
-
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
             return
-        self._newvalue = self.member.getformattedvalue().strip()
+        self._newvalue = self.member.getformattedvalue()
         # draw the value to be edited
-        self.edit_txt.text = self.newvalue()
+        self.edit_txt.text = self._newvalue
         self.edit_txt.draw()
 
 
@@ -751,6 +750,8 @@ class NumberMember(BaseMember):
         text = self.member.getformattedvalue().strip()
         if len(text) > 16:
             text = text[:16]
+        else:
+            text = text.ljust(16)
         # draw the value
         self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
 
@@ -846,10 +847,9 @@ class NumberMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9 # tab key for next item
-            value = editstring.getnumber(key)
-            self._newvalue = value.strip()
+            self._newvalue = editstring.getnumber(key)
             # set new value back into self.edit_txt
-            self.edit_txt.text = value
+            self.edit_txt.text = self._newvalue
             self.edit_txt.draw()
             self.window.noutrefresh()
             editstring.movecurs()
@@ -859,12 +859,14 @@ class NumberMember(BaseMember):
     def checknumber(self):
         "set self._newvalue, limiting it to correct range"
         # self._newvalue is the new value input
+        self.control.client.log(self._newvalue)
         try:
             newfloat = self.member.getfloat(self._newvalue)
         except (ValueError, TypeError):
             # reset self._newvalue
-            self._newvalue = self.member.getformattedvalue().strip()
+            self._newvalue = self.member.getformattedvalue()
             return
+        self.control.client.log(str(newfloat))
         # check step, and round newfloat to nearest step value
         stepvalue = self.member.getfloat(self.member.step)
         minvalue = self.member.getfloat(self.member.min)
@@ -875,16 +877,19 @@ class NumberMember(BaseMember):
         # check not less than minimum
         if newfloat < minvalue:
             # reset self._newvalue to be the minimum, and accept this
-            self._newvalue = self.member.getformattedstring(minvalue).strip()
+            self._newvalue = self.member.getformattedstring(minvalue)
             return
         if self.member.max != self.member.min:
             maxvalue = self.member.getfloat(self.member.max)
             if newfloat > maxvalue:
                 # reset self._newvalue to be the maximum, and accept this
-                self._newvalue = self.member.getformattedstring(maxvalue).strip()
+                self._newvalue = self.member.getformattedstring(maxvalue)
                 return
         # reset self._newvalue to the correct format, and accept this
-        self._newvalue = self.member.getformattedstring(newfloat).strip()
+        self.control.client.log(str(newfloat))
+        self._newvalue = self.member.getformattedstring(newfloat)
+        self.control.client.log(self._newvalue)
+
 
 
 # <!ATTLIST defTextVector
@@ -930,11 +935,6 @@ class TextMember(BaseMember):
         self.name_btn.focus = value
         self.edit_txt.focus = False
 
-    def newvalue(self):
-        value = self._newvalue.strip()
-        if len(value) > 30:
-            value = value[:30]
-        return value
 
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
@@ -942,7 +942,7 @@ class TextMember(BaseMember):
             return
         self._newvalue = self.member.membervalue
         # draw the value to be edited
-        self.edit_txt.text = self.newvalue()
+        self.edit_txt.text = self._newvalue
         self.edit_txt.draw()
 
 
@@ -950,9 +950,11 @@ class TextMember(BaseMember):
         super().draw(startline)
 
         # draw the text
-        text = self.member.membervalue.strip()
+        text = self.member.membervalue
         if len(text) > 30:
             text = text[:30]
+        else:
+            text = text.ljust(30)
         # draw the value
         self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
 
@@ -1044,10 +1046,9 @@ class TextMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9 # tab key for next item
-            value = editstring.gettext(key)
-            self._newvalue = value.strip()
+            self._newvalue = editstring.gettext(key)
             # set new value back into self.edit_txt
-            self.edit_txt.text = value
+            self.edit_txt.text = self._newvalue
             self.edit_txt.draw()
             self.window.noutrefresh()
             editstring.movecurs()
@@ -1086,8 +1087,6 @@ class BLOBMember(BaseMember):
             self.linecount = 3
         else:
             self.linecount = 4
-        # the filename to be edited and sent
-        self._newvalue = ""
         # length of editable field, start with nominal 40
                                # window         text        row                col           length of field
         self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-55, txtlen=40)
@@ -1116,21 +1115,13 @@ class BLOBMember(BaseMember):
         else:
             return ""
 
-    def newvalue(self):
-        if not self._newvalue:
-            return ""
-        value = self._newvalue.strip()
-        if len(value) > 40:
-            value = value[:40]
-        return value
-
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
         if self.vector.perm == "ro":
             return
         self._newvalue = self.member.membervalue
         # draw the value to be edited
-        self.edit_txt.text = self.newvalue()
+        self.edit_txt.text = self._newvalue
         self.edit_txt.draw()
 
 
@@ -1338,10 +1329,9 @@ class BLOBMember(BaseMember):
                 # which gets a key, and as this widget is still in focus
                 # calls this widgets setkey method
                 return
-            value = editstring.gettext(key)
-            self._newvalue = value.strip()
+            self._newvalue = editstring.gettext(key)
             # set new value back into self.edit_txt
-            self.edit_txt.text = value
+            self.edit_txt.text = self._newvalue
             self.edit_txt.draw()
             self.window.noutrefresh()
             editstring.movecurs()
