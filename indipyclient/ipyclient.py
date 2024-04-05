@@ -233,6 +233,16 @@ class IPyClient(collections.UserDict):
                 self._logfp.write(bytex)
 
 
+    def log(self, message):
+        """If logging is enabled, this writes the message, with a timestamp
+           to the logfile"""
+        if self._level:
+            timestamp = datetime.now(tz=timezone.utc)
+            timestamp = timestamp.replace(tzinfo=None)
+            reportmessage  = f"\n{timestamp.isoformat(sep='T')} {message}"
+            self._logfp.write(reportmessage.encode())
+
+
     def enabledlen(self):
         "Returns the number of enabled devices"
         return sum(map(lambda x:1 if x.enable else 0, self.data.values()))
@@ -266,6 +276,8 @@ class IPyClient(collections.UserDict):
                     await self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionResetError:
                     await self.report("Error: Connection Lost")
+                except Exception:
+                    await self.report("Error: Connection failed")
                 self._clear_connection()
                 if self._stop:
                     break

@@ -165,7 +165,7 @@ class Text:
             elif len(text) == txtlen-2:
                 self._text = text
             else:
-                self._text = text.ljust(txtlen-2)
+                self._text = text.ljust(txtlen-2)  # pads space to right of the text
             self.txtlen = txtlen
         else:
             # no txtlen given
@@ -184,7 +184,7 @@ class Text:
         elif len(text) == self.txtlen-2:
             self._text = text
         else:
-            self._text = text.ljust(self.txtlen-2)
+            self._text = text.ljust(self.txtlen-2)  # pads space to right of the text
 
 
     def __contains__(self, mouse):
