@@ -157,16 +157,11 @@ class Text:
         self.col = col
         self._focus = False
         self._show = True
-        text = text.strip()
         if txtlen:
             # txtlen includes the two [ ] brackets
-            if len(text) > txtlen-2:
-                self._text = shorten(text, width=txtlen-2, placeholder="...")
-            elif len(text) == txtlen-2:
-                self._text = text
-            else:
-                self._text = text.ljust(txtlen-2)  # pads space to right of the text
             self.txtlen = txtlen
+            # call text property setter
+            self.text = text
         else:
             # no txtlen given
             self._text = text
@@ -175,7 +170,7 @@ class Text:
 
     @property
     def text(self):
-        return self._text.strip()
+        return self._text
 
     @text.setter
     def text(self, text):
@@ -255,14 +250,13 @@ class EditString():
         self.startcol = startcol
         self.endcol = endcol
         self.length = endcol - startcol + 1
-        self.text = text.strip()
-        if len(self.text) > self.length:
-            self.text = self.text[:self.length]
+        if len(text) > self.length:
+            self.text = text[:self.length]
+        else:
+            # pad text with right hand spaces
+            self.text = text.ljust(self.length)
         # put curser at end of text
-        self.stringpos = len(self.text)
-
-        # pad text with right hand spaces
-        self.text = self.text.ljust(self.length)
+        self.stringpos = len(self.text.rstrip())
         self.movecurs()
 
     def insertch(self, ch):
