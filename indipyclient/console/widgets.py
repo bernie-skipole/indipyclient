@@ -859,14 +859,12 @@ class NumberMember(BaseMember):
     def checknumber(self):
         "set self._newvalue, limiting it to correct range"
         # self._newvalue is the new value input
-        self.control.client.log(self._newvalue)
         try:
             newfloat = self.member.getfloat(self._newvalue)
         except (ValueError, TypeError):
             # reset self._newvalue
             self._newvalue = self.member.getformattedvalue()
             return
-        self.control.client.log(str(newfloat))
         # check step, and round newfloat to nearest step value
         stepvalue = self.member.getfloat(self.member.step)
         minvalue = self.member.getfloat(self.member.min)
@@ -886,10 +884,7 @@ class NumberMember(BaseMember):
                 self._newvalue = self.member.getformattedstring(maxvalue)
                 return
         # reset self._newvalue to the correct format, and accept this
-        self.control.client.log(str(newfloat))
         self._newvalue = self.member.getformattedstring(newfloat)
-        self.control.client.log(self._newvalue)
-
 
 
 # <!ATTLIST defTextVector
