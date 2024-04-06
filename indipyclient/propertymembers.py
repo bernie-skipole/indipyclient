@@ -125,12 +125,12 @@ class ParentNumberMember(Member):
         self.max = max
         self.step = step
 
-
     def getfloatvalue(self):
         """The INDI spec allows a number of different number formats, this method returns
            this members value as a float.
            If an error occurs while parsing the number, a TypeError exception is raised."""
         return self.getfloat(self._membervalue)
+
 
     def getfloat(self, value):
         """The INDI spec allows a number of different number formats, given a number,
@@ -179,64 +179,70 @@ class ParentNumberMember(Member):
         return floatvalue
 
 
-    def getoldfloat(self, value):
-        """The INDI spec allows a number of different number formats, given a number,
-           this returns a float.
-           If an error occurs while parsing the number, a TypeError exception is raised."""
-        try:
-            if isinstance(value, float):
-                return value
-            if isinstance(value, int):
-                return float(value)
-            if not isinstance(value, str):
-                raise TypeError
-            # negative is True, if the value is negative
-            value = value.strip()
-            negative = value.startswith("-")
-            if negative:
-                value = value.lstrip("-")
-            # Is the number provided in sexagesimal form?
-            if value == "":
-                parts = [0, 0, 0]
-            elif " " in value:
-                parts = value.split(" ")
-            elif ":" in value:
-                parts = value.split(":")
-            elif ";" in value:
-                parts = value.split(";")
-            else:
-                # not sexagesimal
-                parts = [value, "0", "0"]
-            # Any missing parts should have zero
-            if len(parts) == 2:
-                # assume seconds are missing, set to zero
-                parts.append("0")
-            assert len(parts) == 3
-            number_strings = list(x if x else "0" for x in parts)
-            # convert strings to integers or floats
-            number_list = []
-            for part in number_strings:
-                try:
-                    num = int(part)
-                except ValueError:
-                    num = float(part)
-                number_list.append(num)
-            floatvalue = number_list[0] + (number_list[1]/60) + (number_list[2]/360)
-            if negative:
-                floatvalue = -1 * floatvalue
-        except:
-            raise TypeError("Error: Unable to parse number value")
-        return floatvalue
-
-
-
-
     def getformattedvalue(self):
         """This method returns this members value as a string float."""
         return self.getformattedstring(self._membervalue)
 
 
     def getformattedstring(self, value):
+        """Given a number this returns a formatted string"""
+        try:
+            value = self.getfloat(value)
+            if (not self.format.startswith("%")) or (not self.format.endswith("m")):
+                return self.format % value
+            # sexagesimal
+            # format string is of the form  %<w>.<f>m
+            w,f = self.format.split(".")
+            w = w.lstrip("%")
+            f = f.rstrip("m")
+
+            if value<0:
+                negative = True
+            else:
+                negative = False
+            absvalue = abs(value)
+
+            # get integer part and fraction part
+            degrees = math.floor(absvalue)
+            minutes = (absvalue - degrees) * 60.0
+
+            # number list will be degrees, minutes, seconds
+            number_list = [str(degrees)]    # integer degrees
+
+            if f == "3":   # three fractional values including the colon ":mm"
+                # create nearest integer minutes
+                number_list.append(str(round(minutes)).rjust(2, '0'))
+            elif f == "5":  # five fractional values including the colon and decimal point ":mm.m"
+                number_list.append(str(round(minutes,1)).rjust(4, '0'))
+            else:
+                integerminutes = math.floor(minutes)
+                number_list.append(str(integerminutes).rjust(2, '0'))
+                seconds = (minutes - integerminutes) * 60.0
+
+                if f == "6":    # six fractional values including two colons ":mm:ss"
+                    number_list.append(str(round(seconds)).rjust(2, '0'))
+                elif f == "8":  # eight fractional values including two colons and decimal point ":mm:ss.s"
+                    number_list.append(str(round(seconds,1)).rjust(4, '0'))
+                else:
+                    fn = int(f)
+                    if fn>8 and fn<15:    # make maximum of 14
+                        secondsvalue = round(seconds,fn-7)
+                        number_list.append(f"{seconds:0{fn-4}.{fn-7}f}") # ensure trailing zeros
+                    else:
+                        # unable to parse format string
+                        raise TypeError("Error: Unable to parse number value")
+
+            absstring = ":".join(number_list)
+            valstring = "-"+absstring if negative else absstring
+
+        except:
+            raise TypeError("Error: Unable to parse number value")
+
+        # w is the overall length of the string, prepend with spaces to make the length up to w
+        return valstring.rjust(int(w), ' ')
+
+
+    def oldgetformattedstring(self, value):
         """Given a number this returns a formatted string"""
         value = self.getfloat(value)
         if (not self.format.startswith("%")) or (not self.format.endswith("m")):
@@ -293,7 +299,6 @@ class ParentNumberMember(Member):
         if w>l:
             number = " "*(w-l) + number
         return number
-
 
 
 class NumberMember(ParentNumberMember):
