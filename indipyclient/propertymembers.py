@@ -280,66 +280,6 @@ class ParentNumberMember(Member):
         raise TypeError("Error: Unable to process number format")
 
 
-
-    def oldgetformattedstring(self, value):
-        """Given a number this returns a formatted string"""
-        value = self.getfloat(value)
-        if (not self.format.startswith("%")) or (not self.format.endswith("m")):
-            return self.format % value
-        # sexagesimal format
-        if value<0:
-            negative = True
-            value = abs(value)
-        else:
-            negative = False
-        # number list will be degrees, minutes, seconds
-        number_list = [0,0,0]
-        if isinstance(value, int):
-            number_list[0] = value
-        else:
-            # get integer part and fraction part
-            fractdegrees, degrees = math.modf(value)
-            number_list[0] = int(degrees)
-            mins = 60*fractdegrees
-            fractmins, mins = math.modf(mins)
-            number_list[1] = int(mins)
-            number_list[2] = 60*fractmins
-
-        # so number list is a valid degrees, minutes, seconds
-        # degrees
-        if negative:
-            number = f"-{number_list[0]}:"
-        else:
-            number = f"{number_list[0]}:"
-        # format string is of the form  %<w>.<f>m
-        w,f = self.format.split(".")
-        w = w.lstrip("%")
-        f = f.rstrip("m")
-        if (f == "3") or (f == "5"):
-            # no seconds, so create minutes value
-            minutes = float(number_list[1]) + number_list[2]/60.0
-            if f == "5":
-                number += f"{minutes:04.1f}"
-            else:
-                number += f"{minutes:02.0f}"
-        else:
-            number += f"{number_list[1]:02d}:"
-            seconds = float(number_list[2])
-            if f == "6":
-                number += f"{seconds:02.0f}"
-            elif f == "8":
-                number += f"{seconds:04.1f}"
-            else:
-                number += f"{seconds:05.2f}"
-
-        # w is the overall length of the string, prepend with spaces to make the length up to w
-        w = int(w)
-        l = len(number)
-        if w>l:
-            number = " "*(w-l) + number
-        return number
-
-
 class NumberMember(ParentNumberMember):
     """Contains a number, the attributes inform the client how the number should be
        displayed.
