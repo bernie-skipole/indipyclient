@@ -206,40 +206,79 @@ class ParentNumberMember(Member):
             degrees = math.floor(absvalue)
             minutes = (absvalue - degrees) * 60.0
 
-            # number list will be degrees, minutes, seconds
-            number_list = [str(degrees)]    # integer degrees
-
             if f == "3":   # three fractional values including the colon ":mm"
                 # create nearest integer minutes
-                number_list.append(str(round(minutes)).rjust(2, '0'))
-            elif f == "5":  # five fractional values including the colon and decimal point ":mm.m"
-                number_list.append(str(round(minutes,1)).rjust(4, '0'))
-            else:
-                integerminutes = math.floor(minutes)
-                number_list.append(str(integerminutes).rjust(2, '0'))
-                seconds = (minutes - integerminutes) * 60.0
+                minutes = round(minutes)
+                if minutes == 60:
+                    minutes = 0
+                    degrees = degrees + 1
+                valstring = f"{'-' if negative else ''}{degrees}:{minutes:02d}"
+                # w is the overall length of the string, prepend with spaces to make the length up to w
+                if w:
+                    return valstring.rjust(int(w), ' ')
+                # it is possible w is an empty string
+                return valstring
 
-                if f == "6":    # six fractional values including two colons ":mm:ss"
-                    number_list.append(str(round(seconds)).rjust(2, '0'))
-                elif f == "8":  # eight fractional values including two colons and decimal point ":mm:ss.s"
-                    number_list.append(str(round(seconds,1)).rjust(4, '0'))
-                else:
-                    fn = int(f)
-                    if fn>8 and fn<15:    # make maximum of 14
-                        secondsvalue = round(seconds,fn-7)
-                        number_list.append(f"{seconds:0{fn-4}.{fn-7}f}") # ensure trailing zeros
-                    else:
-                        # unable to parse format string
-                        raise TypeError("Error: Unable to parse number value")
+            if f == "5":  # five fractional values including the colon and decimal point ":mm.m"
+                minutes = round(minutes,1)
+                if minutes == 60.0:
+                    minutes = 0.0
+                    degrees = degrees + 1
+                valstring = f"{'-' if negative else ''}{degrees}:{minutes:04.1f}"
+                if w:
+                    return valstring.rjust(int(w), ' ')
+                return valstring
 
-            absstring = ":".join(number_list)
-            valstring = "-"+absstring if negative else absstring
+            integerminutes = math.floor(minutes)
+            seconds = (minutes - integerminutes) * 60.0
+
+            if f == "6":    # six fractional values including two colons ":mm:ss"
+                seconds = round(seconds)
+                if seconds == 60:
+                    seconds = 0
+                    integerminutes = integerminutes + 1
+                    if integerminutes == 60:
+                        integerminutes = 0
+                        degrees = degrees + 1
+                valstring = f"{'-' if negative else ''}{degrees}:{integerminutes:02d}:{seconds:02d}"
+                if w:
+                    return valstring.rjust(int(w), ' ')
+                return valstring
+
+
+            if f == "8":    # eight fractional values including two colons and decimal point ":mm:ss.s"
+                seconds = round(seconds,1)
+                if seconds == 60.0:
+                    seconds = 0.0
+                    integerminutes = integerminutes + 1
+                    if integerminutes == 60:
+                        integerminutes = 0
+                        degrees = degrees + 1
+                valstring = f"{'-' if negative else ''}{degrees}:{integerminutes:02d}:{seconds:04.1f}"
+                if w:
+                    return valstring.rjust(int(w), ' ')
+                return valstring
+
+            fn = int(f)
+            if fn>8 and fn<15:    # make maximum of 14
+                seconds = round(seconds,1)
+                if seconds == 60.0:
+                    seconds = 0.0
+                    integerminutes = integerminutes + 1
+                    if integerminutes == 60:
+                        integerminutes = 0
+                        degrees = degrees + 1
+                valstring = f"{'-' if negative else ''}{degrees}:{integerminutes:02d}:{seconds:0{fn-4}.{fn-7}f}"
+                if w:
+                    return valstring.rjust(int(w), ' ')
+                return valstring
 
         except:
             raise TypeError("Error: Unable to parse number value")
 
-        # w is the overall length of the string, prepend with spaces to make the length up to w
-        return valstring.rjust(int(w), ' ')
+        # no other options accepted
+        raise TypeError("Error: Unable to process number format")
+
 
 
     def oldgetformattedstring(self, value):
