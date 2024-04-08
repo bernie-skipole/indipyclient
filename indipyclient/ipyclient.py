@@ -170,8 +170,8 @@ class IPyClient(collections.UserDict):
     def setlogging(self, level, logfile):
         """Sets the logging level and logfile, returns the level, which will be None on failure.
            As default, the level is None, indicating no logging. Apart from None, level should
-           be an integer, one of 1, 2, 3 or 4
-           Be warned, there is no logfile ration, files can become large.
+           be an integer, one of 1, 2, 3 or 4.
+           Be warned, there is no logfile rotation, files can become large.
            Note: it may be useful in another terminal to try tail -f logfile"""
         try:
             if self._logfp:
@@ -668,11 +668,12 @@ class IPyClient(collections.UserDict):
         """Whenever you send updated values, a timer is started and if a timeout occurs
            before the server responds, a VectorTimeOut event will be created, which you
            could choose to ignore, or take action such as setting an Alert flag.
-           The protocol allows the server to suggest a timeout for each vector. This method
-           allows you to set minimum and maximum timeouts, which should be given as integer
-           values. If any parameter is not provided (left at None) then that value will not be
-           changed. If timeout_enable is set to False, no VectorTimeOut events will occur.
-           As default, timeouts are enabled, minimum is set to 2 seconds, maximum 10 seconds."""
+           The INDI protocol allows the server to suggest a timeout for each vector. This
+           method allows you to set minimum and maximum timeouts which restricts the
+           suggested values. These should be given as integer seconds. If any parameter
+           is not provided (left at None) then that value will not be changed. If
+           timeout_enable is set to False, no VectorTimeOut events will occur. As default,
+           timeouts are enabled, minimum is set to 2 seconds, maximum 10 seconds."""
         if not timeout_enable is None:
             self.vector_timeout_enable = timeout_enable
         if not timeout_min is None:
