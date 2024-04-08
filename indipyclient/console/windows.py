@@ -2196,6 +2196,7 @@ class VectorListWin(ParentScreen):
         # change is a flag to indicate the window needs to be redrawn
 
         if (groupname != self.groupname) or (devicename != self.devicename):
+            self.topindex = 0
             change = True
 
         self.devicename = devicename
