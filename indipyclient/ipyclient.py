@@ -784,7 +784,7 @@ class Device(collections.UserDict):
         # This device name
         self.devicename = devicename
 
-        # this is a dictionary of property name to propertyvector this device owns
+        # this is a dictionary of vector name to vector this device owns
         self.data = {}
 
     @property

@@ -18,19 +18,53 @@ The rest of this documentation details the classes, methods and attributes avail
    :members:
    :exclude-members: level, logfile, logfp
 
+Attributes
+----------
 
 Attributes of the IPyClient object are:
 
+**self.indihost**
 
+The host as given in the class argument.
 
+**self.indiport**
 
-The IPyClient object is a mapping of device name to device object. These Device objects are automatically created as data comes from the INDI server.
+The port as given in the class argument.
+
+**self.clientdata**
+
+Dictionary of any named arguments.
+
+**self.connected**
+
+True if a connection has been made.
+
+**self.stopped**
+
+True when asyncrun is finished.
+
+**self.level**
+
+Read only attribute, set via setlogging method.
+
+**self.logfile**
+
+Read only attribute, set via setlogging method.
+
+**self.logfp**
+
+Read only attribute, set via setlogging method.
+
+The IPyClient object is also mapping of device name to device object. These Device objects are automatically created as data comes from the INDI server.
+
 
 Device
 ======
 
 .. autoclass:: indipyclient.ipyclient.Device
 
+Attributes
+----------
 
 The attributes of the device object are:
 

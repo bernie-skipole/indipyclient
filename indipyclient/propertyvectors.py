@@ -14,6 +14,19 @@ from .error import ParseException
 
 class Vector(collections.UserDict):
 
+    """This class is the parent of the PropertyVector class, which in turn
+       is the parent of SwitchVector, LightVector, TextVector, NumberVector
+       and BLOBVector classes.
+       It is a mapping of membername to member value.
+       Should you use the ipyclient.snapshot method to create a snapshot,
+       the snapshot device will contain objects of this vector class. Which
+       does not have the methods of SwitchVector, etc..
+       This allows the snapshot to be read without risk of creating any
+       side effects.
+       """
+
+
+
     def __init__(self, name, label, group, state, timestamp, message):
         super().__init__()
 
