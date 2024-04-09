@@ -18,8 +18,7 @@ The rest of this documentation details the classes, methods and attributes avail
    :members:
    :exclude-members: level, logfile, logfp
 
-Attributes
-----------
+**Attributes**
 
 Attributes of the IPyClient object are:
 
@@ -58,18 +57,3 @@ Read only attribute, set via setlogging method.
 The IPyClient object is also mapping of device name to device object. These Device objects are automatically created as data comes from the INDI server.
 
 
-Device
-======
-
-.. autoclass:: indipyclient.ipyclient.Device
-
-Attributes
-----------
-
-The attributes of the device object are:
-
-**self.devicename**
-
-**self.enable**
-
-This will normally be True, but will become False if the INDI server sends a request to delete the device.

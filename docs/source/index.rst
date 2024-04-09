@@ -9,6 +9,7 @@ indipyclient = A pure Python INDI terminal client
    usage/introduction
    usage/installation
    usage/ipyclient
+   usage/devices
    usage/propertyvectors
    usage/references
 
