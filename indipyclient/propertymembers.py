@@ -1,7 +1,7 @@
 
 import xml.etree.ElementTree as ET
 
-import sys, math, pathlib
+import sys, pathlib
 
 from .error import ParseException
 
@@ -203,7 +203,7 @@ class ParentNumberMember(Member):
             absvalue = abs(value)
 
             # get integer part and fraction part
-            degrees = math.floor(absvalue)
+            degrees = int(absvalue)
             minutes = (absvalue - degrees) * 60.0
 
             if f == "3":   # three fractional values including the colon ":mm"
@@ -229,7 +229,7 @@ class ParentNumberMember(Member):
                     return valstring.rjust(int(w), ' ')
                 return valstring
 
-            integerminutes = math.floor(minutes)
+            integerminutes = int(minutes)
             seconds = (minutes - integerminutes) * 60.0
 
             if f == "6":    # six fractional values including two colons ":mm:ss"

@@ -19,13 +19,23 @@ The rest of this documentation details the classes, methods and attributes avail
    :exclude-members: level, logfile, logfp
 
 
-The IPyClient object is a mapping of device name to device object. These objects are automatically created as data comes from the INDI server.
+Attributes of the IPyClient object are:
+
+
+
+
+The IPyClient object is a mapping of device name to device object. These Device objects are automatically created as data comes from the INDI server.
+
+Device
+======
 
 .. autoclass:: indipyclient.ipyclient.Device
 
 
 The attributes of the device object are:
 
-self.devicename
+**self.devicename**
 
-self.enable - this will normally be True, but will become False if the INDI server sends a request to delete the device.
+**self.enable**
+
+This will normally be True, but will become False if the INDI server sends a request to delete the device.
