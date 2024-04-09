@@ -8,6 +8,22 @@ values on a client.
 .. autoclass:: indipyclient.propertyvectors.Vector
    :members: members, memberlabel
 
+
+So for example, you will have your IPyClient object, and as it is a mapping of device name to devices, you have:
+
+device = ipyclient[devicename]
+
+Devices are mappings of vectors:
+
+vector = ipyclient[devicename][vectorname]
+
+Vectors are mappings of member values:
+
+value = ipyclient[devicename][vectorname][membername]
+
+These mappings obey dictionary methods allowing you to iterate over items, keys and values.
+
+
 Attributes
 ----------
 
