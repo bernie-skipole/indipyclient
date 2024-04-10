@@ -88,7 +88,7 @@ class Vector(collections.UserDict):
 
 
 class PropertyVector(Vector):
-    "Parent class of SwitchVector etc.."
+    "Inherits from Vector, and is the parent class of SwitchVector etc.."
 
     def __init__(self, name, label, group, state, timestamp, message, device, client):
         super().__init__(name, label, group, state, timestamp, message)
@@ -297,7 +297,8 @@ class SwitchVector(PropertyVector):
     def send_newSwitchVector(self, timestamp=None, members={}):
         """Transmits the vector (newSwitchVector) and the members given in the members
            dictionary which consists of member names:values to be sent.
-           This method will transmit the xml, and change the vector state to busy."""
+           This method will encode and transmit the xml, and change the vector state to busy.
+           If no timestamp is given, a current UTC time will be created."""
         xmldata = self._newSwitchVector(timestamp, members)
         if xmldata is None:
             return
@@ -450,7 +451,7 @@ class TextVector(PropertyVector):
 
     def send_newTextVector(self, timestamp=None, members={}):
         """Transmits the vector (newTextVector) together with all text members.
-           (The spec requires text vectors to be sent with all members)
+           (The spec requires text vectors to be sent with all members, not just those that have changed.)
            This method will transmit the vector and change the vector state to busy."""
         xmldata = self._newTextVector(timestamp, members)
         if xmldata is None:
@@ -461,6 +462,10 @@ class TextVector(PropertyVector):
 
 
 class NumberVector(PropertyVector):
+    """A NumberVector is used to send and receive numbers between instrument and client.
+       The INDI spec defines a number of formats, including degrees:minutes:seconds so
+       this class includes methods to obtain the number as a float, and to create a string
+       formatted as the device requires."""
 
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state,

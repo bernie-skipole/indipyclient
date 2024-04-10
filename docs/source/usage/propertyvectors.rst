@@ -21,15 +21,19 @@ Attributes of the Vector object are derived from the INDI protocol
 
 **self.state**
 
+One of "Idle", "Ok", "Busy" or "Alert"
+
 **self.message**
 
 **self.devicename**
 
 **self.rule**
 
-None unless inherited and set by Switch Vectors
+Applicable to Switch Vectors only, in which case it will be one of "OneOfMany", "AtMostOne" or "AnyOfMany"
 
 **self.perm**
+
+One of "ro", "wo" or "rw". Not applicable to Light Vector, which is read only.
 
 **self.vectortype**
 
@@ -50,3 +54,26 @@ Inherits attributes from Vector, and also has:
 **self.device**
 
 The device object owning this vector.
+
+----
+
+The following vectors all inherit from PropertyVector.
+
+.. autoclass:: indipyclient.propertyvectors.SwitchVector
+   :members: send_newSwitchVector
+
+----
+
+.. autoclass:: indipyclient.propertyvectors.LightVector
+
+----
+
+.. autoclass:: indipyclient.propertyvectors.TextVector
+   :members: send_newTextVector
+
+----
+
+.. autoclass:: indipyclient.propertyvectors.NumberVector
+   :members: getfloatvalue, getformattedvalue, send_newNumberVector
+
+----

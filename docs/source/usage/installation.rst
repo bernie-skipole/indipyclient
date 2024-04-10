@@ -16,8 +16,7 @@ or if you want to run it, without installing:
 pipx run indipyclient
 
 
-For Import
-==========
+**For Import**
 
 If you are intending to import the indipyclient package to use the classes to create scripts, then you would normally install it with pip, usually into a virtual environment.
 
@@ -34,8 +33,7 @@ Then, activate your virtual environment, and install indipyclient with:
 pip install indipyclient
 
 
-Notes
-=====
+**Notes**
 
 You could run the INDI service and drivers on one machine, and indipyclient on another if you specify the host and ports to connect to. However a more secure method would be to run both on the same machine using the default localhost, and do not open the port to network connections.  You can still uses the terminal remotely, by calling the machine using SSH, and in the SSH session, open the client by running indipyclient.
 
