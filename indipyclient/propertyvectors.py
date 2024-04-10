@@ -450,9 +450,12 @@ class TextVector(PropertyVector):
 
 
     def send_newTextVector(self, timestamp=None, members={}):
-        """Transmits the vector (newTextVector) together with all text members.
-           (The spec requires text vectors to be sent with all members, not just those that have changed.)
-           This method will transmit the vector and change the vector state to busy."""
+        """Transmits the vector (newTextVector) with members and values.
+           The spec requires text vectors to be sent with all members, so if the given
+           members dictionary only includes changed values, the remaining members with
+           unchanged values will still be sent.
+           This method will transmit the vector and change the vector state to busy.
+           If no timestamp is given, a current UTC time will be created."""
         xmldata = self._newTextVector(timestamp, members)
         if xmldata is None:
             return
@@ -563,10 +566,12 @@ class NumberVector(PropertyVector):
         return xmldata
 
     def send_newNumberVector(self, timestamp=None, members={}):
-        """Transmits the vector (newNumberVector) with new number members
-           together with any unchanged numbers.
-           (The spec requires number vectors to be sent with all members)
-           This method will transmit the vector and change the vector state to busy."""
+        """Transmits the vector (newNumberVector) with members and values.
+           The spec requires number vectors to be sent with all members, so if the given
+           members dictionary only includes changed values, the remaining members with
+           unchanged values will still be sent.
+           This method will transmit the vector and change the vector state to busy.
+           If no timestamp is given, a current UTC time will be created."""
         xmldata = self._newNumberVector(timestamp, members)
         if xmldata is None:
             return
@@ -577,6 +582,8 @@ class NumberVector(PropertyVector):
 
 
 class BLOBVector(PropertyVector):
+
+    """A BLOBVector is used to send and receive Binary Large Objects between instrument and client."""
 
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state,
@@ -589,11 +596,7 @@ class BLOBVector(PropertyVector):
             self.data[membername] = BLOBMember(membername, label)
 
     def set_blobsize(self, membername, blobsize):
-        """Sets the blobsize attribute in the blob member. If the default of zero is used,
-           the size will be set to the number of bytes in the BLOB. The INDI standard
-           specifies the size should be that of the BLOB before any compression,
-           therefore if you are sending a compressed file, you should set the blobsize
-           prior to compression with this method."""
+        "Used when an event is received to set the member blobsize"
         if not isinstance(blobsize, int):
             return
         if membername in self.data:
@@ -691,7 +694,13 @@ class BLOBVector(PropertyVector):
     def send_newBLOBVector(self, timestamp=None, members={}):
         """Transmits the vector (newBLOBVector) with new BLOB members
            This method will transmit the vector and change the vector state to busy.
-           members dictionary should be {membername:(value, blobsize, blobformat)}"""
+           members dictionary should be {membername:(value, blobsize, blobformat)}
+           The value could be a bytes object, a pathlib.Path or a file-like object.
+           If blobsize of zero is used, the size value sent will be set to the number of bytes
+           in the BLOB. The INDI standard specifies the size should be that of the BLOB
+           before any compression, therefore if you are sending a compressed file, you
+           should set the blobsize prior to compression.
+           blobformat should be a file extension, such as '.png'"""
         xmldata = self._newBLOBVector(timestamp, members)
         if xmldata is None:
             return

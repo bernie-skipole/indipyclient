@@ -37,7 +37,7 @@ One of "ro", "wo" or "rw". Not applicable to Light Vector, which is read only.
 
 **self.vectortype**
 
-Set to Vector type such as SwitchVector, NumberVector etc.
+Set to Vector type string such as 'SwitchVector', 'NumberVector' etc.
 
 **self.enable**
 
@@ -77,3 +77,6 @@ The following vectors all inherit from PropertyVector.
    :members: getfloatvalue, getformattedvalue, send_newNumberVector
 
 ----
+
+.. autoclass:: indipyclient.propertyvectors.BLOBVector
+   :members: send_newBLOBVector
