@@ -466,9 +466,13 @@ class TextVector(PropertyVector):
 
 class NumberVector(PropertyVector):
     """A NumberVector is used to send and receive numbers between instrument and client.
+       As data is received, this vector is a mapping of membername:membervalue where membervalue
+       is the string of the number taken from the received xml.
        The INDI spec defines a number of formats, including degrees:minutes:seconds so
        this class includes methods to obtain the number as a float, and to create a string
-       formatted as the device requires."""
+       formatted as the particular member requires.
+       The member objects contain further information label, format spec, minimum, maximum and step size.
+       To obtain the member object, as opposed to the member value, use the members() method."""
 
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state,
@@ -583,7 +587,12 @@ class NumberVector(PropertyVector):
 
 class BLOBVector(PropertyVector):
 
-    """A BLOBVector is used to send and receive Binary Large Objects between instrument and client."""
+    """A BLOBVector is used to send and receive Binary Large Objects between instrument and client.
+       As data is received this vector will be a mapping of membername to membervalue where membervalue
+       will be a binary string of the received BLOB.  This binary string has been decoded from the
+       received XML and from the b64 encoding used.
+       The member object contains further information, label, blobsize and blobformat.
+       To obtain the member object, as opposed to the member value, use the members() method."""
 
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state,
@@ -694,7 +703,7 @@ class BLOBVector(PropertyVector):
     def send_newBLOBVector(self, timestamp=None, members={}):
         """Transmits the vector (newBLOBVector) with new BLOB members
            This method will transmit the vector and change the vector state to busy.
-           members dictionary should be {membername:(value, blobsize, blobformat)}
+           The members dictionary should be {membername:(value, blobsize, blobformat)}
            The value could be a bytes object, a pathlib.Path or a file-like object.
            If blobsize of zero is used, the size value sent will be set to the number of bytes
            in the BLOB. The INDI standard specifies the size should be that of the BLOB
