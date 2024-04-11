@@ -8,6 +8,11 @@ from .error import ParseException
 
 class Member():
 
+    """This class is the parent of further member classes.
+       Should you use the ipyclient.snapshot method to create a snapshot,
+       the snapshot vectors for Switch, Light and Text will contain objects
+       of this Member class."""
+
     def __init__(self, name, label=None, membervalue=None):
         self.name = name
         if label:
@@ -25,22 +30,7 @@ class Member():
         self._membervalue = value
 
 
-
-class PropertyMember(Member):
-    "Parent class of SwitchMember etc"
-
-    def checkvalue(self, value, allowed):
-        "allowed is a list of values, checks if value is in it"
-        if value not in allowed:
-            raise ParseException(f"Error: Invalid value:{value}")
-        return value
-
-    def _snapshot(self):
-        snapmember = Member(self.name, self.label, self._membervalue)
-        return snapmember
-
-
-class SwitchMember(PropertyMember):
+class SwitchMember(Member):
     """A SwitchMember can only have one of 'On' or 'Off' values"""
 
     def __init__(self, name, label=None, membervalue="Off"):
@@ -60,6 +50,16 @@ class SwitchMember(PropertyMember):
         if self._membervalue != newvalue:
             self._membervalue = newvalue
 
+    def checkvalue(self, value, allowed):
+        "allowed is a list of values, checks if value is in it"
+        if value not in allowed:
+            raise ParseException(f"Error: Invalid value:{value}")
+        return value
+
+    def _snapshot(self):
+        snapmember = Member(self.name, self.label, self._membervalue)
+        return snapmember
+
     def oneswitch(self, newvalue):
         """Returns xml of a oneSwitch with the new value to send"""
         xmldata = ET.Element('oneSwitch')
@@ -68,7 +68,7 @@ class SwitchMember(PropertyMember):
         return xmldata
 
 
-class LightMember(PropertyMember):
+class LightMember(Member):
     """A LightMember can only have one of 'Idle', 'Ok', 'Busy' or 'Alert' values"""
 
     def __init__(self, name, label=None, membervalue="Idle"):
@@ -88,8 +88,18 @@ class LightMember(PropertyMember):
         if self._membervalue != newvalue:
             self._membervalue = newvalue
 
+    def checkvalue(self, value, allowed):
+        "allowed is a list of values, checks if value is in it"
+        if value not in allowed:
+            raise ParseException(f"Error: Invalid value:{value}")
+        return value
 
-class TextMember(PropertyMember):
+    def _snapshot(self):
+        snapmember = Member(self.name, self.label, self._membervalue)
+        return snapmember
+
+
+class TextMember(Member):
     """Contains a text string"""
 
     def __init__(self, name, label=None, membervalue=""):
@@ -108,6 +118,10 @@ class TextMember(PropertyMember):
         if self._membervalue != value:
             self._membervalue = value
 
+    def _snapshot(self):
+        snapmember = Member(self.name, self.label, self._membervalue)
+        return snapmember
+
     def onetext(self, newvalue):
         """Returns xml of a oneText"""
         xmldata = ET.Element('oneText')
@@ -117,6 +131,11 @@ class TextMember(PropertyMember):
 
 
 class ParentNumberMember(Member):
+
+    """This class inherits from Member and is the parent of the NumberMember class.
+       Should you use the ipyclient.snapshot method to create a snapshot,
+       the snapshot vectors for Numbers will contain objects of this class."""
+
 
     def __init__(self, name, label=None, format='', min='0', max='0', step='0', membervalue='0'):
         super().__init__(name, label, membervalue)
@@ -180,7 +199,7 @@ class ParentNumberMember(Member):
 
 
     def getformattedvalue(self):
-        """This method returns this members value as a string float."""
+        """This method returns this members value as a formatted string."""
         return self.getformattedstring(self._membervalue)
 
 
@@ -283,20 +302,6 @@ class ParentNumberMember(Member):
 class NumberMember(ParentNumberMember):
     """Contains a number, the attributes inform the client how the number should be
        displayed.
-
-       format is a C printf style format, for example %7.2f means the client should
-       display the number string with seven characters (including the decimal point
-       as a character and leading spaces should be inserted if necessary), and with
-       two decimal digits after the decimal point.
-
-       min is the minimum value
-
-       max is the maximum, if min is equal to max, the client should ignore these.
-
-       step is incremental step values, set to string of zero if not used.
-
-       The above numbers, and the member value must be set as a string, this explicitly
-       controls how numbers are placed in the xml protocol.
     """
 
     def __init__(self, name, label=None, format='', min='0', max='0', step='0', membervalue='0'):
@@ -342,6 +347,11 @@ class NumberMember(ParentNumberMember):
 
 class ParentBLOBMember(Member):
 
+    """This class inherits from Member and is the parent of the BLOBMember class.
+       Should you use the ipyclient.snapshot method to create a snapshot,
+       the snapshot vectors for BLOBs will contain objects of this class."""
+
+
     def __init__(self, name, label=None, blobsize=0, blobformat='', membervalue=None):
         super().__init__(name, label, membervalue)
         self.blobsize = blobsize
@@ -349,13 +359,7 @@ class ParentBLOBMember(Member):
 
 
 class BLOBMember(ParentBLOBMember):
-    """Contains a 'binary large object' such as an image.
-
-       blobsize is the size of the BLOB before any compression, if left at
-       zero, the length of the BLOB will be used.
-
-       The BLOB format should be a string describing the BLOB, such as .jpeg
-    """
+    """Contains a 'binary large object' such as an image."""
 
     def __init__(self, name, label=None, blobsize=0, blobformat='', membervalue=None):
         super().__init__(name, label, membervalue)
