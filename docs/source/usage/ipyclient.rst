@@ -64,6 +64,14 @@ Read only attribute, set via setlogging method.
 
 **self.logfp**
 
-Read only attribute, set via setlogging method.
+Read only attribute, file pointer to the logfile.
+
+**self.messages**
+
+This is a collections.deque of item tuples (Timestamp, message).
+
+Where the messages are 'global' messages received from the INDI server, or by the report() coroutine method. They are not associated with a device which has its own messages attribute. The deque has a maxlen=8 value set, and so only the last eight messages will be available.
+
+Note, messages are added with 'appendleft' so the newest message is messages[0] and the oldest message is messages[-1] or can be obtained with .pop()
 
 The IPyClient object is also mapping of device name to device object. These Device objects are automatically created as data comes from the INDI server.

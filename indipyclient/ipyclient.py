@@ -112,7 +112,7 @@ class IPyClient(collections.UserDict):
         self.readerque = asyncio.Queue(4)
         # self.data is a dictionary of devicename to device object
         self.data = {}
-        # self.messages is a deque of "Timestamp space message"
+        # self.messages is a deque of (Timestamp, message) tuples
         self.messages = collections.deque(maxlen=8)
 
         # note, messages are added with 'appendleft'
