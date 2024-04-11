@@ -100,7 +100,7 @@ Vectors are mappings of member values:
 
 value = ipyclient[devicename][vectorname][membername]
 
-The objects defined by classes SwitchMember, LightMember, TextMember, NumberMember and BLOBMember are available via the members attribute:
+The objects defined by classes SwitchMember, LightMember, TextMember, NumberMember and BLOBMember are available via the vector members() method:
 
 members = vector.members()
 

@@ -27,6 +27,14 @@ One of "Idle", "Ok", "Busy" or "Alert"
 
 **self.devicename**
 
+**self.timestamp**
+
+A UTC datetime object
+
+**self.timeout**
+
+A float, suggested timeout for updating a value.
+
 **self.rule**
 
 Applicable to Switch Vectors only, in which case it will be one of "OneOfMany", "AtMostOne" or "AnyOfMany"
