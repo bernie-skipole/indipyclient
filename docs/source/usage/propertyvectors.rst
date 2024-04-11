@@ -57,7 +57,7 @@ The device object owning this vector.
 
 ----
 
-The following vectors all inherit from PropertyVector.
+The following vectors all inherit from PropertyVector. As received events arrive from the server, these vectors are created or updated and are available via the mapping of vectorname to vector object of the ipyclient[devicename], device object.
 
 .. autoclass:: indipyclient.propertyvectors.SwitchVector
    :members: send_newSwitchVector

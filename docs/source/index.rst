@@ -11,6 +11,8 @@ indipyclient = A pure Python INDI terminal client
    usage/ipyclient
    usage/devices
    usage/propertyvectors
+   usage/propertymembers
+   usage/events
    usage/references
 
 Indices and tables
