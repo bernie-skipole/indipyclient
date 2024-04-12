@@ -6,14 +6,13 @@ from the INDI server.
 
 Each vector contains one or more members, which can be obtained from the vector members() method.
 
-Each member holds a value, which can be obtained either from the vector[membername] mapping, or from the member object itself, in attribute membervalue.
 
-.. autoclass:: indipyclient.propertymembers.Member
 
+----
+
+.. autoclass:: indipyclient.propertymembers.SwitchMember
 
 **Attributes**
-
-The Member object contains the attributes:
 
 **self.name**
 
@@ -23,24 +22,42 @@ The Member object contains the attributes:
 
 ----
 
-.. autoclass:: indipyclient.propertymembers.SwitchMember
-
-----
-
 .. autoclass:: indipyclient.propertymembers.LightMember
+
+**Attributes**
+
+**self.name**
+
+**self.label**
+
+**self.membervalue**
 
 ----
 
 .. autoclass:: indipyclient.propertymembers.TextMember
 
+**Attributes**
+
+**self.name**
+
+**self.label**
+
+**self.membervalue**
+
 ----
 
-.. autoclass:: indipyclient.propertymembers.ParentNumberMember
+.. autoclass:: indipyclient.propertymembers.NumberMember
    :members: getfloatvalue, getfloat, getformattedvalue, getformattedstring
 
 **Attributes**
 
-As well as inherited attributes from the Member class, this object has further attributes:
+**self.name**
+
+**self.label**
+
+**self.membervalue**
+
+A string value of the number taken from the XML protocol
 
 **self.format**
 
@@ -62,15 +79,17 @@ These values, and self.membervalue are strings taken from the XML protocol. The 
 
 ----
 
-.. autoclass:: indipyclient.propertymembers.NumberMember
-
-----
-
-.. autoclass:: indipyclient.propertymembers.ParentBLOBMember
+.. autoclass:: indipyclient.propertymembers.BLOBMember
 
 **Attributes**
 
-As well as inherited attributes from the Member class, this object has further attributes:
+**self.name**
+
+**self.label**
+
+**self.membervalue**
+
+A Bytes value of the received BLOB.
 
 **self.blobsize**
 
@@ -79,10 +98,6 @@ blobsize is an integer, the size of the BLOB before any compression.
 **self.blobformat**
 
 blobformat should be a string describing the BLOB, such as '.jpeg'
-
-----
-
-.. autoclass:: indipyclient.propertymembers.BLOBMember
 
 ----
 
