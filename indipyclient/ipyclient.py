@@ -625,11 +625,10 @@ class IPyClient(collections.UserDict):
 
     def snapshot(self):
         """Take a snapshot of the devices and returns a dictionary of device
-           names to objects which are copies of the current state of devices and
-           vectors.
-           These copies will not be updated. This is provided so that you can
-           handle the device data in another thread, without fear of their
-           values changing."""
+           names to objects which are restricted copies of the current state of devices and
+           vectors. Vector methods for sending data will not be available.
+           These copies will not be updated by events. This is provided so that you can
+           handle the device data, without fear of their values changing."""
         with threading.Lock():
             # other threads cannot change the client.data dictionary
             # while the snapshot is being taken
@@ -847,6 +846,7 @@ class _Device(Device):
             raise ParseException("Unrecognised tag received")
 
     def _snapshot(self):
+        "Creates snapshot of this device and its vectors"
         snapdevice = Device(self.devicename)
         for vectorname, vector in self.data:
             snapdevice[vectorname] = vector._snapshot()

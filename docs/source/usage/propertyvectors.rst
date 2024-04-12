@@ -5,11 +5,24 @@ Instances of these classes are created automatically as data is received
 from the INDI server, typically you would read their attributes to display
 values on a client.
 
-.. autoclass:: indipyclient.propertyvectors.Vector
-   :members: members, memberlabel
+You should never need to instantiate these classes yourself, they are located in:
 
+indipyclient.propertyvectors
 
-**Attributes**
+All these vectors are mappings of membername to membervalue, and have the
+following methods and attributes:
+
+**Common Methods**
+
+**members(self)**
+
+Returns a dictionary of member objects
+
+**memberlabel(self, membername)**
+
+Returns the member label, given a member name
+
+**Common Attributes**
 
 Attributes of the Vector object are derived from the INDI protocol
 
@@ -51,21 +64,13 @@ Set to Vector type string such as 'SwitchVector', 'NumberVector' etc.
 
 If self.enable is False, this property is 'deleted'.
 
-----
-
-.. autoclass:: indipyclient.propertyvectors.PropertyVector
-
-**Attributes**
-
-Inherits attributes from Vector, and also has:
-
 **self.device**
 
-The device object owning this vector.
+The device object owning this vector. This attribute is not available in the 'snapshot'.
 
 ----
 
-The following vectors all inherit from PropertyVector. As received events arrive from the server, these vectors are created or updated and are available via the mapping of vectorname to vector object of the ipyclient[devicename], device object.
+As received events arrive from the server, these vectors are created or updated and are available via ipyclient[devicename][vectorname]
 
 .. autoclass:: indipyclient.propertyvectors.SwitchVector
    :members: send_newSwitchVector
