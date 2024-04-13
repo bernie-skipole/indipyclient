@@ -3,13 +3,13 @@ Events
 
 As received data arrives from the server, events are raised. These events are automatically used to create the Devices, Vectors and Members that describe the device properties.
 
-Also the IPyClient rxevent(event) coroutine method is called. As default this does nothing, consisting merely of the pass command. You can create your own class, inheriting from IPyClient and override this method, if you wish to act on the event received.
+After setting any new values into the Vectors and members, the IPyClient rxevent(event) coroutine method is called. As default this does nothing, consisting merely of the pass command. If you wish to act on the event received you could create your own class, inheriting from IPyClient and override this method,
 
-Events are of different types, which initially define a vector, and then set existing vector values.  These event objects are described here, you could inspect the event type, and depending on its devicename, vectorname you can obtain the vector from the IPyClient mapping, and inspect its attributes.
+Events are of different types, which initially define a vector, and then set existing vector values.  These event objects are described here.
 
 You should never need to instantiate these classes yourself.
 
-The classes are defined in indipyclient.events
+The classes can be imported directly from the indipyclient module, which may be needed if you are checking the event class using isinstance, or pattern matching.
 
 ----
 
@@ -28,6 +28,10 @@ The classes are defined in indipyclient.events
 **self.timestamp**
 
 This is created by datetime.now(tz=timezone.utc)
+
+**self.eventtype**
+
+Set to the string "TimeOut".
 
 ----
 
@@ -55,6 +59,11 @@ The root xml object
 
 **self.message**
 
+**self.eventtype**
+
+Set to the string "Message".
+
+
 ----
 
 .. autoclass:: indipyclient.events.delProperty
@@ -75,6 +84,10 @@ An xml.etree.ElementTree object of the received xml data.
 **self.timestamp**
 
 **self.message**
+
+**self.eventtype**
+
+Set to the string "Delete".
 
 ----
 
@@ -114,6 +127,10 @@ One of 'OneOfMany', 'AtMostOne', 'AnyOfMany'
 
 Dictionary with key member name and value being label
 
+**self.eventtype**
+
+Set to the string "Define".
+
 ----
 
 .. autoclass:: indipyclient.events.defTextVector
@@ -148,6 +165,10 @@ Dictionary with key member name and value being label
 
 Dictionary with key member name and value being label
 
+**self.eventtype**
+
+Set to the string "Define".
+
 ----
 
 .. autoclass:: indipyclient.events.defNumberVector
@@ -181,3 +202,79 @@ Dictionary with key member name and value being label
 **self.memberlabels**
 
 Dictionary with key member name and value being a tuple of (label, format, min, max, step).
+
+**self.eventtype**
+
+Set to the string "Define".
+
+----
+
+.. autoclass:: indipyclient.events.defLightVector
+
+**Attributes**
+
+**self.device**
+
+**self.vectorname**
+
+**self.devicename**
+
+**self.root**
+
+**self.timestamp**
+
+**self.message**
+
+**self.vector**
+
+**self.label**
+
+**self.group**
+
+**self.state**
+
+**self.memberlabels**
+
+Dictionary with key member name and value being label
+
+**self.eventtype**
+
+Set to the string "Define".
+
+----
+
+.. autoclass:: indipyclient.events.defBLOBVector
+
+**Attributes**
+
+**self.device**
+
+**self.vectorname**
+
+**self.devicename**
+
+**self.root**
+
+**self.timestamp**
+
+**self.message**
+
+**self.vector**
+
+**self.label**
+
+**self.group**
+
+**self.state**
+
+**self.perm**
+
+**self.timeout**
+
+**self.memberlabels**
+
+Dictionary with key member name and value being label
+
+**self.eventtype**
+
+Set to the string "DefineBLOB".

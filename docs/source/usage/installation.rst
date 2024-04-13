@@ -15,6 +15,13 @@ or if you want to run it, without installing:
 
 pipx run indipyclient
 
+Having installed it, run
+
+indipyclient --help
+
+To display the options.
+
+Without any options the client will attempt to connect to localhost.
 
 **Notes**
 
@@ -24,10 +31,9 @@ You should note that indipyclient relies on the Python Curses standard library p
 
 The Curses library depends on the terminal providing support for terminal control sequences, if your terminal program is not compatable you may find the layout distorted, or certain features such as selecting fields by mouse click not working. In which case, if possible, pick a different emulation.
 
-
 **For Import**
 
-If you are intending to import the indipyclient package to use the classes to create scripts, then you would normally install it with pip, usually into a virtual environment.
+If you are intending to import the indipyclient package to use the classes to create your own clients or scripts, then you would normally install it with pip, usually into a virtual environment.
 
 If you are using Debian, you may need the Python3 version of pip to obtain packages from Pypi.
 
@@ -40,3 +46,37 @@ https://packaging.python.org/guides/installing-using-pip-and-virtual-environment
 Then, activate your virtual environment, and install indipyclient with:
 
 pip install indipyclient
+
+You can then import indipyclient, create a class inheriting from IPyClient, and typically write your own rxevent(event) coroutine method, which is called whenever data is received.
+
+The IPyClient object gives you access to Devices, which represent the remote instrument and Vectors, which are collections of one or more member values. For example a SwitchVector may hold a number of switches, such as a radio button set. The values of these vectors can be read, and updated values transmitted using methods described further in this documentation.
+
+Finally the asyncrun() coroutine method of IPyClient should be awaited which will cause the connection to the INDI server to be made.
+
+**Example**
+
+This script monitors a remote "Thermostat" and prints the temperature as events are received from an INDI "Thermostat" driver. The driver is described as an example at https://indipydriver.readthedocs.io
+
+The script checks for a setNumberVector event, and if the event matches the device, vector and member names, prints the received value. This continues indefinetly, printing the temperature as values are received::
+
+    import asyncio
+    import indipyclient as ipc
+
+    class MyClient(ipc.IPyClient):
+
+        async def rxevent(self, event):
+            "Prints the temperature as it is received"
+            if isinstance(event, ipc.setNumberVector):
+                if event.devicename != "Thermostat":
+                    return
+                if event.vectorname != "temperaturevector":
+                    return
+                # use dictionary get method which returns None
+                # if this member name is not present in the event
+                value = event.get("temperature")
+                if value:
+                    print(value)
+
+    myclient = MyClient()
+
+    asyncio.run(myclient.asyncrun())
