@@ -156,7 +156,8 @@ class PropertyVector(Vector):
         if event.message:
             self.message = event.message
         if hasattr(event, 'timeout'):
-            self.timeout = event.timeout
+            if not self.timeout is None:
+                self.timeout = event.timeout
         for membername, membervalue in event.items():
             if membername in self.data:
                 member = self.data[membername]

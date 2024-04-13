@@ -15,6 +15,7 @@ The classes can be imported directly from the indipyclient module, which may be 
 
 .. autoclass:: indipyclient.events.VectorTimeOut:
 
+
 **Attributes**
 
 **self.device**
@@ -36,6 +37,7 @@ Set to the string "TimeOut".
 ----
 
 .. autoclass:: indipyclient.events.Message:
+
 
 **Attributes**
 
@@ -93,6 +95,7 @@ Set to the string "Delete".
 
 .. autoclass:: indipyclient.events.defSwitchVector
 
+
 **Attributes**
 
 **self.device**
@@ -135,6 +138,7 @@ Set to the string "Define".
 
 .. autoclass:: indipyclient.events.defTextVector
 
+
 **Attributes**
 
 **self.device**
@@ -172,6 +176,7 @@ Set to the string "Define".
 ----
 
 .. autoclass:: indipyclient.events.defNumberVector
+
 
 **Attributes**
 
@@ -211,6 +216,7 @@ Set to the string "Define".
 
 .. autoclass:: indipyclient.events.defLightVector
 
+
 **Attributes**
 
 **self.device**
@@ -245,6 +251,7 @@ Set to the string "Define".
 
 .. autoclass:: indipyclient.events.defBLOBVector
 
+
 **Attributes**
 
 **self.device**
@@ -278,3 +285,162 @@ Dictionary with key member name and value being label
 **self.eventtype**
 
 Set to the string "DefineBLOB".
+
+----
+
+.. autoclass:: indipyclient.events.setSwitchVector
+
+
+**Attributes**
+
+**self.device**
+
+**self.vectorname**
+
+**self.devicename**
+
+**self.root**
+
+**self.timestamp**
+
+**self.message**
+
+**self.vector**
+
+**self.state**
+
+**self.timeout**
+
+This could be None if no timeout information is included, in which case the existing timeout is not altered.
+
+**self.eventtype**
+
+Set to the string "Set".
+
+----
+
+.. autoclass:: indipyclient.events.setTextVector
+
+
+**Attributes**
+
+**self.device**
+
+**self.vectorname**
+
+**self.devicename**
+
+**self.root**
+
+**self.timestamp**
+
+**self.message**
+
+**self.vector**
+
+**self.state**
+
+**self.timeout**
+
+This could be None if no timeout information is included, in which case the existing timeout is not altered.
+
+**self.eventtype**
+
+Set to the string "Set".
+
+----
+
+.. autoclass:: indipyclient.events.setNumberVector
+
+
+**Attributes**
+
+**self.device**
+
+**self.vectorname**
+
+**self.devicename**
+
+**self.root**
+
+**self.timestamp**
+
+**self.message**
+
+**self.vector**
+
+**self.state**
+
+**self.timeout**
+
+This could be None if no timeout information is included, in which case the existing timeout is not altered.
+
+**self.eventtype**
+
+Set to the string "Set".
+
+----
+
+.. autoclass:: indipyclient.events.setLightVector
+
+
+**Attributes**
+
+**self.device**
+
+**self.vectorname**
+
+**self.devicename**
+
+**self.root**
+
+**self.timestamp**
+
+**self.message**
+
+**self.vector**
+
+**self.state**
+
+**self.timeout**
+
+This is None.
+
+**self.eventtype**
+
+Set to the string "Set".
+
+----
+
+.. autoclass:: indipyclient.events.setBLOBVector
+
+
+**Attributes**
+
+**self.device**
+
+**self.vectorname**
+
+**self.devicename**
+
+**self.root**
+
+**self.timestamp**
+
+**self.message**
+
+**self.vector**
+
+**self.state**
+
+**self.sizeformat**
+
+A dictionary of membername to tuple (membersize, memberformat)
+
+**self.timeout**
+
+This could be None if no timeout information is included, in which case the existing timeout is not altered.
+
+**self.eventtype**
+
+Set to the string "SetBLOB".

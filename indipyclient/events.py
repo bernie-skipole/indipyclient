@@ -340,8 +340,8 @@ class defNumberVector(defVector):
 
 class defLightVector(defVector):
 
-    """The remote driver has sent this to define a light vector property, it has further
-       attribute memberlabels which is a dictionary of membername:label."""
+    """The remote driver has sent this to define a light vector property.
+       This is a mapping of membername:value."""
 
     def __init__(self, root, device, client):
         defVector.__init__(self, root, device, client)
@@ -387,9 +387,7 @@ class defLightVector(defVector):
 
 class defBLOBVector(Event):
 
-    """The remote driver has sent this to define a BLOB vector property, it has further
-       attributes perm, timeout, and memberlabels which is a dictionary of
-       membername:label.
+    """The remote driver has sent this to define a BLOB vector property.
 
        However this class does not have an object mapping of member name to value, since
        values are not given in defBLOBVectors"""
@@ -467,6 +465,7 @@ class setVector(Event, UserDict):
         if self.vectorname is None:
             raise ParseException
         # This vector must already exist, and be enabled
+        self.timeout = None
         if self.vectorname in self.device:
             vector = self.device[self.vectorname]
             if not vector.enable:
@@ -486,8 +485,8 @@ class setVector(Event, UserDict):
 
 
 class setSwitchVector(setVector):
-    """The remote driver is setting a Switch vector property, this
-       has further attribute timeout."""
+    """The remote driver is setting a Switch vector property.
+       This is a mapping of membername:value."""
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
@@ -523,8 +522,8 @@ class setSwitchVector(setVector):
 
 class setTextVector(setVector):
 
-    """The remote driver is setting a Text vector property, this
-       has further attribute timeout."""
+    """The remote driver is setting a Text vector property.
+       This is a mapping of membername:value."""
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
@@ -556,9 +555,9 @@ class setTextVector(setVector):
 
 class setNumberVector(setVector):
 
-    """The remote driver is setting a Number vector property, this
-       has further attribute timeout. The number values of the
-       membername:membervalue are string values."""
+    """The remote driver is setting a Number vector property.
+       This is a mapping of membername:value.
+       These number values are string values."""
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
@@ -588,7 +587,9 @@ class setNumberVector(setVector):
 
 class setLightVector(setVector):
 
-    """The remote driver is setting a Light vector property."""
+    """The remote driver is setting a Light vector property.
+       This is a mapping of membername:value.
+       Note, the timeout attribute will always be None"""
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
@@ -614,9 +615,13 @@ class setLightVector(setVector):
 
 class setBLOBVector(setVector):
 
-    """The remote driver is setting a BLOB vector property, this
-       has further attributes timeout and sizeformat which is a dictionary
-       of membername:(size, format)."""
+    """The remote driver is setting a BLOB vector property.
+       This is a mapping of membername:value, where value is a
+       bytes object, taken from the received xml and b64 decoded
+       This event has further attribute sizeformat being a dictionary
+       of membername:(size, format) and which are then set into the target
+       members as blobsize and blobformat attributes."""
+
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
