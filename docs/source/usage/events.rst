@@ -13,7 +13,7 @@ The classes can be imported directly from the indipyclient module, which may be 
 
 ----
 
-.. autoclass:: indipyclient.events.VectorTimeOut:
+.. autoclass:: indipyclient.events.VectorTimeOut
 
 
 **Attributes**
@@ -36,7 +36,7 @@ Set to the string "TimeOut".
 
 ----
 
-.. autoclass:: indipyclient.events.Message:
+.. autoclass:: indipyclient.events.Message
 
 
 **Attributes**
@@ -45,17 +45,17 @@ Set to the string "TimeOut".
 
 Could be None if this is a global message from the server not assigned to a device
 
-**self.vectorname**
-
-Could be None if this message is not associated with a vector
-
 **self.devicename**
 
 Could be None
 
+**self.vectorname**
+
+Always None, as this message is either a global message or only associated with a device
+
 **self.root**
 
-The root xml object
+An xml.etree.ElementTree object of the received xml data.
 
 **self.timestamp**
 
@@ -75,9 +75,11 @@ Set to the string "Message".
 
 **self.device**
 
+**self.devicename**
+
 **self.vectorname**
 
-**self.devicename**
+Could be None, to indicate the whole device is deleted.
 
 **self.root**
 
@@ -100,17 +102,17 @@ Set to the string "Delete".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.label**
 
@@ -143,17 +145,17 @@ Set to the string "Define".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.label**
 
@@ -182,17 +184,17 @@ Set to the string "Define".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.label**
 
@@ -221,17 +223,17 @@ Set to the string "Define".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.label**
 
@@ -256,17 +258,17 @@ Set to the string "Define".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.label**
 
@@ -295,17 +297,17 @@ Set to the string "DefineBLOB".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.state**
 
@@ -326,17 +328,17 @@ Set to the string "Set".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.state**
 
@@ -357,17 +359,17 @@ Set to the string "Set".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.state**
 
@@ -388,17 +390,17 @@ Set to the string "Set".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.state**
 
@@ -419,17 +421,17 @@ Set to the string "Set".
 
 **self.device**
 
-**self.vectorname**
-
 **self.devicename**
+
+**self.vector**
+
+**self.vectorname**
 
 **self.root**
 
 **self.timestamp**
 
 **self.message**
-
-**self.vector**
 
 **self.state**
 
