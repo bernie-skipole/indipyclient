@@ -6,6 +6,9 @@ from the INDI server.
 
 Each vector contains one or more members, which can be obtained from the vector members() method.
 
+You should never need to instantiate these classes yourself.
+
+The classes are defined in indipyclient.propertymembers
 
 
 ----

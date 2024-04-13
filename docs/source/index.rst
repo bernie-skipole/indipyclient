@@ -1,7 +1,7 @@
 
 
-indipyclient = A pure Python INDI terminal client
-=================================================
+A pure Python INDI terminal client
+==================================
 
 .. toctree::
    :maxdepth: 1

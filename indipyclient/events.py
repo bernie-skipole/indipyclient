@@ -52,6 +52,7 @@ class VectorTimeOut:
         self.vector = vector
         self.vectorname = self.vector.name
         self.timestamp = datetime.now(tz=timezone.utc)
+        self.eventtype = "TimeOut"
 
 
 class Event:
@@ -78,6 +79,7 @@ class Message(Event):
 
     def __init__(self, root, device, client):
         super().__init__(root, device, client)
+        self.eventtype = "Message"
         self.message = root.get("message", "")
         if device is None:
             # state wide message
@@ -89,10 +91,13 @@ class Message(Event):
 class delProperty(Event):
     """The remote driver is instructing the client to delete either a device or a vector property.
        This contains attribute vectorname, if it is None, then the whole device is to be deleted.
-       A 'message' attribute contains any message sent by the client with this instruction."""
+       A 'message' attribute contains any message sent by the client with this instruction.
+       This event will automatically set the appropriate enable flag to False in the effected
+       device and vectors."""
 
     def __init__(self, root, device, client):
         super().__init__(root, device, client)
+        self.eventtype = "Delete"
         if self.devicename is None:
             raise ParseException("delProperty has no devicename")
         if not self.device.enable:
@@ -119,6 +124,7 @@ class defVector(Event, UserDict):
     def __init__(self, root, device, client):
         Event.__init__(self, root, device, client)
         UserDict.__init__(self)
+        self.eventtype = "Define"
         self.vectorname = root.get("name")
         if self.vectorname is None:
             raise ParseException("defVector has no vector name")
@@ -139,9 +145,8 @@ class defVector(Event, UserDict):
 
 class defSwitchVector(defVector):
 
-    """The remote driver has sent this to define a switch vector property, it has further
-       attributes perm, rule, timeout, and memberlabels which is a dictionary of
-       membername:label."""
+    """The remote driver has sent this to define a switch vector property, this
+       is a mapping of membername:value"""
 
     def __init__(self, root, device, client):
         defVector.__init__(self, root, device, client)
@@ -206,9 +211,8 @@ class defSwitchVector(defVector):
 
 class defTextVector(defVector):
 
-    """The remote driver has sent this to define a text vector property, it has further
-       attributes perm, timeout, and memberlabels which is a dictionary of
-       membername:label."""
+    """The remote driver has sent this to define a text vector property, this
+       is a mapping of membername:value."""
 
     def __init__(self, root, device, client):
         defVector.__init__(self, root, device, client)
@@ -262,12 +266,11 @@ class defTextVector(defVector):
             properties[self.vectorname] = self.vector
 
 
-
-
 class defNumberVector(defVector):
 
-    """The remote driver has sent this to define a number vector property, it has further
-       attributes perm, timeout, and memberlabels which is a dictionary of
+    """The remote driver has sent this to define a number vector property, this
+       is a mapping of membername:value. Its attributes memberlabels gives further
+       description of members, being a dictionary of
        membername:(label, format, min, max, step)."""
 
     def __init__(self, root, device, client):
@@ -393,6 +396,7 @@ class defBLOBVector(Event):
 
     def __init__(self, root, device, client):
         Event.__init__(self, root, device, client)
+        self.eventtype = "DefineBLOB"
         if self.devicename is None:
             raise ParseException
         self.vectorname = root.get("name")
@@ -456,6 +460,7 @@ class setVector(Event, UserDict):
     def __init__(self, root, device, client):
         Event.__init__(self, root, device, client)
         UserDict.__init__(self)
+        self.eventtype = "Set"
         if self.devicename is None:
             raise ParseException
         self.vectorname = root.get("name")
@@ -615,6 +620,7 @@ class setBLOBVector(setVector):
 
     def __init__(self, root, device, client):
         setVector.__init__(self, root, device, client)
+        self.eventtype = "SetBLOB"
         try:
             timeout = root.get("timeout")
             if not timeout is None:

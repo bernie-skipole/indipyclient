@@ -5,9 +5,9 @@ Instances of these classes are created automatically as data is received
 from the INDI server, typically you would read their attributes to display
 values on a client.
 
-You should never need to instantiate these classes yourself, they are located in:
+You should never need to instantiate these classes yourself.
 
-indipyclient.propertyvectors
+The classes are defined in indipyclient.propertyvectors
 
 All these vectors are mappings of membername to membervalue, and have the
 following methods and attributes:
