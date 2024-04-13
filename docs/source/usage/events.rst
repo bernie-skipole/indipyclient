@@ -61,6 +61,10 @@ An xml.etree.ElementTree object of the received xml data.
 
 **self.message**
 
+If self.device is None, the tuple (self.timestamp, self.message) is appended to the IPyClient messages deque.
+
+If self.device is given, the tuple is appended to the device messages deque.
+
 **self.eventtype**
 
 Set to the string "Message".
