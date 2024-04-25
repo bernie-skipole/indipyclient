@@ -493,7 +493,8 @@ class EnableBLOBsScreen(ConsoleClientScreen):
 
 
     async def submit(self):
-        self._newpath = self.path_txt.text
+        self._newpath = self.path_txt.text.strip()
+        blobfolder = None
         if self._newpath:
             try:
                 blobfolder = pathlib.Path(self._newpath).expanduser().resolve()
@@ -501,22 +502,24 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                 self.control.blobenabled = False
                 self.control.send_disableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                await self.client.report("Warning! BLOB folder is invalid")
+                await self.client.report("Warning! Unable to parse BLOB folder")
+                self.submit_btn.focus = False
+                self.messages_btn.focus = True
+                return
+            if blobfolder.is_dir():
+                self.control.blobfolder = blobfolder
+                self._newpath = str(blobfolder)
+                self.path_txt.text = self._newpath
+                self.path_txt.draw()
+                self.control.blobenabled = True
+                self.control.send_enableBLOB()
+                self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
+                await self.client.report("BLOB folder is set")
             else:
-                if blobfolder.is_dir():
-                    self.control.blobfolder = blobfolder
-                    self._newpath = str(blobfolder)
-                    self.path_txt.text = self._newpath
-                    self.path_txt.draw()
-                    self.control.blobenabled = True
-                    self.control.send_enableBLOB()
-                    self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
-                    await self.client.report("BLOB folder is set")
-                else:
-                    self.control.blobenabled = False
-                    self.control.send_disableBLOB()
-                    self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                    await self.client.report("Warning! BLOB folder is invalid")
+                self.control.blobenabled = False
+                self.control.send_disableBLOB()
+                self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
+                await self.client.report("Warning! BLOB folder is not a directory")
         else:
             self.control.blobenabled = False
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
