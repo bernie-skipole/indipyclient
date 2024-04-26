@@ -36,7 +36,7 @@ class SwitchMember(Member):
     def __init__(self, name, label=None, membervalue="Off"):
         super().__init__(name, label, membervalue)
         if membervalue not in ('On', 'Off'):
-            raise ParseException(f"Error: Invalid value {membervalue}, should be On or Off")
+            raise ParseException(f"Invalid value {membervalue}, should be On or Off")
 
     @property
     def membervalue(self):
@@ -45,7 +45,7 @@ class SwitchMember(Member):
     @membervalue.setter
     def membervalue(self, value):
         if not value:
-            raise ParseException("Error: No value given, should be On or Off")
+            raise ParseException("No value given, should be On or Off")
         newvalue = self.checkvalue(value, ['On', 'Off'])
         if self._membervalue != newvalue:
             self._membervalue = newvalue
@@ -53,7 +53,7 @@ class SwitchMember(Member):
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
         if value not in allowed:
-            raise ParseException(f"Error: Invalid value:{value}")
+            raise ParseException(f"Invalid value:{value}")
         return value
 
     def _snapshot(self):
@@ -74,7 +74,7 @@ class LightMember(Member):
     def __init__(self, name, label=None, membervalue="Idle"):
         super().__init__(name, label, membervalue)
         if membervalue not in ('Idle','Ok','Busy','Alert'):
-            raise ParseException(f"Error: Invalid light value {membervalue}")
+            raise ParseException(f"Invalid light value {membervalue}")
 
     @property
     def membervalue(self):
@@ -83,7 +83,7 @@ class LightMember(Member):
     @membervalue.setter
     def membervalue(self, value):
         if not value:
-            raise ParseException("Error: No light value given")
+            raise ParseException("No light value given")
         newvalue = self.checkvalue(value, ['Idle','Ok','Busy','Alert'])
         if self._membervalue != newvalue:
             self._membervalue = newvalue
@@ -91,7 +91,7 @@ class LightMember(Member):
     def checkvalue(self, value, allowed):
         "allowed is a list of values, checks if value is in it"
         if value not in allowed:
-            raise ParseException(f"Error: Invalid value:{value}")
+            raise ParseException(f"Invalid value:{value}")
         return value
 
     def _snapshot(self):
@@ -105,7 +105,7 @@ class TextMember(Member):
     def __init__(self, name, label=None, membervalue=""):
         super().__init__(name, label, membervalue)
         if not isinstance(membervalue, str):
-            raise ParseException("Error: The text value should be a string")
+            raise ParseException("The text value should be a string")
 
     @property
     def membervalue(self):
@@ -114,7 +114,7 @@ class TextMember(Member):
     @membervalue.setter
     def membervalue(self, value):
         if not isinstance(value, str):
-            raise ParseException("Error: The text value should be a string")
+            raise ParseException("The text value should be a string")
         if self._membervalue != value:
             self._membervalue = value
 
@@ -194,7 +194,7 @@ class ParentNumberMember(Member):
             if negative:
                 floatvalue = -1 * floatvalue
         except:
-            raise TypeError("Error: Unable to parse number value")
+            raise TypeError("Unable to parse number value")
         return floatvalue
 
 
@@ -293,10 +293,10 @@ class ParentNumberMember(Member):
                 return valstring
 
         except:
-            raise TypeError("Error: Unable to parse number value")
+            raise TypeError("Unable to parse number value")
 
         # no other options accepted
-        raise TypeError("Error: Unable to process number format")
+        raise TypeError("Unable to process number format")
 
 
 class NumberMember(ParentNumberMember):
@@ -308,16 +308,21 @@ class NumberMember(ParentNumberMember):
         super().__init__(name, label, format, min, max, step, membervalue)
         self.format = format
         if not isinstance(min, str):
-            raise ParseException("Error: minimum value must be given as a string")
+            raise ParseException("Number minimum value must be given as a string")
         self.min = min
         if not isinstance(max, str):
-            raise ParseException("Error: maximum value must be given as a string")
+            raise ParseException("Number maximum value must be given as a string")
         self.max = max
         if not isinstance(step, str):
-            raise ParseException("Error: step value must be given as a string")
+            raise ParseException("Number step value must be given as a string")
         self.step = step
         if not isinstance(membervalue, str):
-            raise ParseException("Error: number value must be given as a string")
+            raise ParseException("Number value must be given as a string")
+        try:
+            # test a float can be created from this membervalue
+            floatvalue = self.getfloat(membervalue)
+        except:
+            raise ParseException("Cannot parse the number")
 
     @property
     def membervalue(self):
@@ -325,12 +330,17 @@ class NumberMember(ParentNumberMember):
 
     @membervalue.setter
     def membervalue(self, value):
+        if self._membervalue == value:
+            return
         if not isinstance(value, str):
-            raise ParseException("Error: number value must be given as a string")
+            raise ParseException("Number value must be given as a string")
         if not value:
-            raise ParseException("Error: no number value given")
-        if self._membervalue != value:
-            self._membervalue = value
+            raise ParseException("No number value given")
+        try:
+            # test a float can be created from this membervalue
+            floatvalue = self.getfloat(value)
+        except:
+            raise ParseException("Cannot parse the number")
 
 
     def onenumber(self, newvalue):
@@ -364,7 +374,7 @@ class BLOBMember(ParentBLOBMember):
     def __init__(self, name, label=None, blobsize=0, blobformat='', membervalue=None):
         super().__init__(name, label, membervalue)
         if not isinstance(blobsize, int):
-            raise ParseException("Error: blobsize must be given as an integer")
+            raise ParseException("Blobsize must be given as an integer")
         # membervalue can be a byte string, path, string path or file like object
         self.blobsize = blobsize
         self.blobformat = blobformat
@@ -376,7 +386,7 @@ class BLOBMember(ParentBLOBMember):
     @membervalue.setter
     def membervalue(self, value):
         if not value:
-            raise ParseException("Error: No BLOB value given")
+            raise ParseException("No BLOB value given")
         self._membervalue = value
 
 
@@ -393,7 +403,7 @@ class BLOBMember(ParentBLOBMember):
             try:
                 xmldata.text = newvalue.read_bytes()
             except:
-                raise ParseException("Error: Unable to read the given file")
+                raise ParseException("Unable to read the given file")
         elif hasattr(newvalue, "seek") and hasattr(newvalue, "read") and callable(newvalue.read):
             # a file-like object
             # set seek(0) so is read from start of file
@@ -401,9 +411,9 @@ class BLOBMember(ParentBLOBMember):
             bytescontent = newvalue.read()
             newvalue.close()
             if not isinstance(bytescontent, bytes):
-                raise ParseException("Error: The read BLOB is not a bytes object")
+                raise ParseException("The read BLOB is not a bytes object")
             if bytescontent == b"":
-                raise ParseException("Error: The read BLOB value is empty")
+                raise ParseException("The read BLOB value is empty")
             xmldata.text = bytescontent
         else:
             # could be a path to a file
@@ -411,9 +421,9 @@ class BLOBMember(ParentBLOBMember):
                 with open(newvalue, "rb") as fp:
                     bytescontent = fp.read()
             except:
-                raise ParseException("Error: Unable to read the given file")
+                raise ParseException("Unable to read the given file")
             if bytescontent == b"":
-                raise ParseException("Error: The read BLOB value is empty")
+                raise ParseException("The read BLOB value is empty")
             xmldata.text = bytescontent
         return xmldata
 

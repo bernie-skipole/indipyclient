@@ -329,7 +329,6 @@ class defNumberVector(defVector):
             self.vector = properties[self.vectorname]
             # set changed values into self.vector
             self.vector._defvector(self)
-
         else:
             # create a new NumberVector
             self.vector = propertyvectors.NumberVector(self)
