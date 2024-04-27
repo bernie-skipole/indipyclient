@@ -320,7 +320,7 @@ class NumberMember(ParentNumberMember):
             raise ParseException("Number value must be given as a string")
         try:
             # test a float can be created from this membervalue
-            floatvalue = self.getfloat(membervalue)
+            self._floatvalue = self.getfloat(membervalue)
         except:
             raise ParseException("Cannot parse the number")
 
@@ -338,9 +338,16 @@ class NumberMember(ParentNumberMember):
             raise ParseException("No number value given")
         try:
             # test a float can be created from this membervalue
-            floatvalue = self.getfloat(value)
+            self._floatvalue = self.getfloat(value)
         except:
             raise ParseException("Cannot parse the number")
+        self._membervalue = value
+
+
+    def getfloatvalue(self):
+        """The INDI spec allows a number of different number formats, this method returns
+           this members value as a float."""
+        return self._floatvalue
 
 
     def onenumber(self, newvalue):

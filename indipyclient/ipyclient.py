@@ -606,7 +606,7 @@ class IPyClient(collections.UserDict):
                             continue
                 except ParseException as pe:
                     # if a ParseException is raised, it is because received data is malformed
-                    await self.report(f"Error: {pe}")
+                    await self.report(str(pe))
                     continue
                 finally:
                     self.readerque.task_done()
