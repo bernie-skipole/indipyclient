@@ -351,19 +351,19 @@ class defLightVector(defVector):
             if member.tag == "defLight":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("No name given in defLight")
                 label = member.get("label", membername)
                 self.memberlabels[membername] = label
                 if not member.text:
-                    raise ParseException
+                    raise ParseException("No value given in defLight")
                 value = member.text.strip()
                 if not value in ('Idle','Ok','Busy','Alert'):
-                    raise ParseException
+                    raise ParseException("Invalid value given in defLight")
                 self.data[membername] = value
             else:
-                raise ParseException
+                raise ParseException("No members of defLight present")
         if not self.data:
-            raise ParseException
+            raise ParseException("No member values present")
 
 
         # properties is a dictionary of property name to propertyvector this device owns
@@ -395,24 +395,24 @@ class defBLOBVector(Event):
         Event.__init__(self, root, device, client)
         self.eventtype = "DefineBLOB"
         if self.devicename is None:
-            raise ParseException
+            raise ParseException("No device name given in defBLOBVector")
         self.vectorname = root.get("name")
         if self.vectorname is None:
-            raise ParseException
+            raise ParseException("No vector name given in defBLOBVector")
         self.label = root.get("label", self.vectorname)
         self.group = root.get("group", "DEFAULT GROUP")
         state = root.get("state")
         if not state:
-            raise ParseException
+            raise ParseException("No state given in defBLOBVector")
         if not state in ('Idle','Ok','Busy','Alert'):
-            raise ParseException
+            raise ParseException("Invalid state given in defBLOBVector")
         self.state = state
         self.message = root.get("message", "")
         self.perm = root.get("perm")
         if self.perm is None:
-            raise ParseException
+            raise ParseException("No perm given in defBLOBVector")
         if self.perm not in ('ro', 'wo', 'rw'):
-            raise ParseException
+            raise ParseException("Invalid perm given in defBLOBVector")
         try:
             timeout = root.get("timeout")
             if not self.timeout:
@@ -427,13 +427,13 @@ class defBLOBVector(Event):
             if member.tag == "defBLOB":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Missing member name in defBLOB")
                 label = member.get("label", membername)
                 self.memberlabels[membername] = label
             else:
                 raise ParseException(f"Invalid child tag {member.tag} of defBLOBVector received")
         if not self.memberlabels:
-            raise ParseException
+            raise ParseException("No labels given in defBLOBVector")
 
         # properties is a dictionary of property name to propertyvector this device owns
         # This method updates a property vector and sets it into properties
@@ -459,18 +459,18 @@ class setVector(Event, UserDict):
         UserDict.__init__(self)
         self.eventtype = "Set"
         if self.devicename is None:
-            raise ParseException
+            raise ParseException("Missing device name in set vector")
         self.vectorname = root.get("name")
         if self.vectorname is None:
-            raise ParseException
+            raise ParseException("Missing vector name in set vector")
         # This vector must already exist, and be enabled
         self.timeout = None
         if self.vectorname in self.device:
             vector = self.device[self.vectorname]
             if not vector.enable:
-                raise ParseException
+                raise ParseException("Set vector ignored as vector deleted")
         else:
-            raise ParseException
+            raise ParseException("Set vector ignored as vector is unknown")
         state = root.get("state")
         if state and (state in ('Idle','Ok','Busy','Alert')):
             self.state = state
@@ -501,18 +501,18 @@ class setSwitchVector(setVector):
             if member.tag == "oneSwitch":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Missing name in oneSwitch")
                 if not member.text:
-                    raise ParseException
+                    raise ParseException("Missing value in oneSwitch")
                 value = member.text.strip()
                 if value == "On":
                     self.data[membername] = "On"
                 elif value == "Off":
                     self.data[membername] = "Off"
                 else:
-                    raise ParseException
+                    raise ParseException("Invalid value in oneSwitch")
             else:
-                raise ParseException
+                raise ParseException("Invalid child tag of setSwitchVector")
         properties = device.data
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
@@ -538,14 +538,14 @@ class setTextVector(setVector):
             if member.tag == "oneText":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Missing name in oneText")
                 if not member.text:
                     value = ""
                 else:
                     value = member.text.strip()
                 self.data[membername] = value
             else:
-                raise ParseException
+                raise ParseException("Invalid child tag of setTextVector")
         properties = device.data
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
@@ -572,12 +572,12 @@ class setNumberVector(setVector):
             if member.tag == "oneNumber":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Missing name in oneNumber")
                 if not member.text:
-                    raise ParseException
+                    raise ParseException("Missing value in oneNumber")
                 self.data[membername] = member.text.strip()
             else:
-                raise ParseException
+                raise ParseException("Invalid child tag of setNumberVector")
         properties = device.data
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
@@ -597,15 +597,15 @@ class setLightVector(setVector):
             if member.tag == "oneLight":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Missing name in oneLight")
                 if not member.text:
-                    raise ParseException
+                    raise ParseException("Missing value in oneLight")
                 value = member.text.strip()
                 if not value in ('Idle','Ok','Busy','Alert'):
-                    raise ParseException
+                    raise ParseException("Invalid value in oneLight")
                 self.data[membername] = value
             else:
-                raise ParseException
+                raise ParseException("Invalid child tag of setLightVector")
         properties = device.data
         self.vector = properties[self.vectorname]
         # set changed values into self.vector
@@ -640,23 +640,26 @@ class setBLOBVector(setVector):
             if member.tag == "oneBLOB":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Missing name in oneBLOB")
                 membersize = member.get("size")
                 if not membersize:
-                    raise ParseException
-                memberformat = member.get("format")
-                if not memberformat:
-                    raise ParseException
-                if not member.text:
-                    raise ParseException
+                    raise ParseException("Missing size in oneBLOB")
                 try:
-                    self.data[membername] = standard_b64decode(member.text.encode('ascii'))
                     memberize = int(membersize)
                 except:
-                    raise ParseException
+                    raise ParseException("Invalid size in oneBLOB")
+                memberformat = member.get("format")
+                if not memberformat:
+                    raise ParseException("Missing format in oneBLOB")
+                if not member.text:
+                    raise ParseException("Missing value in oneBLOB")
+                try:
+                    self.data[membername] = standard_b64decode(member.text.encode('ascii'))
+                except:
+                    raise ParseException("Unable to decode oneBLOB contents")
                 self.sizeformat[membername] = (membersize, memberformat)
             else:
-                raise ParseException
+                raise ParseException("Invalid child tag of setBLOBVector")
         self.vector = device[self.vectorname]
         # set changed values into self.vector
         self.vector._setvector(self)
