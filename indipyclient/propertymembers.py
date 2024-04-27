@@ -322,7 +322,7 @@ class NumberMember(ParentNumberMember):
             # test a float can be created from this membervalue
             self._floatvalue = self.getfloat(membervalue)
         except:
-            raise ParseException("Cannot parse the number")
+            raise ParseException("Cannot parse number received.")
 
     @property
     def membervalue(self):
@@ -340,7 +340,7 @@ class NumberMember(ParentNumberMember):
             # test a float can be created from this membervalue
             self._floatvalue = self.getfloat(value)
         except:
-            raise ParseException("Cannot parse the number")
+            raise ParseException("Cannot parse number received")
         self._membervalue = value
 
 
