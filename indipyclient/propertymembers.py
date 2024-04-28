@@ -7,8 +7,8 @@ from .error import ParseException
 
 
 def getfloat(value):
-    """The INDI spec allows a number of different number formats, given a number,
-       this returns a float.
+    """The INDI spec specifies several different number formats, given a number
+       in any of these formats, this returns a float.
        If an error occurs while parsing the number, a TypeError exception is raised."""
     try:
         if isinstance(value, float):
@@ -192,7 +192,7 @@ class ParentNumberMember(Member):
         self.step = step
 
     def getfloat(self, value):
-        """The INDI spec allows a number of different number formats, this method returns
+        """The INDI spec specifies several different number formats, this method returns
            the given value as a float.
            If an error occurs while parsing the number, a TypeError exception is raised."""
         return getfloat(value)
