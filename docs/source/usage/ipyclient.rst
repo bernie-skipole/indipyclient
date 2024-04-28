@@ -19,17 +19,6 @@ The rest of this documentation details the classes, methods and attributes avail
    :exclude-members: level, logfile, logfp
 
 
-Note that the set_vector_timeouts method enables the creation of VectorTimeOut events which are not part of the INDI standard which states:
-
-*The Device will eventually send a state of Ok if and when the new values for the Property have been successfully accomplished according to the Devices criteria, or send back Alert if they can not be accomplished with a message explaining why.*
-
-It also states:
-
-*Timeout values give Clients a simple ability to detect dysfunctional Devices or broken communication...*
-
-You have the option of handling timeouts however you prefer.
-
-
 **Attributes**
 
 Attributes of the IPyClient object are:
@@ -76,6 +65,12 @@ Note, messages are added with 'appendleft' so the newest message is messages[0] 
 
 The IPyClient object is also mapping of device name to device object. These Device objects are automatically created as data comes from the INDI server.
 
-As well as IPyClient, the function getfloat(value) is available which given a string version of a number as described in the INDI specification will return a float.
+Note that the set_vector_timeouts method enables the creation of VectorTimeOut events which are not part of the INDI standard which states:
 
-.. autofunction:: indipyclient.getfloat
+*The Device will eventually send a state of Ok if and when the new values for the Property have been successfully accomplished according to the Devices criteria, or send back Alert if they can not be accomplished with a message explaining why.*
+
+It also states:
+
+*Timeout values give Clients a simple ability to detect dysfunctional Devices or broken communication...*
+
+You have the option of handling timeouts however you prefer.

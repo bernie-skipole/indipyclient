@@ -80,3 +80,8 @@ The script checks for a setNumberVector event, and if the event matches the devi
     myclient = MyClient()
 
     asyncio.run(myclient.asyncrun())
+
+
+As well as IPyClient, the function getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
+
+.. autofunction:: indipyclient.getfloat
