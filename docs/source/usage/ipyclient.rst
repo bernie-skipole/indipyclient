@@ -75,3 +75,7 @@ Where the messages are 'global' messages received from the INDI server, or by th
 Note, messages are added with 'appendleft' so the newest message is messages[0] and the oldest message is messages[-1] or can be obtained with .pop()
 
 The IPyClient object is also mapping of device name to device object. These Device objects are automatically created as data comes from the INDI server.
+
+As well as IPyClient, the function getfloat(value) is available which given a string version of a number as described in the INDI specification will return a float.
+
+.. autofunction:: indipyclient.getfloat

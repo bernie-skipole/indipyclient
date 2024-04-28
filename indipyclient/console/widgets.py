@@ -5,6 +5,8 @@ from decimal import Decimal
 
 from curses import ascii
 
+from ..propertymembers import getfloat
+
 def shorten(text, width=0, placeholder="..."):
     "Shorten text"
     txt = text.replace("\n", " ")
@@ -860,14 +862,14 @@ class NumberMember(BaseMember):
         "set self._newvalue, limiting it to correct range"
         # self._newvalue is the new value input
         try:
-            newfloat = self.member.getfloat(self._newvalue)
+            newfloat = getfloat(self._newvalue)
         except (ValueError, TypeError):
             # reset self._newvalue
             self._newvalue = self.member.getformattedvalue()
             return
         # check step, and round newfloat to nearest step value
-        stepvalue = self.member.getfloat(self.member.step)
-        minvalue = self.member.getfloat(self.member.min)
+        stepvalue = getfloat(self.member.step)
+        minvalue = getfloat(self.member.min)
         if stepvalue:
             stepvalue = Decimal(str(stepvalue))
             difference = newfloat - minvalue
@@ -878,7 +880,7 @@ class NumberMember(BaseMember):
             self._newvalue = self.member.getformattedstring(minvalue)
             return
         if self.member.max != self.member.min:
-            maxvalue = self.member.getfloat(self.member.max)
+            maxvalue = getfloat(self.member.max)
             if newfloat > maxvalue:
                 # reset self._newvalue to be the maximum, and accept this
                 self._newvalue = self.member.getformattedstring(maxvalue)

@@ -145,7 +145,6 @@ class PropertyVector(Vector):
 
     def _setvector(self, event):
         "Updates this vector with new values after a set... vector has been received"
-        self._timer = False
         if not self.enable:
             # this property does not exist
             return
@@ -162,6 +161,8 @@ class PropertyVector(Vector):
             if membername in self.data:
                 member = self.data[membername]
                 member.membervalue = membervalue
+        # turn off timer if all updates are successful
+        self._timer = False
 
 
     def _snapshot(self):

@@ -6,6 +6,53 @@ import sys, pathlib
 from .error import ParseException
 
 
+def getfloat(value):
+    """The INDI spec allows a number of different number formats, given a number,
+       this returns a float.
+       If an error occurs while parsing the number, a TypeError exception is raised."""
+    try:
+        if isinstance(value, float):
+            return value
+        if isinstance(value, int):
+            return float(value)
+        if not isinstance(value, str):
+            raise TypeError
+        # negative is True, if the value is negative
+        value = value.strip()
+        negative = value.startswith("-")
+        if negative:
+            value = value.lstrip("-")
+        # Is the number provided in sexagesimal form?
+        if value == "":
+            parts = ["0", "0", "0"]
+        elif " " in value:
+            parts = value.split(" ")
+        elif ":" in value:
+            parts = value.split(":")
+        elif ";" in value:
+            parts = value.split(";")
+        else:
+            # not sexagesimal
+            parts = [value, "0", "0"]
+        if len(parts) > 3:
+            raise TypeError
+        # Any missing parts should have zero
+        if len(parts) == 1:
+            parts.append("0")
+            parts.append("0")
+        if len(parts) == 2:
+            parts.append("0")
+        assert len(parts) == 3
+        # a part could be empty string, ie if 2:5: is given
+        numbers = list(float(x) if x else 0.0 for x in parts)
+        floatvalue = numbers[0] + (numbers[1]/60) + (numbers[2]/3600)
+        if negative:
+            floatvalue = -1 * floatvalue
+    except:
+        raise TypeError("Unable to parse number value")
+    return floatvalue
+
+
 class Member():
 
     """This class is the parent of further member classes.
@@ -144,58 +191,18 @@ class ParentNumberMember(Member):
         self.max = max
         self.step = step
 
+    def getfloat(self, value):
+        """The INDI spec allows a number of different number formats, this method returns
+           the given value as a float.
+           If an error occurs while parsing the number, a TypeError exception is raised."""
+        return getfloat(value)
+
+
     def getfloatvalue(self):
         """The INDI spec allows a number of different number formats, this method returns
            this members value as a float.
            If an error occurs while parsing the number, a TypeError exception is raised."""
-        return self.getfloat(self._membervalue)
-
-
-    def getfloat(self, value):
-        """The INDI spec allows a number of different number formats, given a number,
-           this returns a float.
-           If an error occurs while parsing the number, a TypeError exception is raised."""
-        try:
-            if isinstance(value, float):
-                return value
-            if isinstance(value, int):
-                return float(value)
-            if not isinstance(value, str):
-                raise TypeError
-            # negative is True, if the value is negative
-            value = value.strip()
-            negative = value.startswith("-")
-            if negative:
-                value = value.lstrip("-")
-            # Is the number provided in sexagesimal form?
-            if value == "":
-                parts = ["0", "0", "0"]
-            elif " " in value:
-                parts = value.split(" ")
-            elif ":" in value:
-                parts = value.split(":")
-            elif ";" in value:
-                parts = value.split(";")
-            else:
-                # not sexagesimal
-                parts = [value, "0", "0"]
-            if len(parts) > 3:
-                raise TypeError
-            # Any missing parts should have zero
-            if len(parts) == 1:
-                parts.append("0")
-                parts.append("0")
-            if len(parts) == 2:
-                parts.append("0")
-            assert len(parts) == 3
-            # a part could be empty string, ie if 2:5: is given
-            numbers = list(float(x) if x else 0.0 for x in parts)
-            floatvalue = numbers[0] + (numbers[1]/60) + (numbers[2]/3600)
-            if negative:
-                floatvalue = -1 * floatvalue
-        except:
-            raise TypeError("Unable to parse number value")
-        return floatvalue
+        return getfloat(self._membervalue)
 
 
     def getformattedvalue(self):
@@ -206,7 +213,7 @@ class ParentNumberMember(Member):
     def getformattedstring(self, value):
         """Given a number this returns a formatted string"""
         try:
-            value = self.getfloat(value)
+            value = getfloat(value)
             if (not self.format.startswith("%")) or (not self.format.endswith("m")):
                 return self.format % value
             # sexagesimal
@@ -320,7 +327,7 @@ class NumberMember(ParentNumberMember):
             raise ParseException("Number value must be given as a string")
         try:
             # test a float can be created from this membervalue
-            self._floatvalue = self.getfloat(membervalue)
+            self._floatvalue = getfloat(membervalue)
         except:
             raise ParseException("Cannot parse number received.")
 
@@ -338,7 +345,8 @@ class NumberMember(ParentNumberMember):
             raise ParseException("No number value given")
         try:
             # test a float can be created from this membervalue
-            self._floatvalue = self.getfloat(value)
+            # and save the float
+            self._floatvalue = getfloat(value)
         except:
             raise ParseException("Cannot parse number received")
         self._membervalue = value

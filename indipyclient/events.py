@@ -575,7 +575,15 @@ class setNumberVector(setVector):
                     raise ParseException("Missing name in oneNumber")
                 if not member.text:
                     raise ParseException("Missing value in oneNumber")
-                self.data[membername] = member.text.strip()
+                membervalue = member.text.strip()
+                if not membervalue:
+                    raise ParseException("Missing value in oneNumber")
+                # test membervalue ok
+                try:
+                    memberfloat = propertymembers.getfloat(membervalue)
+                except TypeError:
+                    raise ParseException("Invalid number in setNumberVector")
+                self.data[membername] = membervalue
             else:
                 raise ParseException("Invalid child tag of setNumberVector")
         properties = device.data
