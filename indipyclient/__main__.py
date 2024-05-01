@@ -10,7 +10,7 @@ import os, sys, argparse, asyncio, collections, contextlib, pathlib
 
 from . import version
 
-from .console.consoleclient import ConsoleClient, ConsoleControl
+from .console.consoleclient import ConsoleClient, ConsoleControl, setlogging
 
 
 async def runclient(client, control):
@@ -72,7 +72,7 @@ loglevel:4 log vectors and all contents
         except:
             print("Error: If given, the loglevel should be 1, 2, 3 or 4")
             return 1
-        client.setlogging(loglevel, args.logfile)
+        setlogging(loglevel, args.logfile)
 
     # Monitors eventque and acts on the events, creates the console screens
     control = ConsoleControl(client, blobfolder=blobfolder)

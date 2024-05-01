@@ -1,7 +1,10 @@
 
-import asyncio, sys, traceback
+import asyncio, sys, traceback, pathlib
 
 import curses
+
+import logging
+logger = logging.getLogger('indipyclient')
 
 from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
@@ -13,6 +16,40 @@ from . import widgets
 # set limit to terminal size
 MINROWS = 22
 MINCOLS = 78
+
+
+def setlogging(level, logfile):
+    """Sets the logging level and logfile, returns the level, which will be None on failure.
+       As default, no logging is enabled. If logging is required, this can be called, level
+       should be an integer, one of 1, 2, 3 or 4.
+       Be warned, there is no logfile rotation, files can become large.
+       Note: it may be useful in another terminal to try tail -f logfile"""
+
+    # loglevel:1 Information and error messages only,  -> error
+    # loglevel:2 log vector tags without members or contents  -> warning
+    # loglevel:3 log vectors and members - but not BLOB contents  -> info
+    # loglevel:4 log vectors and all contents   -> debug
+
+    try:
+        if not level in (1, 2, 3, 4):
+            return None
+        logfile = pathlib.Path(logfile).expanduser().resolve()
+
+        if level == 4:
+            logger.setLevel(logging.DEBUG)
+        elif level == 3:
+            logger.setLevel(logging.INFO)
+        elif level == 2:
+            logger.setLevel(logging.WARNING)
+        elif level == 1:
+            logger.setLevel(logging.ERROR)
+        logfile = pathlib.Path(logfile).expanduser().resolve()
+        fh = logging.FileHandler(logfile)
+        logger.addHandler(fh)
+    except:
+        return
+    return level
+
 
 
 class ConsoleClient(IPyClient):
