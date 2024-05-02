@@ -146,29 +146,19 @@ class IPyClient(collections.UserDict):
         # this is set to True when asyncrun is finished
         self.stopped = False
 
-        # logging level and filepointer to logfile
-        # level, None for no logging, 1 for informtion and errors only,
-        #                             2 for transmitted/received vector tags only,
-        #                             3 for transmitted/received vectors, members and contents (apart from BLOB's)
-        #                             4 for all transmitted/received data
-        self._level = None
-        self._logfile = None
-        self._logfp = None
+        # Indicates how verbose the debug xml logs will be when created.
+        self._verbose = 1
 
-    @property
-    def level(self):
-        "Can be read, but only set via setlogging method"
-        return self._level
 
-    @property
-    def logfile(self):
-        "Can be read, but only set via setlogging method"
-        return self._logfile
+    def debug_verbosity(self, verbose):
+        """Indicate how verbose the debug xml logs will be when created.
+           1 for transmitted/received vector tags only,
+           2 for transmitted/received vectors, members and contents (apart from BLOBs)
+           3 for all transmitted/received data including BLOBs."""
+        if verbose not in (1,2,3):
+            raise ValueError
+        self._verbose = verbose
 
-    @property
-    def logfp(self):
-        "Can be read, but only set via setlogging method"
-        return self._logfp
 
     def shutdown(self):
         "Shuts down the client"
@@ -179,21 +169,16 @@ class IPyClient(collections.UserDict):
            picked up by the rxevent method. It is a way to set a message
            on to your client display, in the same way messages come from
            the INDI service. If logging is enabled the message will also
-           be written to the logfile"""
+           be logged at level INFO"""
         try:
             timestamp = datetime.now(tz=timezone.utc)
             timestamp = timestamp.replace(tzinfo=None)
-            logger.error(message)
+            logger.info(message)
             root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
             event = events.Message(root, None, self)
             await self.rxevent(event)
         except Exception :
             logger.exception("Error in IPyClient.report method")
-
-
-    def log(self, message):
-        """If logging is enabled, this writes the message to the logfile"""
-        logger.error(message)
 
 
     def enabledlen(self):
@@ -230,6 +215,7 @@ class IPyClient(collections.UserDict):
                 except ConnectionResetError:
                     await self.report("Error: Connection Lost")
                 except Exception:
+                    logger.exception("Connection Error")
                     await self.report("Error: Connection failed")
                 self._clear_connection()
                 if self._stop:
@@ -245,7 +231,7 @@ class IPyClient(collections.UserDict):
                     count += 1
                     if count >= 10:
                         break
-        except Exception as e:
+        except Exception:
             logger.exception("Error in IPyClient._comms method")
         finally:
             self.shutdown()
@@ -301,25 +287,25 @@ class IPyClient(collections.UserDict):
 
 
     def _logtx(self, txdata):
-        "log tx data to file"
+        "log tx data with level debug, and detail depends on self._verbose"
 
         startlog = "TX:: "
-        if logger.isEnabledFor(logging.DEBUG):
+        if self._verbose == 3:
             binarydata = ET.tostring(txdata)
             logger.debug(startlog + binarydata.decode())
-        elif logger.isEnabledFor(logging.INFO):
+        elif self._verbose == 2:
             tag = txdata.tag
             for element in txdata:
                 if tag == "newBLOBVector":
                     element.text = "NOT LOGGED"
             binarydata = ET.tostring(txdata)
-            logger.info(startlog + binarydata.decode())
-        elif logger.isEnabledFor(logging.WARNING):
+            logger.debug(startlog + binarydata.decode())
+        elif self._verbose == 1:
             for element in txdata:
                 txdata.remove(element)
             txdata.text = ""
             binarydata = ET.tostring(txdata, short_empty_elements=False).split(b">")
-            logger.warning(startlog + binarydata[0].decode()+">")
+            logger.debug(startlog + binarydata[0].decode()+">")
 
 
 
@@ -352,31 +338,32 @@ class IPyClient(collections.UserDict):
                 if (self.tx_timer is None) and (txdata.tag != "enableBLOB"):
                     self.tx_timer = time.time()
                 self.idle_timer = time.time()
-
-                self._logtx(txdata)
+                if logger.isEnabledFor(logging.DEBUG):
+                    self._logtx(txdata)
         except KeyboardInterrupt:
             self.shutdown()
 
     def _logrx(self, rxdata):
         "log rx data to file"
-        data = copy.deepcopy(rxdata)
         startlog = "RX:: "
-        if logger.isEnabledFor(logging.DEBUG):
-            binarydata = ET.tostring(data)
+        if self._verbose == 3:
+            binarydata = ET.tostring(rxdata)
             logger.debug(startlog + binarydata.decode())
-        elif logger.isEnabledFor(logging.INFO):
+        elif self._verbose == 2:
+            data = copy.deepcopy(rxdata)
             tag = data.tag
             for element in data:
                 if tag  == "newBLOBVector":
                     element.text = "NOT LOGGED"
             binarydata = ET.tostring(data)
-            logger.info(startlog + binarydata.decode())
-        elif logger.isEnabledFor(logging.WARNING):
+            logger.debug(startlog + binarydata.decode())
+        elif self._verbose == 1:
+            data = copy.deepcopy(rxdata)
             for element in data:
                 data.remove(element)
             data.text = ""
             binarydata = ET.tostring(data, short_empty_elements=False).split(b">")
-            logger.warning(startlog + binarydata[0].decode() + ">")
+            logger.debug(startlog + binarydata[0].decode() + ">")
 
 
     async def _run_rx(self, reader):
@@ -397,12 +384,17 @@ class IPyClient(collections.UserDict):
                         # discard this data and continue
                         pass
                     else:
-                        self._logrx(rxdata)
+                        if logger.isEnabledFor(logging.DEBUG):
+                            self._logrx(rxdata)
         except RuntimeError:
             # catches StopAsyncIteration and stops this coroutine
             pass
         except KeyboardInterrupt:
             self.shutdown()
+        except Exception:
+            logger.exception("Error in _run_rx")
+            self.shutdown()
+
 
 
     async def _datasource(self, reader):

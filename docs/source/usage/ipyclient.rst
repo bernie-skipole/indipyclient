@@ -43,18 +43,6 @@ True if a connection has been made.
 
 True when asyncrun is finished.
 
-**self.level**
-
-Read only attribute, set via setlogging method.
-
-**self.logfile**
-
-Read only attribute, set via setlogging method.
-
-**self.logfp**
-
-Read only attribute, file pointer to the logfile.
-
 **self.messages**
 
 This is a collections.deque of item tuples (Timestamp, message).

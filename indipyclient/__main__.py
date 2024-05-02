@@ -10,7 +10,7 @@ import os, sys, argparse, asyncio, collections, contextlib, pathlib
 
 from . import version
 
-from .console.consoleclient import ConsoleClient, ConsoleControl, setlogging
+from .console.consoleclient import ConsoleClient, ConsoleControl
 
 
 async def runclient(client, control):
@@ -32,9 +32,9 @@ def main():
 Setting loglevel and logfile should only be used for brief
 diagnostic purposes, the logfile could grow very big.
 loglevel:1 Information and error messages only,
-loglevel:2 log vector tags without members or contents,
-loglevel:3 log vectors and members - but not BLOB contents,
-loglevel:4 log vectors and all contents
+loglevel:2 As 1 plus xml vector tags without members or contents,
+loglevel:3 As 1 plus xml vectors and members - but not BLOB contents,
+loglevel:4 As 1 plus xml vectors and all contents
 """)
     parser.add_argument("-p", "--port", type=int, default=7624, help="Port of the INDI server (default 7624).")
     parser.add_argument("--host", default="localhost", help="Hostname/IP of the INDI server (default localhost).")
@@ -63,19 +63,22 @@ loglevel:4 log vectors and all contents
     # On receiving an event, the client appends it into eventque
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
 
+    # Monitors eventque and acts on the events, creates the console screens
+    control = ConsoleControl(client, blobfolder=blobfolder)
+
     if args.loglevel and args.logfile:
         try:
             loglevel = int(args.loglevel)
             if loglevel not in (1,2,3,4):
                 print("Error: If given, the loglevel should be 1, 2, 3 or 4")
                 return 1
+            level = control.setlogging(loglevel, args.logfile)
+            if level != loglevel:
+                print("Error: Failed to set logging")
+                return 1
         except:
             print("Error: If given, the loglevel should be 1, 2, 3 or 4")
             return 1
-        setlogging(loglevel, args.logfile)
-
-    # Monitors eventque and acts on the events, creates the console screens
-    control = ConsoleControl(client, blobfolder=blobfolder)
 
     asyncio.run(runclient(client, control))
 

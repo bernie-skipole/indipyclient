@@ -18,40 +18,6 @@ MINROWS = 22
 MINCOLS = 78
 
 
-def setlogging(level, logfile):
-    """Sets the logging level and logfile, returns the level, which will be None on failure.
-       As default, no logging is enabled. If logging is required, this can be called, level
-       should be an integer, one of 1, 2, 3 or 4.
-       Be warned, there is no logfile rotation, files can become large.
-       Note: it may be useful in another terminal to try tail -f logfile"""
-
-    # loglevel:1 Information and error messages only,  -> error
-    # loglevel:2 log vector tags without members or contents  -> warning
-    # loglevel:3 log vectors and members - but not BLOB contents  -> info
-    # loglevel:4 log vectors and all contents   -> debug
-
-    try:
-        if not level in (1, 2, 3, 4):
-            return None
-        logfile = pathlib.Path(logfile).expanduser().resolve()
-
-        if level == 4:
-            logger.setLevel(logging.DEBUG)
-        elif level == 3:
-            logger.setLevel(logging.INFO)
-        elif level == 2:
-            logger.setLevel(logging.WARNING)
-        elif level == 1:
-            logger.setLevel(logging.ERROR)
-        logfile = pathlib.Path(logfile).expanduser().resolve()
-        fh = logging.FileHandler(logfile)
-        logger.addHandler(fh)
-    except:
-        return
-    return level
-
-
-
 class ConsoleClient(IPyClient):
 
     """Overrides IPyClient
@@ -126,6 +92,40 @@ class ConsoleControl:
         # BLOBfiles, is a dictionary of {(devicename,vectorname,membername):filepath}
         self.BLOBfiles = {}
 
+    def setlogging(self, level, logfile):
+        """Sets the logging level and logfile, returns the level, which will be None on failure.
+           As default, no logging is enabled. If logging is required, this can be called, level
+           should be an integer, one of 1, 2, 3 or 4.
+           Be warned, there is no logfile rotation, files can become large.
+           Note: it may be useful in another terminal to try tail -f logfile"""
+
+        # loglevel:1 Information and error messages only,  -> error
+        # loglevel:2 log vector tags without members or contents  -> warning
+        # loglevel:3 log vectors and members - but not BLOB contents  -> info
+        # loglevel:4 log vectors and all contents   -> debug
+
+        try:
+            if not level in (1, 2, 3, 4):
+                return None
+            logfile = pathlib.Path(logfile).expanduser().resolve()
+
+            if level == 4:
+                logger.setLevel(logging.DEBUG)
+                self.client.debug_verbosity(3)
+            elif level == 3:
+                logger.setLevel(logging.DEBUG)
+                self.client.debug_verbosity(2)
+            elif level == 2:
+                logger.setLevel(logging.DEBUG)
+                self.client.debug_verbosity(1)
+            elif level == 1:
+                logger.setLevel(logging.INFO)
+            logfile = pathlib.Path(logfile).expanduser().resolve()
+            fh = logging.FileHandler(logfile)
+            logger.addHandler(fh)
+        except:
+            return
+        return level
 
 
     def color(self, state):
@@ -141,18 +141,15 @@ class ConsoleControl:
             return curses.color_pair(3)
         return curses.color_pair(0)
 
+
     @property
     def connected(self):
         return self.client.connected
 
 
-    def shutdown(self, exc=None):
-        """If exc is an exception, and logs are enabled, logs it.
-           Sets self._shutdown to True which shuts down the client"""
+    def shutdown(self):
+        "Sets self._shutdown to True which shuts down the client"
         self._shutdown = True
-        if self.client.level and not(exc is None):
-            bytex = "".join(traceback.format_exception(exc)).encode()
-            self.client.logfp.write(b"\n"+bytex)
 
 
     async def _checkshutdown(self):
@@ -278,8 +275,9 @@ class ConsoleControl:
         except asyncio.CancelledError:
             self.shutdown()
             raise
-        except Exception as e:
-            self.shutdown(e)
+        except Exception:
+            logger.exception("Error in updatescreen")
+            self.shutdown()
         finally:
             self.updatescreenstopped = True
 
@@ -447,8 +445,9 @@ class ConsoleControl:
         except asyncio.CancelledError:
             self.shutdown()
             raise
-        except Exception as e:
-            self.shutdown(e)
+        except Exception:
+            logger.exception("Error in getinput")
+            self.shutdown()
         finally:
             self.getinputstopped = True
 
