@@ -16,7 +16,6 @@ The rest of this documentation details the classes, methods and attributes avail
 
 .. autoclass:: indipyclient.IPyClient
    :members:
-   :exclude-members: level, logfile, logfp
 
 
 **Attributes**
@@ -62,3 +61,32 @@ It also states:
 *Timeout values give Clients a simple ability to detect dysfunctional Devices or broken communication...*
 
 You have the option of handling timeouts however you prefer.
+
+Logging
+=======
+
+This indipyclient package uses the Python standard library logging module, it uses logger with name "indipyclient" and emits logs at levels:
+
+**ERROR**
+
+Logs tracebacks from exceptions
+
+**INFO**
+
+Logs informational messages and error messages as above.
+
+**DEBUG**
+
+Logs xml data transmitted and received, and the info and error messages as above. The verbosity of this xml data can be set with the IPyClient.debug_verbosity(verbose) method, where verbose 1 is the least, and verbose 3 is the most.
+
+As default, only the logging.NullHandler() is added, so no logs are generated. To create logs you will need to add a handler, and a logging level, for example::
+
+    import logging
+    logger = logging.getLogger('indipyclient')
+
+    fh = logging.FileHandler("logfile.log")
+    logger.addHandler(fh)
+
+    logger.setLevel(logging.DEBUG)
+
+This leaves you with the flexibility to add any available loghandler, and to set your own formats if required.
