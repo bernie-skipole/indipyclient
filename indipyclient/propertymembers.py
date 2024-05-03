@@ -3,7 +3,10 @@ import xml.etree.ElementTree as ET
 
 import sys, pathlib
 
-from .error import ParseException
+
+class ParseException(Exception):
+    "Raised if an error occurs when parsing received data"
+    pass
 
 
 def getfloat(value):

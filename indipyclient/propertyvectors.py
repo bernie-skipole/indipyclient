@@ -7,9 +7,7 @@ import asyncio
 
 import xml.etree.ElementTree as ET
 
-from .propertymembers import SwitchMember, LightMember, TextMember, NumberMember, BLOBMember
-
-from .error import ParseException
+from .propertymembers import SwitchMember, LightMember, TextMember, NumberMember, BLOBMember, ParseException
 
 
 class Vector(collections.UserDict):

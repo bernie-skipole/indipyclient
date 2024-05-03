@@ -120,7 +120,7 @@ class ConsoleControl:
                 self.client.debug_verbosity(1)
             elif level == 1:
                 logger.setLevel(logging.INFO)
-            logfile = pathlib.Path(logfile).expanduser().resolve()
+
             fh = logging.FileHandler(logfile)
             logger.addHandler(fh)
         except:
@@ -154,13 +154,17 @@ class ConsoleControl:
 
     async def _checkshutdown(self):
         "If self._shutdown becomes True, shutdown"
-        while not self._shutdown:
+        while (not self._shutdown) and (not self.client.stopped):
             await asyncio.sleep(0)
-        await self.client.report("Shutting down client - please wait")
-        self.client.shutdown()
-        while not self.client.stopped:
-            await asyncio.sleep(0)
-        # now stop co-routines
+        # so either shutdown has been requested or the ipyclient has stopped for some reason
+        self._shutdown = True
+        if not self.client.stopped:
+            # client is still running, shut it down
+            await self.client.report("Shutting down client - please wait")
+            self.client.shutdown()
+            while not self.client.stopped:
+                await asyncio.sleep(0)
+        # so ipyclient has stopped now stop console co-routines
         self.stop = True
         while (not self.updatescreenstopped) and (not self.getinputstopped):
             await asyncio.sleep(0)

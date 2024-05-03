@@ -11,9 +11,7 @@ import xml.etree.ElementTree as ET
 
 from . import propertyvectors
 
-from . import propertymembers
-
-from .error import ParseException
+from .propertymembers import ParseException, getfloat
 
 
 
@@ -580,7 +578,7 @@ class setNumberVector(setVector):
                     raise ParseException("Missing value in oneNumber")
                 # test membervalue ok
                 try:
-                    memberfloat = propertymembers.getfloat(membervalue)
+                    memberfloat = getfloat(membervalue)
                 except TypeError:
                     raise ParseException("Invalid number in setNumberVector")
                 self.data[membername] = membervalue

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 from . import events
 
-from .error import ParseException, ConnectionTimeOut
+from .propertymembers import ParseException
 
 
 # All xml data received from the driver should be contained in one of the following tags
