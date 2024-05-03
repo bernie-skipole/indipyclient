@@ -549,7 +549,7 @@ class IPyClient(collections.UserDict):
                 await self.rxevent(event)
         except asyncio.CancelledError:
             raise
-        except Exception as e:
+        except Exception:
             logger.exception("Error in IPyClient._rxhandler method")
         finally:
             self.shutdown()
@@ -653,7 +653,7 @@ class IPyClient(collections.UserDict):
                             count = 0
         except asyncio.CancelledError:
              raise
-        except Exception as e:
+        except Exception:
             logger.exception("Error in IPyClient._timeout_monitor method")
         finally:
             self.shutdown()
@@ -748,32 +748,41 @@ class _Device(Device):
     def rxvector(self, root):
         """Handle received data, sets new propertyvector into self.data,
            or updates existing property vector and returns an event"""
-        if root.tag == "delProperty":
-            return events.delProperty(root, self, self._client)
-        elif root.tag == "message":
-            return events.Message(root, self, self._client)
-        elif root.tag == "defSwitchVector":
-            return events.defSwitchVector(root, self, self._client)
-        elif root.tag == "setSwitchVector":
-            return events.setSwitchVector(root, self, self._client)
-        elif root.tag == "defLightVector":
-            return events.defLightVector(root, self, self._client)
-        elif root.tag == "setLightVector":
-            return events.setLightVector(root, self, self._client)
-        elif root.tag == "defTextVector":
-            return events.defTextVector(root, self, self._client)
-        elif root.tag == "setTextVector":
-            return events.setTextVector(root, self, self._client)
-        elif root.tag == "defNumberVector":
-            return events.defNumberVector(root, self, self._client)
-        elif root.tag == "setNumberVector":
-            return events.setNumberVector(root, self, self._client)
-        elif root.tag == "defBLOBVector":
-            return events.defBLOBVector(root, self, self._client)
-        elif root.tag == "setBLOBVector":
-            return events.setBLOBVector(root, self, self._client)
-        else:
-            raise ParseException("Unrecognised tag received")
+        try:
+            if root.tag == "delProperty":
+                return events.delProperty(root, self, self._client)
+            elif root.tag == "message":
+                return events.Message(root, self, self._client)
+            elif root.tag == "defSwitchVector":
+                return events.defSwitchVector(root, self, self._client)
+            elif root.tag == "setSwitchVector":
+                return events.setSwitchVector(root, self, self._client)
+            elif root.tag == "defLightVector":
+                return events.defLightVector(root, self, self._client)
+            elif root.tag == "setLightVector":
+                return events.setLightVector(root, self, self._client)
+            elif root.tag == "defTextVector":
+                return events.defTextVector(root, self, self._client)
+            elif root.tag == "setTextVector":
+                return events.setTextVector(root, self, self._client)
+            elif root.tag == "defNumberVector":
+                return events.defNumberVector(root, self, self._client)
+            elif root.tag == "setNumberVector":
+                return events.setNumberVector(root, self, self._client)
+            elif root.tag == "defBLOBVector":
+                return events.defBLOBVector(root, self, self._client)
+            elif root.tag == "setBLOBVector":
+                return events.setBLOBVector(root, self, self._client)
+            else:
+                raise ParseException("Unrecognised tag received")
+        except ParseException:
+            raise
+        except KeyboardInterrupt:
+            raise
+        except Exception:
+            logger.exception("Error in IPyClient.rxvector method")
+            raise ParseException("Error while attempting to parse received data")
+
 
     def _snapshot(self):
         "Creates snapshot of this device and its vectors"
