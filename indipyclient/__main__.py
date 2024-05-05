@@ -1,12 +1,15 @@
 
-"""Usage is
+"""Creates a terminal client
 
-python3 -m indipyclient
+Try
 
+python3 -m indipyclient --help
+
+For a description of options
 """
 
 
-import os, sys, argparse, asyncio, collections, contextlib, pathlib
+import sys, argparse, asyncio, collections, pathlib
 
 from . import version
 
@@ -14,6 +17,7 @@ from .console.consoleclient import ConsoleClient, ConsoleControl
 
 
 async def runclient(client, control):
+    "Run the client.asyncrun() and control.asyncrun() coroutines"
     t1 = asyncio.create_task(client.asyncrun())
     t2 = asyncio.create_task(control.asyncrun())
     await asyncio.gather(t1, t2)
@@ -23,7 +27,7 @@ async def runclient(client, control):
 
 
 def main():
-    """The main routine."""
+    """The commandline entry point to run the terminal client."""
 
     parser = argparse.ArgumentParser(usage="indipyclient [options]",
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -45,8 +49,6 @@ loglevel:4 As 1 plus xml vectors and all contents
     parser.add_argument("--version", action="version", version=version)
     args = parser.parse_args()
 
-    eventque = collections.deque(maxlen=4)
-
     if args.blobs:
         try:
             blobfolder = pathlib.Path(args.blobs).expanduser().resolve()
@@ -60,10 +62,15 @@ loglevel:4 As 1 plus xml vectors and all contents
     else:
         blobfolder = None
 
+    # ConsoleClient is a subclass of IPyClient, with its rxevent(event) method created
+    # to add events to a queue. First a queue is created and passed into ConsoleClient
+    eventque = collections.deque(maxlen=4)
+
     # On receiving an event, the client appends it into eventque
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
 
     # Monitors eventque and acts on the events, creates the console screens
+    # and calls the send vector methods of client to transmit data
     control = ConsoleControl(client, blobfolder=blobfolder)
 
     if args.loglevel and args.logfile:

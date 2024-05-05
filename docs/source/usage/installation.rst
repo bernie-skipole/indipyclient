@@ -25,7 +25,9 @@ Without any options the client will attempt to connect to localhost.
 
 **Notes**
 
-You could run the INDI service and drivers on one machine, and indipyclient on another if you specify the host and ports to connect to. However a more secure method would be to run both on the same machine using the default localhost, and do not open the port to network connections.  You can still uses the terminal remotely, by calling the machine using SSH, and in the SSH session, open the client by running indipyclient.
+You could run the INDI service on one machine, and indipyclient on another if you specify the host and port to connect to. However a more secure method would be to run both on the same machine using the default localhost, and do not open the port to network connections.  You can still uses the terminal remotely, by calling the machine using SSH, and in the SSH session, open the client by running indipyclient.
+
+Using SSH and running the client on the machine which is also running the server will be secure, but may give poorer performance for rapidly changing values, as screen refreshes are transmitted across the network rather than the efficient xml. It may be useful to explore SSH tunneling as another alternative.
 
 You should note that indipyclient relies on the Python Curses standard library package, and this is not available on Windows, in which case using an SSH connection and running indipyclient on the server is the best option.
 
