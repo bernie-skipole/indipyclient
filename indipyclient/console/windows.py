@@ -272,9 +272,9 @@ class MessagesScreen(ConsoleClientScreen):
         curses.doupdate()
 
 
-    async def disableBLOBs(self):
+    def disableBLOBs(self):
         self.control.blobenabled = False
-        await self.client.report("Warning! BLOBs disabled")
+        self.client.report("Warning! BLOBs disabled")
         self.control.send_disableBLOB()
         self.enable_btn.bold = False
         self.disable_btn.bold = True
@@ -321,7 +321,7 @@ class MessagesScreen(ConsoleClientScreen):
                             # focus already set - return the button onclick
                             value = fld.onclick
                             if value == "DisableBLOBs":
-                                await self.disableBLOBs()
+                                self.disableBLOBs()
                                 break
                             else:
                                 return value
@@ -405,7 +405,7 @@ class MessagesScreen(ConsoleClientScreen):
                     if fld.focus:
                         value = fld.onclick
                         if value == "DisableBLOBs":
-                            await self.disableBLOBs()
+                            self.disableBLOBs()
                             break
                         else:
                             return value
@@ -492,7 +492,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             curses.doupdate()
 
 
-    async def submit(self):
+    def submit(self):
         self._newpath = self.path_txt.text.strip()
         blobfolder = None
         if self._newpath:
@@ -502,7 +502,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                 self.control.blobenabled = False
                 self.control.send_disableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                await self.client.report("Warning! Unable to parse BLOB folder")
+                self.client.report("Warning! Unable to parse BLOB folder")
                 self.submit_btn.focus = False
                 self.messages_btn.focus = True
                 return
@@ -514,16 +514,16 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                 self.control.blobenabled = True
                 self.control.send_enableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
-                await self.client.report("BLOB folder is set")
+                self.client.report("BLOB folder is set")
             else:
                 self.control.blobenabled = False
                 self.control.send_disableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                await self.client.report("Warning! BLOB folder is not a directory")
+                self.client.report("Warning! BLOB folder is not a directory")
         else:
             self.control.blobenabled = False
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-            await self.client.report("Warning! BLOB folder is invalid")
+            self.client.report("Warning! BLOB folder is invalid")
             self.control.send_disableBLOB()
         self.submit_btn.focus = False
         self.messages_btn.focus = True
@@ -550,7 +550,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                             # focus already set - return the button onclick
                             value = fld.onclick
                             if value == "Submit":
-                                await self.submit()
+                                self.submit()
                                 self.submit_btn.draw()
                                 self.messages_btn.draw()
                                 self.buttwin.noutrefresh()
@@ -582,7 +582,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
                 elif self.devices_btn.focus:
                     return "Messages"
                 elif self.submit_btn.focus:
-                    await self.submit()
+                    self.submit()
 
             elif key in (32, 9, 261, 338, 258):
                 # go to the next button

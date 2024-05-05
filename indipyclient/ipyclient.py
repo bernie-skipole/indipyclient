@@ -164,7 +164,7 @@ class IPyClient(collections.UserDict):
         "Shuts down the client"
         self._stop = True
 
-    async def report(self, message):
+    def report(self, message):
         """This injects a message into the received data, which will be
            picked up by the rxevent method. It is a way to set a message
            on to your client display, in the same way messages come from
@@ -175,8 +175,13 @@ class IPyClient(collections.UserDict):
             timestamp = timestamp.replace(tzinfo=None)
             logger.info(message)
             root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
-            event = events.Message(root, None, self)
-            await self.rxevent(event)
+            # and place root into readerque
+            try:
+                self.readerque.put_nowait(root)
+            except asyncio.QueueFull:
+                # The queue is full, something may be wrong
+                # discard this data and continue
+                pass
         except Exception :
             logger.exception("Error in IPyClient.report method")
 
@@ -201,27 +206,27 @@ class IPyClient(collections.UserDict):
                     # start by openning a connection
                     # clear messages
                     self.messages.clear()
-                    await self.report("Attempting to connect")
+                    self.report("Attempting to connect")
                     reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
                     self.connected = True
                     self.messages.clear()
-                    await self.report(f"Connected to {self.indihost}:{self.indiport}")
+                    self.report(f"Connected to {self.indihost}:{self.indiport}")
                     await asyncio.gather(self._run_tx(writer),
                                          self._run_rx(reader),
                                          self._check_alive(writer)
                                          )
                 except ConnectionRefusedError:
-                    await self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
+                    self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionResetError:
-                    await self.report("Error: Connection Lost")
+                    self.report("Error: Connection Lost")
                 except Exception:
                     logger.exception("Connection Error")
-                    await self.report("Error: Connection failed")
+                    self.report("Error: Connection failed")
                 self._clear_connection()
                 if self._stop:
                     break
                 else:
-                    await self.report(f"Connection failed, re-trying...")
+                    self.report(f"Connection failed, re-trying...")
 
                 # wait five seconds before re-trying, but keep checking
                 # that self._stop has not been set
@@ -275,7 +280,7 @@ class IPyClient(collections.UserDict):
                        await writer.wait_closed()
                        self._clear_connection()
                        if not self._stop:
-                           await self.report("Error: Connection timed out")
+                           self.report("Error: Connection timed out")
             if self.connected and self._stop:
                 writer.close()
                 await writer.wait_closed()
@@ -540,7 +545,7 @@ class IPyClient(collections.UserDict):
                             continue
                 except ParseException as pe:
                     # if a ParseException is raised, it is because received data is malformed
-                    await self.report(str(pe))
+                    self.report(str(pe))
                     continue
                 finally:
                     self.readerque.task_done()
@@ -647,7 +652,7 @@ class IPyClient(collections.UserDict):
                         # then send a getProperties, every five seconds, when count is zero
                         if not count:
                             self.send_getProperties()
-                            await self.report("getProperties sent")
+                            self.report("getProperties sent")
                         count += 1
                         if count >= 10:
                             count = 0

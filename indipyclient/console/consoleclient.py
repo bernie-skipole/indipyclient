@@ -160,7 +160,7 @@ class ConsoleControl:
         self._shutdown = True
         if not self.client.stopped:
             # client is still running, shut it down
-            await self.client.report("Shutting down client - please wait")
+            self.client.report("Shutting down client - please wait")
             self.client.shutdown()
             while not self.client.stopped:
                 await asyncio.sleep(0)
