@@ -123,3 +123,51 @@ The objects defined by classes SwitchMember, LightMember, TextMember, NumberMemb
 members = vector.members()
 
 memberobject = members[membername]
+
+To illustrate this, the following example connects to a server, and prints devices, vectors and member values::
+
+    import asyncio
+    from indipyclient import IPyClient
+
+
+    async def main():
+        "Print all devices, vectors and values then shut down"
+
+        # get an instance of IPyClient, which, using its default
+        # values, will connect to a server running on localhost
+        client = IPyClient()
+
+        # run the client.asyncrun() method to start the connection
+        # and obtain values from the server
+        asyncio.create_task(client.asyncrun())
+
+        # after starting, wait 5 seconds for devices to be learnt
+        # by the client
+        await asyncio.sleep(5)
+
+        for devicename, device in client.items():
+            print(f"Device : {devicename}")
+            for vectorname, vector in device.items():
+                print(f"  Vector : {vectorname}")
+                for membername, value in vector.items():
+                    print(f"    Member : {membername} Value : {value}")
+
+        client.shutdown()
+        while not client.stopped:
+            # wait for the client to properly stop
+            await asyncio.sleep(1)
+
+
+    asyncio.run( main() )
+
+For the thermostat server example this outputs::
+
+    Device : Thermostat
+      Vector : temperaturevector
+        Member : temperature Value : 19.60
+      Vector : targetvector
+        Member : target Value : 15.00
+
+
+
+
