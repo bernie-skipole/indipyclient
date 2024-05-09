@@ -26,7 +26,7 @@ class ConsoleClient(IPyClient):
 
     async def rxevent(self, event):
         """Add event to eventque"""
-        self.clientdata['eventque'].appendleft(event)
+        await self.clientdata['eventque'].put(event)
 
 
 class ConsoleControl:
@@ -195,8 +195,9 @@ class ConsoleControl:
                     continue
                 # act when an event is received
                 try:
-                    event = self.eventque.pop()
-                except IndexError:
+                    event = self.eventque.get_nowait()
+                    self.eventque.task_done()
+                except asyncio.QueueEmpty:
                     # no event received, so do not update screen
                     continue
                 if isinstance(event, VectorTimeOut) and (event.devicename == self.screen.devicename):

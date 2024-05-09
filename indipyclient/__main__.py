@@ -9,7 +9,7 @@ For a description of options
 """
 
 
-import sys, argparse, asyncio, collections, pathlib
+import sys, argparse, asyncio, pathlib
 
 from . import version
 
@@ -64,7 +64,7 @@ loglevel:4 As 1 plus xml vectors and all contents
 
     # ConsoleClient is a subclass of IPyClient, with its rxevent(event) method created
     # to add events to a queue. First a queue is created and passed into ConsoleClient
-    eventque = collections.deque(maxlen=4)
+    eventque = asyncio.Queue(maxsize=4)
 
     # On receiving an event, the client appends it into eventque
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
