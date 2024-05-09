@@ -394,6 +394,9 @@ class IPyClient(collections.UserDict):
         except RuntimeError:
             # catches StopAsyncIteration and stops this coroutine
             pass
+        except StopAsyncIteration:
+            # catches StopAsyncIteration and stops this coroutine
+            pass
         except KeyboardInterrupt:
             self.shutdown()
         except Exception:

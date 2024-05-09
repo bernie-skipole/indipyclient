@@ -162,9 +162,7 @@ class ConsoleControl:
             # client is still running, shut it down
             self.client.report("Shutting down client - please wait")
             self.client.shutdown()
-            while not self.client.stopped:
-                await asyncio.sleep(0)
-        # so ipyclient has stopped now stop console co-routines
+        # Now stop console co-routines
         self.stop = True
         while (not self.updatescreenstopped) and (not self.getinputstopped):
             await asyncio.sleep(0)
@@ -276,12 +274,11 @@ class ConsoleControl:
                 if isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
                     # The event refers to this vector
                     self.screen.update(event)
-
         except asyncio.CancelledError:
             self.shutdown()
             raise
         except Exception:
-            logger.exception("Error in updatescreen")
+            logger.exception("Exception report from ConsoleControl.updatescreen")
             self.shutdown()
         finally:
             self.updatescreenstopped = True
@@ -451,7 +448,7 @@ class ConsoleControl:
             self.shutdown()
             raise
         except Exception:
-            logger.exception("Error in getinput")
+            logger.exception("Exception report from ConsoleControl.getinput")
             self.shutdown()
         finally:
             self.getinputstopped = True
@@ -464,6 +461,7 @@ class ConsoleControl:
         for devicename,device in self.client.items():
             if device.enable:
                 self.client.send_enableBLOB('Also', devicename)
+
 
     def send_disableBLOB(self):
         "Sends Never to disable blobs for all devices"
