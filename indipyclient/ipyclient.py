@@ -388,7 +388,7 @@ class IPyClient(collections.UserDict):
                 # Wait for at most 2 seconds
                 try:
                     await asyncio.wait_for(self.readerque.put(rxdata), timeout=2.0)
-                except TimeoutError:
+                except asyncio.TimeoutError:
                     logger.error("Error: Timeout waiting for received data to be handled, data discarded")
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logrx(rxdata)
@@ -518,10 +518,9 @@ class IPyClient(collections.UserDict):
         try:
             while not self._stop:
                 # get block of data from the self.readerque
-                await asyncio.sleep(0)
                 try:
-                    root = self.readerque.get_nowait()
-                except asyncio.QueueEmpty:
+                    root = await asyncio.wait_for(self.readerque.get(), timeout=1.0)
+                except asyncio.TimeoutError:
                     # nothing to read, continue while loop which re-checks the _stop flag
                     continue
                 devicename = root.get("device")
