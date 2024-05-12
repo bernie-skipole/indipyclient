@@ -374,23 +374,26 @@ class IPyClient(collections.UserDict):
     async def _run_rx(self, reader):
         "pass xml.etree.ElementTree data to readerque"
         try:
+            # get block of xml.etree.ElementTree data
+            # from source and append it to  readerque
             source = self._datasource(reader)
-            while self.connected and (not self._stop):
-                await asyncio.sleep(0)
-                # get block of xml.etree.ElementTree data
-                # from source and append it to  readerque
-                rxdata = await anext(source)
-                if rxdata is not None:
-                    # and place rxdata into readerque
-                    try:
-                        self.readerque.put_nowait(rxdata)
-                    except asyncio.QueueFull:
-                        # The queue is full, something may be wrong
-                        # discard this data and continue
-                        pass
-                    else:
-                        if logger.isEnabledFor(logging.DEBUG):
-                            self._logrx(rxdata)
+            async for rxdata in source:
+                if not self.connected:
+                    return
+                if self._stop:
+                    return
+                if rxdata is None:
+                    continue
+                # and place rxdata into readerque
+                try:
+                    self.readerque.put_nowait(rxdata)
+                except asyncio.QueueFull:
+                    # The queue is full, something may be wrong
+                    # discard this data and continue
+                    pass
+                else:
+                    if logger.isEnabledFor(logging.DEBUG):
+                        self._logrx(rxdata)
         except RuntimeError:
             # catches StopAsyncIteration and stops this coroutine
             pass
@@ -411,10 +414,11 @@ class IPyClient(collections.UserDict):
         message = b''
         messagetagnumber = None
         try:
-            while self.connected and (not self._stop):
-                await asyncio.sleep(0)
-                # get blocks of data from _datainput
-                data = await anext(data_in)
+            async for data in data_in:
+                if not self.connected:
+                    return
+                if self._stop:
+                    return
                 if not data:
                     continue
                 if not message:
