@@ -385,15 +385,13 @@ class IPyClient(collections.UserDict):
                 if rxdata is None:
                     continue
                 # and place rxdata into readerque
+                # Wait for at most 2 seconds
                 try:
-                    self.readerque.put_nowait(rxdata)
-                except asyncio.QueueFull:
-                    # The queue is full, something may be wrong
-                    # discard this data and continue
-                    pass
-                else:
-                    if logger.isEnabledFor(logging.DEBUG):
-                        self._logrx(rxdata)
+                    await asyncio.wait_for(self.readerque.put(rxdata), timeout=2.0)
+                except TimeoutError:
+                    logger.error("Error: Timeout waiting for received data to be handled, data discarded")
+                if logger.isEnabledFor(logging.DEBUG):
+                    self._logrx(rxdata)
         except RuntimeError:
             # catches StopAsyncIteration and stops this coroutine
             pass
