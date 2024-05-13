@@ -202,19 +202,22 @@ class IPyClient(collections.UserDict):
             while not self._stop:
                 self.tx_timer = None
                 self.idle_timer = time.time()
+                t1 = None
+                t2 = None
+                t3 = None
                 try:
                     # start by openning a connection
-                    # clear messages
-                    self.messages.clear()
                     self.report("Attempting to connect")
                     reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
                     self.connected = True
                     self.messages.clear()
+                    # clear devices etc
+                    self.clear()
                     self.report(f"Connected to {self.indihost}:{self.indiport}")
-                    await asyncio.gather(self._run_tx(writer),
-                                         self._run_rx(reader),
-                                         self._check_alive(writer)
-                                         )
+                    t1 = asyncio.create_task(self._run_tx(writer))
+                    t2 = asyncio.create_task(self._run_rx(reader))
+                    t3 = asyncio.create_task(self._check_alive(writer))
+                    await asyncio.gather(t1, t2, t3)
                 except ConnectionRefusedError:
                     self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionResetError:
@@ -223,11 +226,20 @@ class IPyClient(collections.UserDict):
                     logger.exception("Connection Error")
                     self.report("Error: Connection failed")
                 self._clear_connection()
+                # connection has failed, ensure all tasks are done
+                if t1:
+                    while not t1.done():
+                        await asyncio.sleep(0)
+                if t2:
+                    while not t2.done():
+                        await asyncio.sleep(0)
+                if t3:
+                    while not t3.done():
+                        await asyncio.sleep(0)
                 if self._stop:
                     break
                 else:
                     self.report(f"Connection failed, re-trying...")
-
                 # wait five seconds before re-trying, but keep checking
                 # that self._stop has not been set
                 count = 0
@@ -243,21 +255,11 @@ class IPyClient(collections.UserDict):
 
 
     def _clear_connection(self):
-        "On a connection closing down, clears queues"
+        "On a connection closing down, clears devices"
         self.connected = False
         self.tx_timer = None
-        # clear devices etc
-        self.clear()
         # clear the writerque
         self.writerque.clear()
-        if not self.readerque.empty():
-            # empty the queue
-            while True:
-                try:
-                    xmldata = self.readerque.get_nowait()
-                    self.readerque.task_done()
-                except asyncio.QueueEmpty:
-                    break
 
 
 
@@ -323,7 +325,10 @@ class IPyClient(collections.UserDict):
                     txdata = self.writerque.popleft()
                 except IndexError:
                     continue
-
+                if not self.connected:
+                    break
+                if self._stop:
+                    break
                 if txdata.tag == "newBLOBVector" and len(txdata):
                     # txdata is a newBLOBVector containing blobs
                     # the generator blob_xml_bytes yields bytes
@@ -345,6 +350,8 @@ class IPyClient(collections.UserDict):
                 self.idle_timer = time.time()
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logtx(txdata)
+            # stop writing data, so clear writerque
+            self.writerque.clear()
         except KeyboardInterrupt:
             self.shutdown()
 
@@ -378,20 +385,20 @@ class IPyClient(collections.UserDict):
             # from source and append it to  readerque
             source = self._datasource(reader)
             async for rxdata in source:
-                if not self.connected:
-                    return
-                if self._stop:
-                    return
-                if rxdata is None:
-                    continue
                 # and place rxdata into readerque
-                # Wait for at most 2 seconds
-                try:
-                    await asyncio.wait_for(self.readerque.put(rxdata), timeout=2.0)
-                except asyncio.TimeoutError:
-                    logger.error("Error: Timeout waiting for received data to be handled, data discarded")
+                while self.connected and (not self._stop):
+                    await asyncio.sleep(0)
+                    try:
+                        self.readerque.put_nowait(rxdata)
+                    except asyncio.QueueFull:
+                        # The queue is full
+                        continue
+                    # rxdata is now in readerque
+                    break
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logrx(rxdata)
+                if (not self.connected) or self._stop:
+                    break
         except RuntimeError:
             # catches StopAsyncIteration and stops this coroutine
             pass
@@ -517,9 +524,10 @@ class IPyClient(collections.UserDict):
         """Populates the events using data from self.readerque"""
         try:
             while not self._stop:
+                await asyncio.sleep(0)
                 # get block of data from the self.readerque
                 try:
-                    root = await asyncio.wait_for(self.readerque.get(), timeout=1.0)
+                    root = await asyncio.wait_for(self.readerque.get(), timeout=0.5)
                 except asyncio.TimeoutError:
                     # nothing to read, continue while loop which re-checks the _stop flag
                     continue
@@ -663,7 +671,7 @@ class IPyClient(collections.UserDict):
         except asyncio.CancelledError:
              raise
         except Exception:
-            logger.exception("Error in IPyClient._timeout_monitor method")
+            logger.exception("Exception report from IPyClient._timeout_monitor method")
         finally:
             self.shutdown()
 
@@ -708,7 +716,22 @@ class IPyClient(collections.UserDict):
     async def asyncrun(self):
         "Await this method to run the client."
         self._stop = False
-        await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), return_exceptions=True)
+        t1 = asyncio.create_task(self._comms())
+        t2 = asyncio.create_task(self._rxhandler())
+        t3 = asyncio.create_task(self._timeout_monitor())
+        try:
+            await asyncio.gather(t1, t2, t3)
+        except Exception:
+            # one task has raised an exception, wait for the
+            # remaining tasks to stop
+            self._stop = True
+            logger.exception("Exception report from IPyClient.asyncrun coroutine")
+            while not t1.done():
+                await asyncio.sleep(0)
+            while not t2.done():
+                await asyncio.sleep(0)
+            while not t3.done():
+                await asyncio.sleep(0)
         self.stopped = True
 
 

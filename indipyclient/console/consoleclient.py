@@ -190,7 +190,7 @@ class ConsoleControl:
                     else:
                         # when not connected, show messages screen
                         self.screen.close("Messages")
-                    continue
+                        continue
                 # act when an event is received
                 try:
                     event = self.eventque.get_nowait()
@@ -475,4 +475,19 @@ class ConsoleControl:
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self.stop = False
-        await asyncio.gather(self.updatescreen(), self.getinput(), self._checkshutdown())
+        t1 = asyncio.create_task(self.updatescreen())
+        t2 = asyncio.create_task(self.getinput())
+        t3 = asyncio.create_task(self._checkshutdown())
+        try:
+            await asyncio.gather(t1, t2, t3)
+        except Exception:
+            # one task has raised an exception, shutdown and wait for the
+            # remaining task to shutdown
+            logger.exception("Exception report from  ConsoleControl.asyncrun coroutine")
+            self.stop = True
+            while not t1.done():
+                await asyncio.sleep(0)
+            while not t2.done():
+                await asyncio.sleep(0)
+            while not t3.done():
+                await asyncio.sleep(0)
