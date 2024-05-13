@@ -9,7 +9,7 @@ For a description of options
 """
 
 
-import sys, argparse, asyncio, pathlib
+import sys, argparse, asyncio, pathlib, curses
 
 import logging
 logger = logging.getLogger('indipyclient')
@@ -36,7 +36,12 @@ async def runclient(client, control):
             await asyncio.sleep(0)
         while not t2.done():
             await asyncio.sleep(0)
-
+    finally:
+        curses.nocbreak()
+        control.stdscr.keypad(False)
+        curses.curs_set(1)
+        curses.echo()
+        curses.endwin()
 
 
 def main():

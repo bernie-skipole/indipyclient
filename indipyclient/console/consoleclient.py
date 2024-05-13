@@ -154,10 +154,10 @@ class ConsoleControl:
 
     async def _checkshutdown(self):
         "If self._shutdown becomes True, shutdown"
-        while (not self._shutdown) and (not self.client.stopped):
+        while (not self._shutdown) and (not self.client.stopped) and (not self.stop):
+            # no shutdown requested, just continue
             await asyncio.sleep(0)
         # so either shutdown has been requested or the ipyclient has stopped for some reason
-        self._shutdown = True
         if not self.client.stopped:
             # client is still running, shut it down
             self.client.report("Shutting down client - please wait")
@@ -166,12 +166,6 @@ class ConsoleControl:
         self.stop = True
         while (not self.updatescreenstopped) and (not self.getinputstopped):
             await asyncio.sleep(0)
-        # async tasks finished, clear up the terminal
-        curses.nocbreak()
-        self.stdscr.keypad(False)
-        curses.curs_set(1)
-        curses.echo()
-        curses.endwin()
 
 
     async def updatescreen(self):
