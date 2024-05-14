@@ -9,7 +9,7 @@ For a description of options
 """
 
 
-import sys, argparse, asyncio, pathlib, curses
+import sys, argparse, asyncio, pathlib
 
 import logging
 logger = logging.getLogger('indipyclient')
@@ -20,28 +20,7 @@ from .console.consoleclient import ConsoleClient, ConsoleControl
 
 
 async def runclient(client, control):
-    "Run the client.asyncrun() and control.asyncrun() coroutines"
-    t1 = asyncio.create_task(client.asyncrun())
-    t2 = asyncio.create_task(control.asyncrun())
-    try:
-        await asyncio.gather(t1, t2)
-    except Exception:
-        # one task has raised an exception, shutdown and wait for the
-        # remaining task to shutdown
-        logger.exception("Exception report from  __main__.runclient coroutine")
-        # set flags in these classes requesting them to stop
-        client.shutdown()
-        control.shutdown()
-        while not t1.done():
-            await asyncio.sleep(0)
-        while not t2.done():
-            await asyncio.sleep(0)
-    finally:
-        curses.nocbreak()
-        control.stdscr.keypad(False)
-        curses.curs_set(1)
-        curses.echo()
-        curses.endwin()
+    await asyncio.gather(client.asyncrun(), control.asyncrun())
 
 
 def main():
@@ -105,7 +84,11 @@ loglevel:4 As 1 plus xml vectors and all contents
             print("Error: If given, the loglevel should be 1, 2, 3 or 4")
             return 1
 
-    asyncio.run(runclient(client, control))
+    try:
+        asyncio.run(runclient(client, control))
+    finally:
+        # clear curses setup
+        control.console_reset()
 
     return 0
 

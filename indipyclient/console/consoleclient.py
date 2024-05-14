@@ -168,6 +168,15 @@ class ConsoleControl:
             await asyncio.sleep(0)
 
 
+    def console_reset(self):
+        "Resets console, called in finally clause at program shutdown"
+        curses.nocbreak()
+        self.stdscr.keypad(False)
+        curses.curs_set(1)
+        curses.echo()
+        curses.endwin()
+
+
     async def updatescreen(self):
         "Update while events are being received"
         try:
