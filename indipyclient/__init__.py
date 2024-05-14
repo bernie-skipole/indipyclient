@@ -9,4 +9,4 @@ from .events import (delProperty, defSwitchVector, defTextVector, defNumberVecto
 
 from .propertymembers import getfloat
 
-version = "0.1.2"
+version = "0.1.3"
