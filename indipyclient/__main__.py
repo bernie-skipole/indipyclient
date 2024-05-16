@@ -70,6 +70,8 @@ loglevel:4 As 1 plus xml vectors and all contents
     # and calls the send vector methods of client to transmit data
     control = ConsoleControl(client, blobfolder=blobfolder)
 
+    loglevel = 0
+
     if args.loglevel and args.logfile:
         try:
             loglevel = int(args.loglevel)
@@ -80,9 +82,13 @@ loglevel:4 As 1 plus xml vectors and all contents
             if level != loglevel:
                 print("Error: Failed to set logging")
                 return 1
-        except:
+        except Exception:
             print("Error: If given, the loglevel should be 1, 2, 3 or 4")
             return 1
+
+    if loglevel < 2:
+        # If logging debug not enabled, reduce traceback info
+        sys.tracebacklimit = 0
 
     try:
         asyncio.run(runclient(client, control))

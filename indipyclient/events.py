@@ -34,7 +34,7 @@ def _parse_timestamp(timestamp_string):
             else:
                 timestamp = datetime.fromisoformat(timestamp_string)
                 timestamp = timestamp.replace(tzinfo=timezone.utc)
-        except:
+        except Exception:
             timestamp = None
     else:
         timestamp = datetime.now(tz=timezone.utc)
@@ -164,7 +164,7 @@ class defSwitchVector(defVector):
                 self.timeout = 0.0
             else:
                 self.timeout = float(timeout)
-        except:
+        except Exception:
             self.timeout = 0.0
         # create object dictionary of member name to value
         # and another dictionary of self.memberlabels with key member name and value being label
@@ -225,7 +225,7 @@ class defTextVector(defVector):
                 self.timeout = 0.0
             else:
                 self.timeout = float(timeout)
-        except:
+        except Exception:
             self.timeout = 0.0
         # create object dictionary of member name to value
         # and another dictionary of self.memberlabels with key member name and value being label
@@ -284,7 +284,7 @@ class defNumberVector(defVector):
                 self.timeout = 0.0
             else:
                 self.timeout = float(timeout)
-        except:
+        except Exception:
             self.timeout = 0.0
         # create object dictionary of member name to value
         # and another dictionary of self.memberlabels with key member name and
@@ -417,7 +417,7 @@ class defBLOBVector(Event):
                 self.timeout = 0.0
             else:
                 self.timeout = float(timeout)
-        except:
+        except Exception:
             self.timeout = 0.0
         # create a dictionary of self.memberlabels with key member name and value being label
         self.memberlabels = {}
@@ -491,7 +491,7 @@ class setSwitchVector(setVector):
             timeout = root.get("timeout")
             if not timeout is None:
                 self.timeout = float(timeout)
-        except:
+        except Exception:
             # dont update
             pass
         # create a dictionary of member name to value
@@ -528,7 +528,7 @@ class setTextVector(setVector):
             timeout = root.get("timeout")
             if not timeout is None:
                 self.timeout = float(timeout)
-        except:
+        except Exception:
             # dont update
             pass
         # create a dictionary of member name to value
@@ -562,7 +562,7 @@ class setNumberVector(setVector):
             timeout = root.get("timeout")
             if not timeout is None:
                 self.timeout = float(timeout)
-        except:
+        except Exception:
             # dont update
             pass
         # create a dictionary of member name to value
@@ -635,7 +635,7 @@ class setBLOBVector(setVector):
             timeout = root.get("timeout")
             if not timeout is None:
                 self.timeout = float(timeout)
-        except:
+        except Exception:
             # dont update
             pass
         # create a dictionary of member name to value
@@ -652,7 +652,7 @@ class setBLOBVector(setVector):
                     raise ParseException("Missing size in oneBLOB")
                 try:
                     memberize = int(membersize)
-                except:
+                except Exception:
                     raise ParseException("Invalid size in oneBLOB")
                 memberformat = member.get("format")
                 if not memberformat:
@@ -661,7 +661,7 @@ class setBLOBVector(setVector):
                     raise ParseException("Missing value in oneBLOB")
                 try:
                     self.data[membername] = standard_b64decode(member.text.encode('ascii'))
-                except:
+                except Exception:
                     raise ParseException("Unable to decode oneBLOB contents")
                 self.sizeformat[membername] = (membersize, memberformat)
             else:

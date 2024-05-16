@@ -51,7 +51,7 @@ def getfloat(value):
         floatvalue = numbers[0] + (numbers[1]/60) + (numbers[2]/3600)
         if negative:
             floatvalue = -1 * floatvalue
-    except:
+    except Exception:
         raise TypeError("Unable to parse number value")
     return floatvalue
 
@@ -302,7 +302,7 @@ class ParentNumberMember(Member):
                     return valstring.rjust(int(w), ' ')
                 return valstring
 
-        except:
+        except Exception:
             raise TypeError("Unable to parse number value")
 
         # no other options accepted
@@ -331,7 +331,7 @@ class NumberMember(ParentNumberMember):
         try:
             # test a float can be created from this membervalue
             self._floatvalue = getfloat(membervalue)
-        except:
+        except Exception:
             raise ParseException("Cannot parse number received.")
 
     @property
@@ -350,7 +350,7 @@ class NumberMember(ParentNumberMember):
             # test a float can be created from this membervalue
             # and save the float
             self._floatvalue = getfloat(value)
-        except:
+        except Exception:
             raise ParseException("Cannot parse number received")
         self._membervalue = value
 
@@ -420,7 +420,7 @@ class BLOBMember(ParentBLOBMember):
         elif isinstance(newvalue, pathlib.Path):
             try:
                 xmldata.text = newvalue.read_bytes()
-            except:
+            except Exception:
                 raise ParseException("Unable to read the given file")
         elif hasattr(newvalue, "seek") and hasattr(newvalue, "read") and callable(newvalue.read):
             # a file-like object
@@ -438,7 +438,7 @@ class BLOBMember(ParentBLOBMember):
             try:
                 with open(newvalue, "rb") as fp:
                     bytescontent = fp.read()
-            except:
+            except Exception:
                 raise ParseException("Unable to read the given file")
             if bytescontent == b"":
                 raise ParseException("The read BLOB value is empty")

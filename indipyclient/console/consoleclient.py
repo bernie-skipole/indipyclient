@@ -123,7 +123,7 @@ class ConsoleControl:
 
             fh = logging.FileHandler(logfile)
             logger.addHandler(fh)
-        except:
+        except Exception:
             return
         return level
 
@@ -164,9 +164,6 @@ class ConsoleControl:
             self.client.shutdown()
         # Now stop console co-routines
         self.stop = True
-        while (not self.updatescreenstopped) and (not self.getinputstopped):
-            await asyncio.sleep(0)
-
 
     def console_reset(self):
         "Resets console, called in finally clause at program shutdown"
@@ -277,12 +274,9 @@ class ConsoleControl:
                 if isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
                     # The event refers to this vector
                     self.screen.update(event)
-        except asyncio.CancelledError:
-            self.shutdown()
-            raise
         except Exception:
             logger.exception("Exception report from ConsoleControl.updatescreen")
-            self.shutdown()
+            raise
         finally:
             self.updatescreenstopped = True
 
@@ -447,12 +441,9 @@ class ConsoleControl:
                         self.screen.show()
                         continue
 
-        except asyncio.CancelledError:
-            self.shutdown()
-            raise
         except Exception:
             logger.exception("Exception report from ConsoleControl.getinput")
-            self.shutdown()
+            raise
         finally:
             self.getinputstopped = True
 
@@ -478,19 +469,4 @@ class ConsoleControl:
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self.stop = False
-        t1 = asyncio.create_task(self.updatescreen())
-        t2 = asyncio.create_task(self.getinput())
-        t3 = asyncio.create_task(self._checkshutdown())
-        try:
-            await asyncio.gather(t1, t2, t3)
-        except Exception:
-            # one task has raised an exception, shutdown and wait for the
-            # remaining task to shutdown
-            logger.exception("Exception report from  ConsoleControl.asyncrun coroutine")
-            self.stop = True
-            while not t1.done():
-                await asyncio.sleep(0)
-            while not t2.done():
-                await asyncio.sleep(0)
-            while not t3.done():
-                await asyncio.sleep(0)
+        await asyncio.gather(self.updatescreen(), self.getinput(), self._checkshutdown())

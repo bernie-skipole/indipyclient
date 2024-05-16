@@ -1,6 +1,6 @@
 
 
-import os, sys, collections, threading, asyncio, pathlib, time, traceback, copy
+import os, sys, collections, threading, asyncio, pathlib, time, copy
 
 from time import sleep
 
@@ -183,7 +183,7 @@ class IPyClient(collections.UserDict):
                 # discard this data and continue
                 pass
         except Exception :
-            logger.exception("Error in IPyClient.report method")
+            logger.exception("Exception report from IPyClient.report method")
 
 
     def enabledlen(self):
@@ -219,12 +219,12 @@ class IPyClient(collections.UserDict):
                     t3 = asyncio.create_task(self._check_alive(writer))
                     await asyncio.gather(t1, t2, t3)
                 except ConnectionRefusedError:
-                    self.report(f"Error: Connection refused on {self.indihost}:{self.indiport}")
-                except ConnectionResetError:
-                    self.report("Error: Connection Lost")
+                    self.report(f"Connection refused on {self.indihost}:{self.indiport}")
+                except ConnectionError:
+                    self.report("Connection Lost")
                 except Exception:
                     logger.exception("Connection Error")
-                    self.report("Error: Connection failed")
+                    self.report("Connection failed")
                 self._clear_connection()
                 # connection has failed, ensure all tasks are done
                 if t1:
@@ -249,7 +249,8 @@ class IPyClient(collections.UserDict):
                     if count >= 10:
                         break
         except Exception:
-            logger.exception("Error in IPyClient._comms method")
+            logger.exception("Exception report from IPyClient._comms method")
+            raise
         finally:
             self.shutdown()
 
@@ -287,8 +288,9 @@ class IPyClient(collections.UserDict):
                 writer.close()
                 await writer.wait_closed()
                 self._clear_connection()
-        except KeyboardInterrupt:
-            self.shutdown()
+        except Exception:
+            logger.exception("Error in IPyClient._check_alive method")
+            raise
         finally:
             self.connected = False
 
@@ -352,8 +354,9 @@ class IPyClient(collections.UserDict):
                     self._logtx(txdata)
             # stop writing data, so clear writerque
             self.writerque.clear()
-        except KeyboardInterrupt:
-            self.shutdown()
+        except Exception:
+            logger.exception("Exception report from IPyClient._run_tx method")
+            raise
 
     def _logrx(self, rxdata):
         "log rx data to file"
@@ -399,18 +402,9 @@ class IPyClient(collections.UserDict):
                     self._logrx(rxdata)
                 if (not self.connected) or self._stop:
                     break
-        except RuntimeError:
-            # catches StopAsyncIteration and stops this coroutine
-            pass
-        except StopAsyncIteration:
-            # catches StopAsyncIteration and stops this coroutine
-            pass
-        except KeyboardInterrupt:
-            self.shutdown()
         except Exception:
-            logger.exception("Error in _run_rx")
-            self.shutdown()
-
+            logger.exception("Exception report from IPyClient._run_rx method")
+            raise
 
 
     async def _datasource(self, reader):
@@ -468,9 +462,6 @@ class IPyClient(collections.UserDict):
                     # the message is complete, handle message here
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
-                    except KeyboardInterrupt:
-                        self.shutdown()
-                        break
                     except ET.ParseError as e:
                         message = b''
                         messagetagnumber = None
@@ -480,11 +471,10 @@ class IPyClient(collections.UserDict):
                     # and start again, waiting for a new message
                     message = b''
                     messagetagnumber = None
-        except KeyboardInterrupt:
-            self.shutdown()
-        except asyncio.CancelledError:
-            self.shutdown()
+        except Exception:
+            logger.exception("Exception report from IPyClient._datasource method")
             raise
+
 
 
     async def _datainput(self, reader):
@@ -513,10 +503,8 @@ class IPyClient(collections.UserDict):
                     # data has content but no > found
                     binarydata += data
                     # could put a max value here to stop this increasing indefinetly
-        except KeyboardInterrupt:
-            self.shutdown()
-        except asyncio.CancelledError:
-            self.shutdown()
+        except Exception:
+            logger.exception("Exception report from IPyClient._datainput method")
             raise
 
 
@@ -564,10 +552,10 @@ class IPyClient(collections.UserDict):
                 # and to get here, continue has not been called
                 # and an event has been created, call the user event handling function
                 await self.rxevent(event)
-        except asyncio.CancelledError:
-            raise
+
         except Exception:
-            logger.exception("Error in IPyClient._rxhandler method")
+            logger.exception("Exception report from IPyClient._rxhandler method")
+            raise
         finally:
             self.shutdown()
 
@@ -609,8 +597,10 @@ class IPyClient(collections.UserDict):
                 propertyvector.send_newNumberVector(timestamp, members)
             elif propertyvector.vectortype == "BLOBVector":
                 propertyvector.send_newBLOBVector(timestamp, members)
-        except KeyboardInterrupt:
-            self.shutdown()
+        except Exception:
+            logger.exception("Exception report from IPyClient.send_newVector method")
+            raise
+
 
     def set_vector_timeouts(self, timeout_enable=None, timeout_min=None, timeout_max=None):
         """Whenever you send updated values, a timer is started and if a timeout occurs
@@ -668,10 +658,9 @@ class IPyClient(collections.UserDict):
                         count += 1
                         if count >= 10:
                             count = 0
-        except asyncio.CancelledError:
-             raise
         except Exception:
             logger.exception("Exception report from IPyClient._timeout_monitor method")
+            raise
         finally:
             self.shutdown()
 
@@ -716,22 +705,7 @@ class IPyClient(collections.UserDict):
     async def asyncrun(self):
         "Await this method to run the client."
         self._stop = False
-        t1 = asyncio.create_task(self._comms())
-        t2 = asyncio.create_task(self._rxhandler())
-        t3 = asyncio.create_task(self._timeout_monitor())
-        try:
-            await asyncio.gather(t1, t2, t3)
-        except Exception:
-            # one task has raised an exception, wait for the
-            # remaining tasks to stop
-            self._stop = True
-            logger.exception("Exception report from IPyClient.asyncrun coroutine")
-            while not t1.done():
-                await asyncio.sleep(0)
-            while not t2.done():
-                await asyncio.sleep(0)
-            while not t3.done():
-                await asyncio.sleep(0)
+        await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor())
         self.stopped = True
 
 
@@ -809,10 +783,8 @@ class _Device(Device):
                 raise ParseException("Unrecognised tag received")
         except ParseException:
             raise
-        except KeyboardInterrupt:
-            raise
         except Exception:
-            logger.exception("Error in IPyClient.rxvector method")
+            logger.exception("Exception report from IPyClient.rxvector method")
             raise ParseException("Error while attempting to parse received data")
 
 
