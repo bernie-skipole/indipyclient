@@ -69,7 +69,7 @@ This indipyclient package uses the Python standard library logging module, it us
 
 **ERROR**
 
-Logs tracebacks from exceptions
+Logs errors including tracebacks from exceptions
 
 **INFO**
 
