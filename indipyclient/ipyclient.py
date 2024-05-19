@@ -303,19 +303,20 @@ class IPyClient(collections.UserDict):
             binarydata = ET.tostring(txdata)
             logger.debug(startlog + binarydata.decode())
         elif self._verbose == 2:
-            tag = txdata.tag
-            for element in txdata:
+            data = copy.deepcopy(txdata)
+            tag = data.tag
+            for element in data:
                 if tag == "newBLOBVector":
                     element.text = "NOT LOGGED"
-            binarydata = ET.tostring(txdata)
+            binarydata = ET.tostring(data)
             logger.debug(startlog + binarydata.decode())
         elif self._verbose == 1:
-            for element in txdata:
-                txdata.remove(element)
-            txdata.text = ""
-            binarydata = ET.tostring(txdata, short_empty_elements=False).split(b">")
+            data = copy.deepcopy(txdata)
+            for element in data:
+                data.remove(element)
+            data.text = ""
+            binarydata = ET.tostring(data, short_empty_elements=False).split(b">")
             logger.debug(startlog + binarydata[0].decode()+">")
-
 
 
     async def _run_tx(self, writer):
