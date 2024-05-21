@@ -149,6 +149,9 @@ class IPyClient(collections.UserDict):
         # Indicates how verbose the debug xml logs will be when created.
         self._verbose = 1
 
+        # Enables reports
+        self.enable_reports = True
+
 
     def debug_verbosity(self, verbose):
         """Set how verbose the debug xml logs will be when created.
@@ -165,15 +168,17 @@ class IPyClient(collections.UserDict):
         self._stop = True
 
     def report(self, message):
-        """This injects a message into the received data, which will be
-           picked up by the rxevent method. It is a way to set a message
-           on to your client display, in the same way messages come from
-           the INDI service. If logging is enabled the message will also
-           be logged at level INFO"""
+        """If logging is enabled message will be logged at level INFO.
+           If self.enable_reports is True, the message will be injected into
+           the received data, which will be picked up by the rxevent method.
+           It is a way to set a message on to your client display, in the
+           same way messages come from the INDI service."""
         try:
+            logger.info(message)
+            if not self.enable_reports:
+                return
             timestamp = datetime.now(tz=timezone.utc)
             timestamp = timestamp.replace(tzinfo=None)
-            logger.info(message)
             root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
             # and place root into readerque
             try:

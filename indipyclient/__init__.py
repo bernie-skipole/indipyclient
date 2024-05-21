@@ -1,7 +1,7 @@
 
 
 import logging
-logging.getLogger('indipyclient').addHandler(logging.NullHandler())
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 from .ipyclient import IPyClient
 from .events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,

@@ -51,6 +51,7 @@ class VectorTimeOut:
         self.vectorname = self.vector.name
         self.timestamp = datetime.now(tz=timezone.utc)
         self.eventtype = "TimeOut"
+        self.root = None
 
 
 class Event:
