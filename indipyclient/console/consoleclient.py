@@ -99,10 +99,10 @@ class ConsoleControl:
            Be warned, there is no logfile rotation, files can become large.
            Note: it may be useful in another terminal to try tail -f logfile"""
 
-        # loglevel:1 Information and error messages only,  -> error
-        # loglevel:2 log vector tags without members or contents  -> warning
-        # loglevel:3 log vectors and members - but not BLOB contents  -> info
-        # loglevel:4 log vectors and all contents   -> debug
+        # loglevel:1 Information and error messages only
+        # loglevel:2 log vector tags without members or contents
+        # loglevel:3 log vectors and members - but not BLOB contents
+        # loglevel:4 log vectors and all contents
 
         try:
             if not level in (1, 2, 3, 4):
@@ -120,6 +120,7 @@ class ConsoleControl:
                 self.client.debug_verbosity(1)
             elif level == 1:
                 logger.setLevel(logging.INFO)
+                self.client.debug_verbosity(0)
 
             fh = logging.FileHandler(logfile)
             logger.addHandler(fh)

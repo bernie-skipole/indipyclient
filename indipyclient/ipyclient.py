@@ -155,10 +155,11 @@ class IPyClient(collections.UserDict):
 
     def debug_verbosity(self, verbose):
         """Set how verbose the debug xml logs will be when created.
+           0 no xml logs will be generated
            1 for transmitted/received vector tags only,
            2 for transmitted/received vectors, members and contents (apart from BLOBs)
            3 for all transmitted/received data including BLOBs."""
-        if verbose not in (1,2,3):
+        if verbose not in (0,1,2,3):
             raise ValueError
         self._verbose = verbose
 
@@ -302,7 +303,8 @@ class IPyClient(collections.UserDict):
 
     def _logtx(self, txdata):
         "log tx data with level debug, and detail depends on self._verbose"
-
+        if not self._verbose:
+            return
         startlog = "TX:: "
         if self._verbose == 3:
             binarydata = ET.tostring(txdata)
@@ -366,6 +368,8 @@ class IPyClient(collections.UserDict):
 
     def _logrx(self, rxdata):
         "log rx data to file"
+        if not self._verbose:
+            return
         startlog = "RX:: "
         if self._verbose == 3:
             binarydata = ET.tostring(rxdata)
