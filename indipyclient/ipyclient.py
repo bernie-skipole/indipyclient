@@ -30,7 +30,8 @@ TAGS = (b'message',
         b'defNumberVector',
         b'setNumberVector',
         b'defBLOBVector',
-        b'setBLOBVector'
+        b'setBLOBVector',
+        b'getProperties'       # for snooping
        )
 
 DEFTAGS = ( 'defSwitchVector',
@@ -537,13 +538,19 @@ class IPyClient(collections.UserDict):
                             if root.tag == "message":
                                 # create event
                                 event = events.Message(root, None, self)
+                            elif root.tag == "getProperties":
+                                # create event
+                                event = events.getProperties(root, None, self)
                             else:
-                                # if no devicename and not message, do nothing
+                                # if no devicename and not message or getProperties, do nothing
                                 continue
                         elif devicename in self:
                             # device is known about
                             device = self[devicename]
                             event = device.rxvector(root)
+                        elif root.tag == "getProperties":
+                            # device is not known about, but this is a getProperties, so raise an event
+                            event = events.getProperties(root, None, self)
                         elif root.tag in DEFTAGS:
                             # device not known, but a def is received
                             newdevice = _Device(devicename, self)
@@ -551,7 +558,7 @@ class IPyClient(collections.UserDict):
                             # no error has occurred, so add this device to self.data
                             self.data[devicename] = newdevice
                         else:
-                            # device not known, not a def, so ignore it
+                            # device not known, not a def or getProperties, so ignore it
                             continue
                 except ParseException as pe:
                     # if a ParseException is raised, it is because received data is malformed
@@ -789,6 +796,8 @@ class _Device(Device):
                 return events.defBLOBVector(root, self, self._client)
             elif root.tag == "setBLOBVector":
                 return events.setBLOBVector(root, self, self._client)
+            elif root.tag == "getProperties":
+                return events.getProperties(root, self, self._client)
             else:
                 raise ParseException("Unrecognised tag received")
         except ParseException:

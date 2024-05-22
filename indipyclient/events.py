@@ -87,6 +87,17 @@ class Message(Event):
             device.messages.appendleft( (self.timestamp, self.message) )
 
 
+class getProperties(Event):
+    """This may have a device and name, both may be None
+       But there may still be a devicename and vectorname for an unknown device"""
+
+    def __init__(self, root, device, client):
+        super().__init__(root, device, client)
+        self.eventtype = "getProperties"
+        self.devicename = root.get("device")
+        self.vectorname = root.get("name")
+
+
 class delProperty(Event):
     """The remote driver is instructing the client to delete either a device or a vector property.
        This contains attribute vectorname, if it is None, then the whole device is to be deleted.
