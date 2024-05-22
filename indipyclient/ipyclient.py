@@ -149,7 +149,7 @@ class IPyClient(collections.UserDict):
         # Indicates how verbose the debug xml logs will be when created.
         self._verbose = 1
 
-        # Enables reports
+        # Enables reports, by adding INFO logs to client messages
         self.enable_reports = True
 
 
