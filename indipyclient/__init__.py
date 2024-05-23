@@ -1,8 +1,5 @@
 
 
-import logging
-logging.getLogger(__name__).addHandler(logging.NullHandler())
-
 from .ipyclient import IPyClient
 from .events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message, VectorTimeOut)

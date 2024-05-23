@@ -12,7 +12,7 @@ For a description of options
 import sys, argparse, asyncio, pathlib
 
 import logging
-logger = logging.getLogger('indipyclient')
+logging.getLogger("indipyclient").addHandler(logging.NullHandler())
 
 from . import version
 
@@ -59,6 +59,11 @@ loglevel:4 As 1 plus xml vectors and all contents
     else:
         blobfolder = None
 
+    if args.loglevel:
+        if args.loglevel not in ("1", "2", "3", "4"):
+            print("Error: If given, the loglevel should be 1, 2, 3 or 4")
+            return 1
+
     # ConsoleClient is a subclass of IPyClient, with its rxevent(event) method created
     # to add events to a queue. First a queue is created and passed into ConsoleClient
     eventque = asyncio.Queue(maxsize=4)
@@ -71,19 +76,11 @@ loglevel:4 As 1 plus xml vectors and all contents
     control = ConsoleControl(client, blobfolder=blobfolder)
 
     loglevel = 0
-
     if args.loglevel and args.logfile:
-        try:
-            loglevel = int(args.loglevel)
-            if loglevel not in (1,2,3,4):
-                print("Error: If given, the loglevel should be 1, 2, 3 or 4")
-                return 1
-            level = control.setlogging(loglevel, args.logfile)
-            if level != loglevel:
-                print("Error: Failed to set logging")
-                return 1
-        except Exception:
-            print("Error: If given, the loglevel should be 1, 2, 3 or 4")
+        loglevel = int(args.loglevel)
+        level = control.setlogging(loglevel, args.logfile)
+        if level != loglevel:
+            print("Error: Failed to set logging")
             return 1
 
     if loglevel < 2:
