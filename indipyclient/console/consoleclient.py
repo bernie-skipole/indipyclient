@@ -4,7 +4,7 @@ import asyncio, sys, traceback, pathlib
 import curses
 
 import logging
-logger = logging.getLogger('indipyclient')
+logger = logging.getLogger(__name__)
 
 from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
@@ -92,41 +92,7 @@ class ConsoleControl:
         # BLOBfiles, is a dictionary of {(devicename,vectorname,membername):filepath}
         self.BLOBfiles = {}
 
-    def setlogging(self, level, logfile):
-        """Sets the logging level and logfile, returns the level, which will be None on failure.
-           As default, no logging is enabled. If logging is required, this can be called, level
-           should be an integer, one of 1, 2, 3 or 4.
-           Be warned, there is no logfile rotation, files can become large.
-           Note: it may be useful in another terminal to try tail -f logfile"""
 
-        # loglevel:1 Information and error messages only
-        # loglevel:2 log vector tags without members or contents
-        # loglevel:3 log vectors and members - but not BLOB contents
-        # loglevel:4 log vectors and all contents
-
-        try:
-            if not level in (1, 2, 3, 4):
-                return None
-            logfile = pathlib.Path(logfile).expanduser().resolve()
-
-            if level == 4:
-                logger.setLevel(logging.DEBUG)
-                self.client.debug_verbosity(3)
-            elif level == 3:
-                logger.setLevel(logging.DEBUG)
-                self.client.debug_verbosity(2)
-            elif level == 2:
-                logger.setLevel(logging.DEBUG)
-                self.client.debug_verbosity(1)
-            elif level == 1:
-                logger.setLevel(logging.INFO)
-                self.client.debug_verbosity(0)
-
-            fh = logging.FileHandler(logfile)
-            logger.addHandler(fh)
-        except Exception:
-            return
-        return level
 
 
     def color(self, state):

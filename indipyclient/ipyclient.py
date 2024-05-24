@@ -1,6 +1,6 @@
 
 
-import os, sys, collections, threading, asyncio, pathlib, time, copy
+import os, sys, collections, threading, asyncio, time, copy
 
 from time import sleep
 
@@ -214,7 +214,7 @@ class IPyClient(collections.UserDict):
                 t3 = None
                 try:
                     # start by openning a connection
-                    self.report("Attempting to connect")
+                    self.report(f"Attempting to connect to {self.indihost}:{self.indiport}")
                     reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
                     self.connected = True
                     self.messages.clear()
@@ -228,9 +228,9 @@ class IPyClient(collections.UserDict):
                 except ConnectionRefusedError:
                     self.report(f"Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionError:
-                    self.report("Connection Lost")
+                    self.report(f"Connection Lost on {self.indihost}:{self.indiport}")
                 except Exception:
-                    logger.exception("Connection Error")
+                    logger.exception(f"Connection Error on {self.indihost}:{self.indiport}")
                     self.report("Connection failed")
                 self._clear_connection()
                 # connection has failed, ensure all tasks are done

@@ -9,10 +9,13 @@ For a description of options
 """
 
 
-import sys, argparse, asyncio, pathlib
+import sys, argparse, asyncio, pathlib, logging
 
-import logging
-logging.getLogger("indipyclient").addHandler(logging.NullHandler())
+logger = logging.getLogger()
+
+# logger is the root logger, with level and handler set here
+# by the arguments given. If no logging option is given, it
+# has a NullHandler() added
 
 from . import version
 
@@ -21,6 +24,42 @@ from .console.consoleclient import ConsoleClient, ConsoleControl
 
 async def runclient(client, control):
     await asyncio.gather(client.asyncrun(), control.asyncrun())
+
+
+def setlogging(client, level, logfile):
+    """Sets the logging level and logfile, returns the level on success, None on failure.
+       level should be an integer, one of 1, 2, 3 or 4."""
+
+    # loglevel:1 Information and error messages only
+    # loglevel:2 log vector tags without members or contents
+    # loglevel:3 log vectors and members - but not BLOB contents
+    # loglevel:4 log vectors and all contents
+
+    try:
+        if not level in (1, 2, 3, 4):
+            return
+        logfile = pathlib.Path(logfile).expanduser().resolve()
+
+        if level == 4:
+            logger.setLevel(logging.DEBUG)
+            client.debug_verbosity(3)
+        elif level == 3:
+            logger.setLevel(logging.DEBUG)
+            client.debug_verbosity(2)
+        elif level == 2:
+            logger.setLevel(logging.DEBUG)
+            client.debug_verbosity(1)
+        elif level == 1:
+            logger.setLevel(logging.INFO)
+            client.debug_verbosity(0)
+            # If logging debug not enabled, reduce traceback info
+            sys.tracebacklimit = 0
+
+        fh = logging.FileHandler(logfile)
+        logger.addHandler(fh)
+    except Exception:
+        return
+    return level
 
 
 def main():
@@ -71,23 +110,20 @@ loglevel:4 As 1 plus xml vectors and all contents
     # On receiving an event, the client appends it into eventque
     client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
 
-    # Monitors eventque and acts on the events, creates the console screens
-    # and calls the send vector methods of client to transmit data
-    control = ConsoleControl(client, blobfolder=blobfolder)
-
-    loglevel = 0
     if args.loglevel and args.logfile:
         loglevel = int(args.loglevel)
-        level = control.setlogging(loglevel, args.logfile)
+        level = setlogging(client, loglevel, args.logfile)
         if level != loglevel:
             print("Error: Failed to set logging")
             return 1
-
-    if loglevel < 2:
-        # If logging debug not enabled, reduce traceback info
-        sys.tracebacklimit = 0
+    else:
+        logger.addHandler(logging.NullHandler())
 
     try:
+        # Monitors eventque and acts on the events, creates the console screens
+        # and calls the send vector methods of client to transmit data
+        control = ConsoleControl(client, blobfolder=blobfolder)
+
         asyncio.run(runclient(client, control))
     finally:
         # clear curses setup
