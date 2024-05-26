@@ -77,9 +77,9 @@ Logs informational messages and error messages as above.
 
 **DEBUG**
 
-Logs xml data transmitted and received, and the info and error messages as above. The verbosity of this xml data can be set with the IPyClient.debug_verbosity(verbose) method, where verbose 1 is the least, and verbose 3 is the most.
+Logs xml data transmitted and received, and the info and error messages as above. The verbosity of this xml data can be set with the IPyClient.debug_verbosity(verbose) method, where 0 is no xml traffic is recorded, 1 is xm recorded but the least verbose, and verbose 3 is the most.
 
-As default, only the logging.NullHandler() is added, so no logs are generated. To create logs you will need to add a handler, and a logging level, for example::
+To create logs you will need to add a handler, and a logging level, for example::
 
     import logging
     logger = logging.getLogger('indipyclient')
