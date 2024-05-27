@@ -126,21 +126,32 @@ class IPyClient(collections.UserDict):
         # self.connected is True if connection has been made
         self.connected = False
 
-        # tx_timer is set when data is transmitted, it is used to check when data is received,
-        # at which point it becomes None again.
-        # if there is no answer after self.respond_timeout seconds, close connection
-        self.tx_timer = None
-        self.respond_timeout = 15
-        # idle_timer is set when either data is transmitted or received.
-        # If nothing sent or received after idle_timeout reached, then a getProperties is transmitted
-        self.idle_timer = time.time()
-        self.idle_timeout = 20
+        #####################
+        # The following sets of timers are only enabled if this is True
+        self.timeout_enable = True
 
         # vector timeouts are used to check that when a new vector is sent
         # a reply setvector will be received within the given time
-        self.vector_timeout_enable = True
         self.vector_timeout_min = 2
         self.vector_timeout_max = 10
+
+        # idle_timer is set when either data is transmitted or received.
+        # If nothing is sent or received after idle_timeout reached, then a getProperties is transmitted
+        self.idle_timer = time.time()
+        self.idle_timeout = 20
+        # self.idle_timeout is set to two times self.vector_timeout_max
+
+        # tx_timer is set when any data is transmitted,
+        # it is used to check when any data is received,
+        # at which point it becomes None again.
+        # if there is no answer after self.respond_timeout seconds,
+        # assume the connection has failed and close the connection
+        self.tx_timer = None
+        self.respond_timeout = 40
+        # self.respond_timeout is set to four times self.vector_timeout_max
+        ######################
+
+
 
         # and shutdown routine sets this to True to stop coroutines
         self._stop = False
@@ -270,12 +281,12 @@ class IPyClient(collections.UserDict):
         self.writerque.clear()
 
 
-
     def send(self, xmldata):
         """Transmits xmldata, this is an internal method, not normally called by a user.
            xmldata is an xml.etree.ElementTree object"""
         if self.connected:
             self.writerque.append(xmldata)
+
 
     async def _check_alive(self, writer):
         try:
@@ -354,10 +365,11 @@ class IPyClient(collections.UserDict):
                     writer.write(binarydata)
                     await writer.drain()
 
-                # data has been transmitted set timers going, do not set timer
-                # for enableBLOB as no answer is expected for that
-                if (self.tx_timer is None) and (txdata.tag != "enableBLOB"):
-                    self.tx_timer = time.time()
+                if self.timeout_enable:
+                    # data has been transmitted set timers going, do not set timer
+                    # for enableBLOB as no answer is expected for that
+                    if (self.tx_timer is None) and (txdata.tag != "enableBLOB"):
+                        self.tx_timer = time.time()
                 self.idle_timer = time.time()
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logtx(txdata)
@@ -626,15 +638,23 @@ class IPyClient(collections.UserDict):
            The INDI protocol allows the server to suggest a timeout for each vector. This
            method allows you to set minimum and maximum timeouts which restricts the
            suggested values. These should be given as integer seconds. If any parameter
-           is not provided (left at None) then that value will not be changed. If
-           timeout_enable is set to False, no VectorTimeOut events will occur. As default,
-           timeouts are enabled, minimum is set to 2 seconds, maximum 10 seconds."""
+           is not provided (left at None) then that value will not be changed.
+           If timeout_enable is set to False, no VectorTimeOut events will occur.
+           As default, timeouts are enabled, minimum is set to 2 seconds, maximum 10 seconds.
+           Timeout_enable also enables two other timers:
+           self.idle_timeout is set to twice timeout_max, and will cause a getProperties to be sent
+           if nothing is either transmitted or received in that time.
+           self.respond_timeout is set to four times timeout_max, and will assume a call failure
+           and attempt a reconnect, if after any transmission, nothing is received for that time
+           """
         if not timeout_enable is None:
-            self.vector_timeout_enable = timeout_enable
+            self.timeout_enable = timeout_enable
         if not timeout_min is None:
             self.vector_timeout_min = timeout_min
         if not timeout_max is None:
             self.vector_timeout_max = timeout_max
+            self.idle_timeout = 2 * timeout_max
+            self.respond_timeout = 4 * timeout_max
 
 
     async def _timeout_monitor(self):
@@ -650,13 +670,14 @@ class IPyClient(collections.UserDict):
                 else:
                     # so the connection is up, check devices exist
                     if len(self.data):
-                        # connection is up and devices exist, if nothing has been
-                        # sent or received for self.idle_timeout seconds, send a getProperties
-                        nowtime = time.time()
-                        telapsed = nowtime - self.idle_timer
-                        if telapsed > self.idle_timeout:
-                            self.send_getProperties()
-                        elif self.vector_timeout_enable:
+                        # connection is up and devices exist
+                        if self.timeout_enable:
+                            # If nothing has been sent or received
+                            # for self.idle_timeout seconds, send a getProperties
+                            nowtime = time.time()
+                            telapsed = nowtime - self.idle_timer
+                            if telapsed > self.idle_timeout:
+                                self.send_getProperties()
                             # check if any vectors have timed out
                             for device in self.data.values():
                                 for vector in device.values():

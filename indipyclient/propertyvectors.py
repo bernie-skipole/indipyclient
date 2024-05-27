@@ -102,7 +102,7 @@ class PropertyVector(Vector):
     def checktimedout(self, nowtime):
         "Returns True if a timedout has occured, False otherwise"
 
-        if not self._client.vector_timeout_enable:
+        if not self._client.timeout_enable:
             self._timer = False
         if not self._timer:
             return False
