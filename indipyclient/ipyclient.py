@@ -175,6 +175,9 @@ class IPyClient(collections.UserDict):
             raise ValueError
         self._verbose = verbose
 
+    async def hardware(self):
+        """Override this to operate any required client hardware"""
+        pass
 
     def shutdown(self):
         "Shuts down the client"
@@ -743,7 +746,7 @@ class IPyClient(collections.UserDict):
     async def asyncrun(self):
         "Await this method to run the client."
         self._stop = False
-        await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor())
+        await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), self.hardware())
         self.stopped = True
 
 
