@@ -151,8 +151,6 @@ class IPyClient(collections.UserDict):
         # self.respond_timeout is set to four times self.vector_timeout_max
         ######################
 
-
-
         # and shutdown routine sets this to True to stop coroutines
         self._stop = False
         # this is set to True when asyncrun is finished
@@ -176,11 +174,12 @@ class IPyClient(collections.UserDict):
         self._verbose = verbose
 
     async def hardware(self):
-        """Override this to operate any required client hardware"""
+        """This is started when asyncrun is called. As default does nothing so stops immediately.
+           It is available to be overriden if required."""
         pass
 
     def shutdown(self):
-        "Shuts down the client"
+        "Shuts down the client, sets the flag self._stop to True"
         self._stop = True
 
     def report(self, message):

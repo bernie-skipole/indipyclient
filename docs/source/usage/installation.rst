@@ -27,8 +27,6 @@ Without any options the client will attempt to connect to localhost.
 
 You could run the INDI service on one machine, and indipyclient on another if you specify the host and port to connect to. However a more secure method would be to run both on the same machine using the default localhost, and do not open the port to network connections.  You can still uses the terminal remotely, by calling the machine using SSH, and in the SSH session, open the client by running indipyclient.
 
-Using SSH and running the client on the machine which is also running the server will be secure, but may give poorer performance for rapidly changing values, as screen refreshes are transmitted across the network rather than the efficient xml. It may be useful to explore SSH tunneling as another alternative.
-
 You should note that indipyclient relies on the Python Curses standard library package, and this is not available on Windows, in which case using an SSH connection and running indipyclient on the server is the best option.
 
 The Curses library depends on the terminal providing support for terminal control sequences, if your terminal program is not compatable you may find the layout distorted, or certain features such as selecting fields by mouse click not working. In which case, if possible, pick a different emulation.
@@ -51,7 +49,7 @@ pip install indipyclient
 
 You can then import indipyclient, create a class inheriting from IPyClient, and typically write your own rxevent(event) coroutine method, which is called whenever data is received.
 
-The IPyClient object gives you access to Devices, which represent the remote instrument and Vectors, which are collections of one or more member values. For example a SwitchVector may hold a number of switches, such as a radio button set. The values of these vectors can be read, and updated values transmitted using methods described further in this documentation.
+The IPyClient object gives you access to Devices, which represent the remote instrument and property Vectors, which are collections of one or more member values. For example a SwitchVector may hold a number of switches, such as a radio button set. The values of these vectors can be read, and updated values transmitted using methods described further in this documentation.
 
 Finally the asyncrun() coroutine method of IPyClient should be awaited which will cause the connection to the INDI server to be made.
 
@@ -84,6 +82,6 @@ The script checks for a setNumberVector event, and if the event matches the devi
     asyncio.run(myclient.asyncrun())
 
 
-As well as IPyClient, the function getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
+As well as IPyClient, the function indipyclient.getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
 
 .. autofunction:: indipyclient.getfloat

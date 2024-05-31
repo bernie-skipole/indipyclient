@@ -1,5 +1,5 @@
-Vectors
-=======
+Property Vectors
+================
 
 Instances of these classes are created automatically as data is received
 from the INDI server, typically you would read their attributes to display
@@ -70,7 +70,7 @@ The device object owning this vector. This attribute is not available in the 'sn
 
 ----
 
-As received events arrive from the server, these vectors are created or updated and are available via ipyclient[devicename][vectorname]
+As data is received these vectors are created or updated and are available via ipyclient[devicename][vectorname]
 
 .. autoclass:: indipyclient.propertyvectors.SwitchVector
    :members: send_newSwitchVector

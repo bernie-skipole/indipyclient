@@ -11,6 +11,16 @@ As devices and vectors are learnt from the received data, the IPyClient object b
 
 The IPyClient object has an asyncrun() coroutine method which needs to run in an event loop, typically gathered with your own tasks, to run your script or client.
 
+IPyClient has a 'hardware' coroutine method which is started with asyncrun, but as default does nothing. It is available to be overidden if required, for example, if data is to be sent to the remote instrument every ten seconds::
+
+    async def hardware(self):
+        while not self._stop:
+            await asyncio.sleep(10)
+            datavalue = my_function() # your own function which obtains data
+            self.send_newVector("devicename", "vectorname", members={"membername":datavalue}):
+
+Note that attribute self._stop becomes True when the method shutdown() is called, requesting any coroutines to stop.
+
 The rest of this documentation details the classes, methods and attributes available.
 
 
@@ -77,7 +87,7 @@ Logs informational messages and error messages as above.
 
 **DEBUG**
 
-Logs xml data transmitted and received, and the info and error messages as above. The verbosity of this xml data can be set with the IPyClient.debug_verbosity(verbose) method, where 0 is no xml traffic is recorded, 1 is xm recorded but the least verbose, and verbose 3 is the most.
+Logs xml data transmitted and received, and the info and error messages as above. The verbosity of this xml data can be set with the IPyClient.debug_verbosity(verbose) method, where 0 is no xml traffic is recorded, 1 is xml recorded but the least verbose, and 3 is the most.
 
 To create logs you will need to add a handler, and a logging level, for example::
 

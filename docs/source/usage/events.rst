@@ -69,6 +69,35 @@ If self.device is given, the tuple is appended to the device messages deque.
 
 Set to the string "Message".
 
+----
+
+.. autoclass:: indipyclient.events.getProperties
+
+The getProperties request is normally sent from the client to Drivers, and so is not normally received by a client. However one driver can snoop on another by transmitting a getProperties, which may therefore be received here. Usually it should be ignored by a client.
+
+**Attributes**
+
+**self.device**
+
+Could be None
+
+**self.devicename**
+
+Could be None
+
+**self.vectorname**
+
+Could be None
+
+**self.root**
+
+An xml.etree.ElementTree object of the received xml data.
+
+**self.timestamp**
+
+**self.eventtype**
+
+Set to the string "getProperties".
 
 ----
 

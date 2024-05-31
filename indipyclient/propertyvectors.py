@@ -297,6 +297,7 @@ class SwitchVector(PropertyVector):
     def send_newSwitchVector(self, timestamp=None, members={}):
         """Transmits the vector (newSwitchVector) and the members given in the members
            dictionary which consists of member names:values to be sent.
+           The values should be strings of either On or Off.
            This method will encode and transmit the xml, and change the vector state to busy.
            If no timestamp is given, a current UTC time will be created."""
         xmldata = self._newSwitchVector(timestamp, members)
@@ -451,6 +452,7 @@ class TextVector(PropertyVector):
 
     def send_newTextVector(self, timestamp=None, members={}):
         """Transmits the vector (newTextVector) with members and values.
+           members is a dictionary of membernames:text string values.
            The spec requires text vectors to be sent with all members, so if the given
            members dictionary only includes changed values, the remaining members with
            unchanged values will still be sent.
@@ -564,13 +566,18 @@ class NumberVector(PropertyVector):
         # set member values to send
         for membername, numbermember in self.data.items():
             if membername in members:
-                xmldata.append(numbermember.onenumber(members[membername]))
+                value = members[membername]
+                if isinstance(value, float) or isinstance(value, int):
+                    value = str(value)
+                xmldata.append(numbermember.onenumber(value))
             else:
                 xmldata.append(numbermember.onenumber(numbermember.membervalue))
         return xmldata
 
     def send_newNumberVector(self, timestamp=None, members={}):
         """Transmits the vector (newNumberVector) with members and values.
+           members is a dictionary of membernames:number values, the values can be
+           integers, floats or strings, if not strings they will be converted to strings.
            The spec requires number vectors to be sent with all members, so if the given
            members dictionary only includes changed values, the remaining members with
            unchanged values will still be sent.

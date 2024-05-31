@@ -45,7 +45,7 @@ A typical sesssion would look like:
 .. image:: ./image.png
 
 
-This is a companion package to 'indipydriver' which can be used to create INDI drivers.
+This is a companion package to 'indipydriver' which can be used to create and serve INDI drivers.
 
 INDI - Instrument Neutral Distributed Interface.
 
