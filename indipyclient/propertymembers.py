@@ -317,22 +317,28 @@ class NumberMember(ParentNumberMember):
     def __init__(self, name, label=None, format='', min='0', max='0', step='0', membervalue='0'):
         super().__init__(name, label, format, min, max, step, membervalue)
         self.format = format
-        if not isinstance(min, str):
-            raise ParseException("Number minimum value must be given as a string")
-        self.min = min
-        if not isinstance(max, str):
-            raise ParseException("Number maximum value must be given as a string")
-        self.max = max
-        if not isinstance(step, str):
-            raise ParseException("Number step value must be given as a string")
-        self.step = step
-        if not isinstance(membervalue, str):
-            raise ParseException("Number value must be given as a string")
+        if isinstance(min, str):
+            self.min = min
+        else:
+            self.min = str(min)
+        if isinstance(max, str):
+            self.max = max
+        else:
+            self.max = str(max)
+        if isinstance(step, str):
+            self.step = step
+        else:
+            self.step = str(step)
+        if isinstance(membervalue, str):
+            value = membervalue
+        else:
+            value = str(membervalue)
         try:
-            # test a float can be created from this membervalue
-            self._floatvalue = getfloat(membervalue)
+            # test a float can be created from this value
+            self._floatvalue = getfloat(value)
         except Exception:
             raise ParseException("Cannot parse number received.")
+        self._membervalue = value
 
     @property
     def membervalue(self):
@@ -340,12 +346,10 @@ class NumberMember(ParentNumberMember):
 
     @membervalue.setter
     def membervalue(self, value):
+        if not isinstance(value, str):
+            value = str(value)
         if self._membervalue == value:
             return
-        if not isinstance(value, str):
-            raise ParseException("Number value must be given as a string")
-        if not value:
-            raise ParseException("No number value given")
         try:
             # test a float can be created from this membervalue
             # and save the float
@@ -363,9 +367,13 @@ class NumberMember(ParentNumberMember):
 
     def onenumber(self, newvalue):
         """Returns xml of a oneNumber"""
+        if isinstance(newvalue, str):
+            value = newvalue
+        else:
+            value = str(newvalue)
         xmldata = ET.Element('oneNumber')
         xmldata.set("name", self.name)
-        xmldata.text = newvalue
+        xmldata.text = value
         return xmldata
 
     def _snapshot(self):
