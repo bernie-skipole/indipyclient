@@ -670,8 +670,8 @@ class IPyClient(collections.UserDict):
                 if not self.connected:
                     count = 0
                 else:
-                    # so the connection is up, check devices exist
-                    if len(self.data):
+                    # so the connection is up, check enabled devices exist
+                    if self.enabledlen():
                         # connection is up and devices exist
                         if self.timeout_enable:
                             # If nothing has been sent or received
@@ -769,6 +769,12 @@ class Device(collections.UserDict):
             if vector.enable:
                 return True
         return False
+
+    def disable(self):
+        "If called, disables the device"
+        for vector in self.data.values():
+            vector.enable = False
+
 
 
 class _Device(Device):
