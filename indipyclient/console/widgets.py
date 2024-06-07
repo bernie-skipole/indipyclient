@@ -418,6 +418,7 @@ class BaseMember:
                 return self._close
             key = self.stdscr.getch()
             if key == -1:
+                await asyncio.sleep(0.02)
                 continue
             if key == curses.KEY_RESIZE:
                 return "Resize"
