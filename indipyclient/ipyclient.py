@@ -293,7 +293,7 @@ class IPyClient(collections.UserDict):
     async def _check_alive(self, writer):
         try:
             while self.connected and (not self._stop):
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.1)
                 if self.tx_timer:
                     # data has been sent, waiting for reply
                     telapsed = time.time() - self.tx_timer
@@ -348,6 +348,7 @@ class IPyClient(collections.UserDict):
                 try:
                     txdata = self.writerque.popleft()
                 except IndexError:
+                    await asyncio.sleep(0.1)
                     continue
                 if not self.connected:
                     break
