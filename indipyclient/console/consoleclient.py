@@ -123,7 +123,7 @@ class ConsoleControl:
         "If self._shutdown becomes True, shutdown"
         while (not self._shutdown) and (not self.client.stopped) and (not self.stop):
             # no shutdown requested, just continue
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.1)
         # so either shutdown has been requested or the ipyclient has stopped for some reason
         if not self.client.stopped:
             # client is still running, shut it down
@@ -147,6 +147,7 @@ class ConsoleControl:
             while not self.stop:
                 await asyncio.sleep(0)
                 if isinstance(self.screen, windows.TooSmall):
+                    await asyncio.sleep(0.1)
                     continue
                 if not self.connected:
                     if isinstance(self.screen, windows.MessagesScreen):
@@ -164,6 +165,7 @@ class ConsoleControl:
                     self.eventque.task_done()
                 except asyncio.QueueEmpty:
                     # no event received, so do not update screen
+                    await asyncio.sleep(0.02)
                     continue
                 if isinstance(event, VectorTimeOut) and (event.devicename == self.screen.devicename):
                     if isinstance(self.screen, windows.ChooseVectorScreen):
@@ -206,41 +208,32 @@ class ConsoleControl:
                         self.BLOBfiles[(event.devicename, event.vectorname, membername)] = filepath
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
-                    continue
-                if isinstance(self.screen, windows.DevicesScreen):
+                elif isinstance(self.screen, windows.DevicesScreen):
                     self.screen.update(event)
-                    continue
-                if isinstance(self.screen, windows.EnableBLOBsScreen):
+                elif isinstance(self.screen, windows.EnableBLOBsScreen):
                     self.screen.update(event)
-                    continue
-                if event.devicename != self.screen.devicename:
+                elif event.devicename == self.screen.devicename:
                     # the remaining screens are only affected if the event devicename
                     # is the device they refer to
-                    continue
-                if isinstance(event, delProperty):
-                    if event.vectorname is None:
-                        # the whole device is disabled,
-                        if event.devicename and (event.devicename in self.devicenames):
-                            self.devicenames.remove(event.devicename)
-                        # show devicesscreen
-                        self.screen.close("Devices")
-                        continue
-                    if isinstance(self.screen, windows.ChooseVectorScreen):
-                        # one vector has been disabled, update the ChooseVectorScreen
+                    if isinstance(event, delProperty):
+                        if event.vectorname is None:
+                            # the whole device is disabled,
+                            if event.devicename and (event.devicename in self.devicenames):
+                                self.devicenames.remove(event.devicename)
+                            # show devicesscreen
+                            self.screen.close("Devices")
+                        elif isinstance(self.screen, windows.ChooseVectorScreen):
+                            # one vector has been disabled, update the ChooseVectorScreen
+                            self.screen.update(event)
+                        elif isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                            # This vector has been disabled, show ChooseVectorScreen
+                            self.screen.close("Vectors")
+                    # so its not a delete property
+                    elif isinstance(self.screen, windows.ChooseVectorScreen):
                         self.screen.update(event)
-                        continue
-                    if isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
-                        # This vector has been disabled, show ChooseVectorScreen
-                        self.screen.close("Vectors")
-                        continue
-                    continue
-                # so its not a delete property
-                if isinstance(self.screen, windows.ChooseVectorScreen):
-                    self.screen.update(event)
-                    continue
-                if isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
-                    # The event refers to this vector
-                    self.screen.update(event)
+                    elif isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                        # The event refers to this vector
+                        self.screen.update(event)
         except Exception:
             logger.exception("Exception report from ConsoleControl.updatescreen")
             raise
@@ -258,7 +251,7 @@ class ConsoleControl:
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
                         if self.maxrows < 10 or self.maxcols < 40:
                             self.shutdown()
-                            continue
+                            break
                         if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
@@ -277,7 +270,7 @@ class ConsoleControl:
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
-                            continue
+                            break
                         if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
@@ -302,7 +295,7 @@ class ConsoleControl:
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
-                            continue
+                            break
                         if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
@@ -327,7 +320,7 @@ class ConsoleControl:
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
-                            continue
+                            break
                         if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
@@ -354,7 +347,7 @@ class ConsoleControl:
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
-                            continue
+                            break
                         if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
@@ -384,29 +377,25 @@ class ConsoleControl:
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
                         if self.maxrows < 16 or self.maxcols < 40:
                             self.shutdown()
-                            continue
+                            break
                         if self.maxrows < MINROWS or self.maxcols < MINCOLS:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue
                         self.screen = windows.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
-                        continue
-                    if result == "Quit":
+                    elif result == "Quit":
                         self.shutdown()
                         break
-                    if result == "Messages":
+                    elif result == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if result == "Devices":
+                    elif result == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if result == "Vectors":
+                    elif result == "Vectors":
                         self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.vector.group)
                         self.screen.show()
-                        continue
 
         except Exception:
             logger.exception("Exception report from ConsoleControl.getinput")
