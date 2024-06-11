@@ -6,8 +6,6 @@ from time import sleep
 
 from datetime import datetime, timezone
 
-from base64 import standard_b64encode
-
 import xml.etree.ElementTree as ET
 
 import logging
@@ -59,32 +57,6 @@ def _makestart(element):
         attriblist.append(f" {key}=\"{value}\"")
     attriblist.append(">")
     return "".join(attriblist)
-
-
-def blob_xml_bytes(xmldata):
-    """A generator yielding blob xml byte strings
-       for a newBLOBVector.
-       reads member bytes, b64 encodes the data
-       and yields the byte string including tags."""
-
-    # yield initial newBLOBVector
-    newblobvector = _makestart(xmldata)
-    yield newblobvector.encode()
-    for oneblob in xmldata.iter('oneBLOB'):
-        bytescontent = oneblob.text
-        size = oneblob.get("size")
-        if size == "0":
-            oneblob.set("size", str(len(bytescontent)))
-        # yield start of oneblob
-        start = _makestart(oneblob)
-        yield start.encode()
-        # yield body, b64 encoded, in chunks
-        encoded_data = standard_b64encode(bytescontent)
-        chunksize = 1000
-        for b in range(0, len(encoded_data), chunksize):
-            yield encoded_data[b:b+chunksize]
-        yield b"</oneBLOB>"
-    yield b"</newBLOBVector>\n"
 
 
 
@@ -314,7 +286,6 @@ class IPyClient(collections.UserDict):
         finally:
             self.connected = False
 
-
     def _logtx(self, txdata):
         "log tx data with level debug, and detail depends on self._verbose"
         if not self._verbose:
@@ -324,12 +295,13 @@ class IPyClient(collections.UserDict):
             binarydata = ET.tostring(txdata)
             logger.debug(startlog + binarydata.decode())
         elif self._verbose == 2:
-            data = copy.deepcopy(txdata)
-            tag = data.tag
-            for element in data:
-                if tag == "newBLOBVector":
+            if txdata.tag == "newBLOBVector" or txdata.tag == "setBLOBVector":
+                data = copy.deepcopy(txdata)
+                for element in data:
                     element.text = "NOT LOGGED"
-            binarydata = ET.tostring(data)
+                binarydata = ET.tostring(data)
+            else:
+                binarydata = ET.tostring(txdata)
             logger.debug(startlog + binarydata.decode())
         elif self._verbose == 1:
             data = copy.deepcopy(txdata)
@@ -354,20 +326,11 @@ class IPyClient(collections.UserDict):
                     break
                 if self._stop:
                     break
-                if txdata.tag == "newBLOBVector" and len(txdata):
-                    # txdata is a newBLOBVector containing blobs
-                    # the generator blob_xml_bytes yields bytes
-                    for binarydata in blob_xml_bytes(txdata):
-                        # Send to the port
-                        writer.write(binarydata)
-                        await writer.drain()
-                else:
-                    # its straight xml, send it out on the port
-                    binarydata = ET.tostring(txdata)
-                    # Send to the port
-                    writer.write(binarydata)
-                    await writer.drain()
-
+                # send it out on the port
+                binarydata = ET.tostring(txdata)
+                # Send to the port
+                writer.write(binarydata)
+                await writer.drain()
                 if self.timeout_enable:
                     # data has been transmitted set timers going, do not set timer
                     # for enableBLOB as no answer is expected for that

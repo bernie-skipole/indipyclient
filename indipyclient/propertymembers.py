@@ -3,6 +3,8 @@ import xml.etree.ElementTree as ET
 
 import sys, pathlib
 
+from base64 import standard_b64encode
+
 
 class ParseException(Exception):
     "Raised if an error occurs when parsing received data"
@@ -421,13 +423,12 @@ class BLOBMember(ParentBLOBMember):
         xmldata = ET.Element('oneBLOB')
         xmldata.set("name", self.name)
         xmldata.set("format", newformat)
-        xmldata.set("size", str(newsize))
         # the value set in the xmldata object should be a bytes object
         if isinstance(newvalue, bytes):
-            xmldata.text = newvalue
+            bytescontent = newvalue
         elif isinstance(newvalue, pathlib.Path):
             try:
-                xmldata.text = newvalue.read_bytes()
+                bytescontent = newvalue.read_bytes()
             except Exception:
                 raise ParseException("Unable to read the given file")
         elif hasattr(newvalue, "seek") and hasattr(newvalue, "read") and callable(newvalue.read):
@@ -440,7 +441,6 @@ class BLOBMember(ParentBLOBMember):
                 raise ParseException("The read BLOB is not a bytes object")
             if bytescontent == b"":
                 raise ParseException("The read BLOB value is empty")
-            xmldata.text = bytescontent
         else:
             # could be a path to a file
             try:
@@ -450,7 +450,10 @@ class BLOBMember(ParentBLOBMember):
                 raise ParseException("Unable to read the given file")
             if bytescontent == b"":
                 raise ParseException("The read BLOB value is empty")
-            xmldata.text = bytescontent
+        if not newsize:
+            newsize = len(bytescontent)
+        xmldata.set("size", str(newsize))
+        xmldata.text = standard_b64encode(bytescontent).decode("utf-8")
         return xmldata
 
 
