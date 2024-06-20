@@ -369,132 +369,125 @@ class IPyClient(collections.UserDict):
             binarydata = ET.tostring(data, short_empty_elements=False).split(b">")
             logger.debug(startlog + binarydata[0].decode() + ">")
 
-
     async def _run_rx(self, reader):
         "pass xml.etree.ElementTree data to readerque"
         try:
             # get block of xml.etree.ElementTree data
-            # from source and append it to  readerque
-            source = self._datasource(reader)
-            async for rxdata in source:
+            # from self._xmlinput and append it to  readerque
+            while self.connected and (not self._stop):
+                rxdata = await self._xmlinput(reader)
+                if rxdata is None:
+                    return
                 # and place rxdata into readerque
                 while self.connected and (not self._stop):
-                    await asyncio.sleep(0)
                     try:
-                        self.readerque.put_nowait(rxdata)
-                    except asyncio.QueueFull:
-                        # The queue is full
+                        await asyncio.wait_for(self.readerque.put(rxdata), timeout=0.02)
+                    except asyncio.TimeoutError:
+                        # queue is full, continue while loop, checking flags
                         continue
-                    # rxdata is now in readerque
+                    # rxdata is now in readerque, break the inner while loop
                     break
+                # rxdata in readerque, log it, then continue with next block
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logrx(rxdata)
-                if (not self.connected) or self._stop:
-                    break
         except Exception:
-            logger.exception("Exception report from IPyClient._run_rx method")
+            logger.exception("Exception report from IPyClient._run_rx")
             raise
 
 
-    async def _datasource(self, reader):
-        "get received data, parse it, and yield it as xml.etree.ElementTree object"
-        data_in = self._datainput(reader)
+    async def _xmlinput(self, reader):
+        """get received data, parse it, and yield it as xml.etree.ElementTree object
+           Returns None if notconnected/stop flags arises"""
         message = b''
         messagetagnumber = None
-        try:
-            async for data in data_in:
-                if not self.connected:
-                    return
-                if self._stop:
-                    return
-                if not data:
+        while self.connected and (not self._stop):
+            await asyncio.sleep(0)
+            data = await self._datainput(reader)
+            # data is either None, or binary data ending in b">"
+            if data is None:
+                return
+            if not self.connected:
+                return
+            if self._stop:
+                return
+            if not message:
+                # data is expected to start with <tag, first strip any newlines
+                data = data.strip()
+                for index, st in enumerate(_STARTTAGS):
+                    if data.startswith(st):
+                        messagetagnumber = index
+                        break
+                    elif st in data:
+                        # remove any data prior to a starttag
+                        positionofst = data.index(st)
+                        data = data[positionofst:]
+                        messagetagnumber = index
+                        break
+                else:
+                    # data does not start with a recognised tag, so ignore it
+                    # and continue waiting for a valid message start
                     continue
-                if not message:
-                    # data is expected to start with <tag, first strip any newlines
-                    data = data.strip()
-                    for index, st in enumerate(_STARTTAGS):
-                        if data.startswith(st):
-                            messagetagnumber = index
-                            break
-                        elif st in data:
-                            # remove any data prior to a starttag
-                            positionofst = data.index(st)
-                            data = data[positionofst:]
-                            messagetagnumber = index
-                            break
-                    else:
-                        # data does not start with a recognised tag, so ignore it
-                        # and continue waiting for a valid message start
-                        continue
-                    # set this data into the received message
-                    message = data
-                    # either further children of this tag are coming, or maybe its a single tag ending in "/>"
-                    if message.endswith(b'/>'):
-                        # the message is complete, handle message here
-                        try:
-                            root = ET.fromstring(message.decode("us-ascii"))
-                        except ET.ParseError as e:
-                            message = b''
-                            messagetagnumber = None
-                            continue
-                        # xml datablock done, yield it up
-                        yield root
-                        # and start again, waiting for a new message
-                        message = b''
-                        messagetagnumber = None
-                    # and read either the next message, or the children of this tag
-                    continue
-                # To reach this point, the message is in progress, with a messagetagnumber set
-                # keep adding the received data to message, until an endtag is reached
-                message += data
-                if message.endswith(_ENDTAGS[messagetagnumber]):
+                # set this data into the received message
+                message = data
+                # either further children of this tag are coming, or maybe its a single tag ending in "/>"
+                if message.endswith(b'/>'):
                     # the message is complete, handle message here
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
                     except ET.ParseError as e:
+                       # failed to parse the message, continue at beginning
                         message = b''
                         messagetagnumber = None
                         continue
-                    # xml datablock done, yield it up
-                    yield root
-                    # and start again, waiting for a new message
+                    # xml datablock done, return it
+                    return root
+                # and read either the next message, or the children of this tag
+                continue
+            # To reach this point, the message is in progress, with a messagetagnumber set
+            # keep adding the received data to message, until an endtag is reached
+            message += data
+            if message.endswith(_ENDTAGS[messagetagnumber]):
+                # the message is complete, handle message here
+                try:
+                    root = ET.fromstring(message.decode("us-ascii"))
+                except ET.ParseError as e:
+                    # failed to parse the message, continue at beginning
                     message = b''
                     messagetagnumber = None
-        except Exception:
-            logger.exception("Exception report from IPyClient._datasource method")
-            raise
+                    continue
+                # xml datablock done, yield it up
+                return root
+            # so message is in progress, with a messagetagnumber set
+            # but no valid endtag received yet, so continue the loop
 
 
 
     async def _datainput(self, reader):
-        "Generator producing binary string of data from the port"
+        """Waits for binary string of data ending in > from the port
+           Returns None if notconnected/stop flags arises"""
         binarydata = b""
-        try:
-            while self.connected and (not self._stop):
-                await asyncio.sleep(0)
-                try:
-                    data = await reader.readuntil(separator=b'>')
-                except asyncio.LimitOverrunError:
-                    data = await reader.read(n=32000)
-                except asyncio.IncompleteReadError:
-                    binarydata = b""
-                    continue
-                if not data:
-                    continue
-                # data received
-                self.tx_timer = None
-                self.idle_timer = time.time()
-                if b">" in data:
-                    binarydata = binarydata + data
-                    yield binarydata
-                    binarydata = b""
-                else:
-                    # data has content but no > found
-                    binarydata += data
-                    # could put a max value here to stop this increasing indefinetly
-        except Exception:
-            logger.exception("Exception report from IPyClient._datainput method")
-            raise
+        while self.connected and (not self._stop):
+            await asyncio.sleep(0)
+            try:
+                data = await reader.readuntil(separator=b'>')
+            except asyncio.LimitOverrunError:
+                data = await reader.read(n=32000)
+            except asyncio.IncompleteReadError:
+                binarydata = b""
+                continue
+            if not data:
+                await asyncio.sleep(0.01)
+                continue
+            # data received
+            self.tx_timer = None
+            self.idle_timer = time.time()
+            if b">" in data:
+                binarydata = binarydata + data
+                return binarydata
+            # data has content but no > found
+            binarydata += data
+            # could put a max value here to stop this increasing indefinetly
+
 
 
     async def _rxhandler(self):
