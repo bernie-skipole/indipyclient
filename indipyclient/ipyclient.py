@@ -396,7 +396,7 @@ class IPyClient(collections.UserDict):
 
 
     async def _xmlinput(self, reader):
-        """get received data, parse it, and yield it as xml.etree.ElementTree object
+        """get received data, parse it, and return it as xml.etree.ElementTree object
            Returns None if notconnected/stop flags arises"""
         message = b''
         messagetagnumber = None
@@ -455,7 +455,7 @@ class IPyClient(collections.UserDict):
                     message = b''
                     messagetagnumber = None
                     continue
-                # xml datablock done, yield it up
+                # xml datablock done, return it
                 return root
             # so message is in progress, with a messagetagnumber set
             # but no valid endtag received yet, so continue the loop
@@ -796,7 +796,7 @@ class _Device(Device):
     def _snapshot(self):
         "Creates snapshot of this device and its vectors"
         snapdevice = Device(self.devicename)
-        for vectorname, vector in self.data:
+        for vectorname, vector in self.data.items():
             snapdevice[vectorname] = vector._snapshot()
         snapdevice.messages = list(self.messages)
         return snapdevice
