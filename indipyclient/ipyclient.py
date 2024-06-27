@@ -570,13 +570,13 @@ class IPyClient(collections.UserDict):
         """Send a Vector with updated member values, members is a membername
            to value dictionary. It could also be a vector, which is itself a
            membername to value mapping"""
-        if devicename not in self.data:
+        device = self.data.get(devicename)
+        if device is None:
             return
-        device = self.data[devicename]
-        if vectorname not in device:
+        propertyvector = device.get(vectorname)
+        if propertyvector is None:
             return
         try:
-            propertyvector = device[vectorname]
             if propertyvector.vectortype == "SwitchVector":
                 propertyvector.send_newSwitchVector(timestamp, members)
             elif propertyvector.vectortype == "TextVector":
@@ -691,6 +691,19 @@ class IPyClient(collections.UserDict):
                 xmldata.set("name", vectorname)
             xmldata.text = value
             self.send(xmldata)
+
+    def get_vector_state(self, devicename, vectorname):
+        """Gets the state string of the given vectorname, if this vector does not exist
+           returns None - this could be because the vector is not yet learnt.
+           The vector state attribute will still be returned, even if vector.enable is False"""
+        device = self.data.get(devicename)
+        if device is None:
+            return
+        propertyvector = device.get(vectorname)
+        if propertyvector is None:
+            return
+        return propertyvector.state
+
 
     async def rxevent(self, event):
         """Override this.

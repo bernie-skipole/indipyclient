@@ -17,7 +17,7 @@ IPyClient has a 'hardware' coroutine method which is started with asyncrun, but 
         while not self._stop:
             await asyncio.sleep(10)
             datavalue = my_function() # your own function which obtains data
-            self.send_newVector("devicename", "vectorname", members={"membername":datavalue}):
+            self.send_newVector("devicename", "vectorname", members={"membername":datavalue})
 
 Note that attribute self._stop becomes True when the method shutdown() is called, requesting any coroutines to stop.
 

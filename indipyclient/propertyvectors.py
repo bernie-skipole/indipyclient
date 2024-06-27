@@ -51,6 +51,8 @@ class Vector(collections.UserDict):
 
     @state.setter
     def state(self, value):
+        if not value in ('Idle','Ok','Busy','Alert'):
+            raise ValueError("Invalid state given")
         self._state = value
 
     @property
@@ -59,6 +61,8 @@ class Vector(collections.UserDict):
 
     @rule.setter
     def rule(self, value):
+        if value not in ('OneOfMany', 'AtMostOne', 'AnyOfMany'):
+            raise ValueError("Invalid rule given")
         self._rule = value
 
     @property
@@ -67,6 +71,8 @@ class Vector(collections.UserDict):
 
     @perm.setter
     def perm(self, value):
+        if value not in ('ro', 'wo', 'rw'):
+            raise ValueError("Invalid permission given")
         self._perm = value
 
     def __setitem__(self, membername, value):
