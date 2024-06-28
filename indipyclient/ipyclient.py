@@ -461,7 +461,6 @@ class IPyClient(collections.UserDict):
             # but no valid endtag received yet, so continue the loop
 
 
-
     async def _datainput(self, reader):
         """Waits for binary string of data ending in > from the port
            Returns None if notconnected/stop flags arises"""
@@ -487,7 +486,6 @@ class IPyClient(collections.UserDict):
             # data has content but no > found
             binarydata += data
             # could put a max value here to stop this increasing indefinetly
-
 
 
     async def _rxhandler(self):

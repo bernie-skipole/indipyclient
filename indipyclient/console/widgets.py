@@ -5,6 +5,9 @@ from decimal import Decimal
 
 from curses import ascii
 
+import logging
+logger = logging.getLogger(__name__)
+
 from ..propertymembers import getfloat
 
 def shorten(text, width=0, placeholder="..."):
@@ -1195,11 +1198,12 @@ class BLOBMember(BaseMember):
                 self.send_btn.focus = False
                 self.send_btn.draw()
                 try:
-                    filepath = pathlib.Path(self._newvalue).expanduser().resolve()
+                    filepath = pathlib.Path(self._newvalue.strip()).expanduser().resolve()
                     blobformat = ''.join(filepath.suffixes)
                     members = {self.name : (filepath, 0, blobformat)}
                     self.vector.send_newBLOBVector(members=members)
                 except Exception:
+                    logger.exception("Exception report from BLOB send action")
                     self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )
                 else:
                     self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
@@ -1264,11 +1268,12 @@ class BLOBMember(BaseMember):
                 self.send_btn.focus = False
                 self.send_btn.draw()
                 try:
-                    filepath = pathlib.Path(self._newvalue).expanduser().resolve()
+                    filepath = pathlib.Path(self._newvalue.strip()).expanduser().resolve()
                     blobformat = ''.join(filepath.suffixes)
                     members = {self.name : (filepath, 0, blobformat)}
                     self.vector.send_newBLOBVector(members=members)
                 except Exception:
+                    logger.exception("Exception report from BLOB send action")
                     self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )
                 else:
                     self.window.addstr( self.startline+2, 1, " - Sending -     ", curses.color_pair(1) )
