@@ -3655,12 +3655,12 @@ def submitvector(vector, memberwidgets):
         vector.send_newSwitchVector(members=members)
         return True
     elif vector.vectortype == "NumberVector":
-        members = {member.name:member.newvalue() for member in memberwidgets}
+        members = {member.name:member.newvalue().strip() for member in memberwidgets}
         # members is a dictionary of membername : member value (new number string)
         vector.send_newNumberVector(members=members)
         return True
     elif vector.vectortype == "TextVector":
-        members = {member.name:member.newvalue() for member in memberwidgets}
+        members = {member.name:member.newvalue().strip() for member in memberwidgets}
         # members is a dictionary of membername : member value (new text string)
         vector.send_newTextVector(members=members)
         return True
