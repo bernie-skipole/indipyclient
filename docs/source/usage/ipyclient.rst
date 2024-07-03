@@ -107,7 +107,7 @@ Snapshot
 
 The snapshot() method of IPyClient returns a Snap object which is a copy of the state of the client. This could be used if you wish to pass this state to your own routines, perhaps to record values.
 
-.. autoclass:: indipyclient.Snap
+.. autoclass:: indipyclient.ipyclient.Snap
    :members: dumps, dump
 
 The dumps and dump methods can be used to create JSON records of the client state.
