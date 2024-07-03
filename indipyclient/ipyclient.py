@@ -722,7 +722,12 @@ class Snap(collections.UserDict):
 
     """An instance of this object is returned when a snapshot is
        taken of the client.
-       It is a mapping of device name to device snapshots"""
+       It is a mapping of device name to device snapshots, which
+       are in turn mappings of vectorname to vector snapshots.
+       These snapshots record values and attributes, at the
+       moment of the snapshot.
+       Unlike IPyClient this has no send_newVector method, and the
+       snap vectors do not have the send methods."""
 
     def __init__(self, indihost, indiport, messages):
         super().__init__()
@@ -745,7 +750,7 @@ class Snap(collections.UserDict):
                 "devices":devdict}
 
     def dumps(self, indent=None, separators=None):
-        "Returns a JSON string of the snapshot"
+        "Returns a JSON string of the snapshot."
         return json.dumps(self.dictdump(), indent=indent, separators=separators)
 
 
