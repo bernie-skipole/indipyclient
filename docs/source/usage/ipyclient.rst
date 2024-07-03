@@ -105,9 +105,13 @@ This leaves you with the flexibility to add any available loghandler, and to set
 Snapshot
 ========
 
-The snapshot() method of IPyClient returns a Snap object which is a copy of the state of the client. This could be used if you wish to pass this state to your own routines, perhaps to record values.
+The snapshot() method of IPyClient returns a Snap object which is a copy of the state of the client. This could be used if you wish to pass this state to your own routines, perhaps to record values in another thread without danger of them being updated.
 
 .. autoclass:: indipyclient.ipyclient.Snap
    :members: dumps, dump
 
 The dumps and dump methods can be used to create JSON records of the client state.
+
+Note: the messages attribute is cast as a list rather than a collections.deque
+
+The JSON record does not include BLOB values, they are set as null.
