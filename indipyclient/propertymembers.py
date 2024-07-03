@@ -59,11 +59,7 @@ def getfloat(value):
 
 
 class Member():
-
-    """This class is the parent of further member classes.
-       Should you use the ipyclient.snapshot method to create a snapshot,
-       the snapshot vectors for Switch, Light and Text will contain objects
-       of this Member class."""
+    """This class is the parent of further member classes."""
 
     def __init__(self, name, label=None, membervalue=None):
         self.name = name
@@ -80,6 +76,18 @@ class Member():
     @membervalue.setter
     def membervalue(self, value):
         self._membervalue = value
+
+
+class SnapMember(Member):
+
+    """Should you use the ipyclient.snapshot method to create a snapshot,
+       the snapshot members for Switch, Light and Text will be objects
+       of this class."""
+
+    def dictdump(self):
+        "Returns a dictionary of this member"
+        return {"label": self.label,
+                "value": self._membervalue}
 
 
 class SwitchMember(Member):
@@ -109,7 +117,7 @@ class SwitchMember(Member):
         return value
 
     def _snapshot(self):
-        snapmember = Member(self.name, self.label, self._membervalue)
+        snapmember = SnapMember(self.name, self.label, self._membervalue)
         return snapmember
 
     def oneswitch(self, newvalue):
@@ -147,7 +155,7 @@ class LightMember(Member):
         return value
 
     def _snapshot(self):
-        snapmember = Member(self.name, self.label, self._membervalue)
+        snapmember = SnapMember(self.name, self.label, self._membervalue)
         return snapmember
 
 
@@ -171,7 +179,7 @@ class TextMember(Member):
             self._membervalue = value
 
     def _snapshot(self):
-        snapmember = Member(self.name, self.label, self._membervalue)
+        snapmember = SnapMember(self.name, self.label, self._membervalue)
         return snapmember
 
     def onetext(self, newvalue):
@@ -185,8 +193,7 @@ class TextMember(Member):
 class ParentNumberMember(Member):
 
     """This class inherits from Member and is the parent of the NumberMember class.
-       Should you use the ipyclient.snapshot method to create a snapshot,
-       the snapshot vectors for Numbers will contain objects of this class."""
+    """
 
 
     def __init__(self, name, label=None, format='', min='0', max='0', step='0', membervalue='0'):
@@ -311,6 +318,24 @@ class ParentNumberMember(Member):
         raise TypeError("Unable to process number format")
 
 
+class SnapNumberMember(ParentNumberMember):
+
+    """Should you use the ipyclient.snapshot method to create a snapshot,
+       the snapshot members for Numbers will be objects of this class."""
+
+    def dictdump(self):
+        "Returns a dictionary of this member"
+        return {"label": self.label,
+                "format": self.format,
+                "min": self.min,
+                "max": self.max,
+                "step": self.step,
+                "value": self._membervalue,
+                "floatvalue": self.getfloatvalue(),
+                "formattedvalue": self.getformattedvalue()
+                }
+
+
 class NumberMember(ParentNumberMember):
     """Contains a number, the attributes inform the client how the number should be
        displayed.
@@ -379,21 +404,33 @@ class NumberMember(ParentNumberMember):
         return xmldata
 
     def _snapshot(self):
-        snapmember = ParentNumberMember(self.name, self.label, self.format, self.min, self.max, self.step, self._membervalue)
+        snapmember = SnapNumberMember(self.name, self.label, self.format, self.min, self.max, self.step, self._membervalue)
         return snapmember
 
 
 class ParentBLOBMember(Member):
 
     """This class inherits from Member and is the parent of the BLOBMember class.
-       Should you use the ipyclient.snapshot method to create a snapshot,
-       the snapshot vectors for BLOBs will contain objects of this class."""
+    """
 
 
     def __init__(self, name, label=None, blobsize=0, blobformat='', membervalue=None):
         super().__init__(name, label, membervalue)
         self.blobsize = blobsize
         self.blobformat = blobformat
+
+
+class SnapBLOBMember(ParentBLOBMember):
+
+    """Should you use the ipyclient.snapshot method to create a snapshot,
+       the snapshot members for BLOBs will be objects of this class."""
+
+    def dictdump(self):
+        "Returns a dictionary of this member, value is always None"
+        return {"label": self.label,
+                "blobsize": self.blobsize,
+                "blobformat": self.blobformat,
+                "value": None}
 
 
 class BLOBMember(ParentBLOBMember):
@@ -458,5 +495,5 @@ class BLOBMember(ParentBLOBMember):
 
 
     def _snapshot(self):
-        snapmember = ParentBLOBMember(self.name, self.label, self.blobsize, self.blobformat, self._membervalue)
+        snapmember = SnapBLOBMember(self.name, self.label, self.blobsize, self.blobformat, self._membervalue)
         return snapmember

@@ -16,14 +16,7 @@ class Vector(collections.UserDict):
        is the parent of SwitchVector, LightVector, TextVector, NumberVector
        and BLOBVector classes.
        It is a mapping of membername to member value.
-       Should you use the ipyclient.snapshot method to create a snapshot,
-       the snapshot device will contain objects of this vector class. Which
-       does not have the methods of SwitchVector, etc..
-       This allows the snapshot to be read without risk of creating any
-       side effects.
        """
-
-
 
     def __init__(self, name, label, group, state, timestamp, message):
         super().__init__()
@@ -89,6 +82,36 @@ class Vector(collections.UserDict):
         "Returns the member label, given a member name"
         return self.data[membername].label
 
+
+class SnapVector(Vector):
+    """This object is used as a snapshot of this vector.
+       Should you use the ipyclient.snapshot method to create a snapshot,
+       the snapshot device will contain objects of this vector class. Which
+       does not have the methods of SwitchVector, etc..
+       This allows the snapshot to be read without risk of creating any
+       side effects."""
+
+    def dictdump(self):
+        "Returns a dictionary of this vector"
+        vecdict = {}
+        memdict = {}
+        for membername, member in self.data.items():
+            memdict[membername] = member.dictdump()
+        vecdict = {"vectortype":self.vectortype,
+                   "label":self.label,
+                   "message":self.message,
+                   "enable":self.enable,
+                   "group":self.group,
+                   "state":self.state,
+                   "timeout":self.timeout,
+                   "timestamp":self.timestamp.isoformat(sep='T')}
+        if self.rule:
+            vecdict["rule"] = self.rule
+        if self.perm:
+            vecdict["perm"] = self.perm
+
+        vecdict["members"] = memdict
+        return vecdict
 
 
 class PropertyVector(Vector):
@@ -170,15 +193,15 @@ class PropertyVector(Vector):
 
 
     def _snapshot(self):
-        snapvector = Vector(self.name, self.label, self.group, self.state, self.timestamp, self.message)
+        snapvector = SnapVector(self.name, self.label, self.group, self.state, self.timestamp, self.message)
         snapvector.vectortype = self.vectortype
         snapvector.devicename = self.devicename
         snapvector.enable = self.enable
-        if hasattr(self, 'rule'):
+        if hasattr(self, 'rule') and self.rule:
             snapvector.rule = self.rule
-        if hasattr(self, 'perm'):
+        if hasattr(self, 'perm') and self.perm:
             snapvector.perm = self.perm
-        if hasattr(self, 'timeout'):
+        if hasattr(self, 'timeout') and self.timeout:
             snapvector.timeout = self.timeout
         for membername, member in self.data.items():
             snapvector.data[membername] = member._snapshot()

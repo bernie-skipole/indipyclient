@@ -1,6 +1,6 @@
 
 
-import os, sys, collections, threading, asyncio, time, copy
+import os, sys, collections, threading, asyncio, time, copy, json
 
 from time import sleep
 
@@ -522,7 +522,7 @@ class IPyClient(collections.UserDict):
                             event = events.getProperties(root, None, self)
                         elif root.tag in DEFTAGS:
                             # device not known, but a def is received
-                            newdevice = _Device(devicename, self)
+                            newdevice = Device(devicename, self)
                             event = newdevice.rxvector(root)
                             # no error has occurred, so add this device to self.data
                             self.data[devicename] = newdevice
@@ -547,15 +547,15 @@ class IPyClient(collections.UserDict):
 
 
     def snapshot(self):
-        """Take a snapshot of the devices and returns a dictionary of device
-           names to objects which are restricted copies of the current state of devices and
-           vectors. Vector methods for sending data will not be available.
+        """Take a snapshot of the client and returns an object which is a restricted copy
+           of the current state of devices and vectors.
+           Vector methods for sending data will not be available.
            These copies will not be updated by events. This is provided so that you can
-           handle the device data, without fear of their values changing."""
+           handle the client data, without fear of their values changing."""
         with threading.Lock():
             # other threads cannot change the client.data dictionary
             # while the snapshot is being taken
-            snap = {}
+            snap = Snap(self.indihost, self.indiport, self.messages)
             if self.data:
                 for devicename, device in self.data.items():
                     snap[devicename] = device._snapshot()
@@ -717,8 +717,47 @@ class IPyClient(collections.UserDict):
         self.stopped = True
 
 
-class Device(collections.UserDict):
 
+class Snap(collections.UserDict):
+
+    """An instance of this object is returned when a snapshot is
+       taken of the client.
+       It is a mapping of device name to device snapshots"""
+
+    def __init__(self, indihost, indiport, messages):
+        super().__init__()
+        self.indihost = indihost
+        self.indiport = indiport
+        self.messages = list(messages)
+
+    def dictdump(self):
+        """Returns a dictionary of this client information
+           and is used to generate the JSON output"""
+        messlist = []
+        for message in self.messages:
+            messlist.append([message[0].isoformat(sep='T'), message[1]])
+        devdict = {}
+        for devicename, device in self.items():
+            devdict[devicename] = device.dictdump()
+        return {"indihost":self.indihost,
+                "indiport":self.indiport,
+                "messages":messlist,
+                "devices":devdict}
+
+    def dumps(self, indent=None, separators=None):
+        "Returns a JSON string of the snapshot"
+        return json.dumps(self.dictdump(), indent=indent, separators=separators)
+
+
+    def dump(self, fp, indent=None, separators=None):
+        """Serialize the snapshot as a JSON formatted stream to fp, a file-like object.
+           This uses the Python json module which always produces str objects, not bytes
+           objects. Therefore, fp.write() must support str input."""
+        return json.dump(self.dictdump(), fp, indent=indent, separators=separators)
+
+
+
+class _ParentDevice(collections.UserDict):
     "Each device is a mapping of vector name to vector object."
 
     def __init__(self, devicename):
@@ -744,10 +783,30 @@ class Device(collections.UserDict):
             vector.enable = False
 
 
+class SnapDevice(_ParentDevice):
+    """This object is used as a snapshot of this device
+       It is a mapping of vector name to vector snapshots"""
 
-class _Device(Device):
+    def __init__(self, devicename, messages):
+        super().__init__(devicename)
+        self.messages = list(messages)
 
-    """An instance of this should be created for each device.
+    def dictdump(self):
+        """Returns a dictionary of this device information
+           and is used to generate the JSON output"""
+        messlist = []
+        for message in self.messages:
+            messlist.append([message[0].isoformat(sep='T'), message[1]])
+        vecdict = {}
+        for vectorname, vector in self.items():
+            vecdict[vectorname] = vector.dictdump()
+        return {"messages":messlist, "enable":self.enable, "vectors":vecdict}
+
+
+class Device(_ParentDevice):
+
+    """An instance of this is created for each device
+       as data is received.
     """
 
     def __init__(self, devicename, client):
@@ -806,8 +865,7 @@ class _Device(Device):
 
     def _snapshot(self):
         "Creates snapshot of this device and its vectors"
-        snapdevice = Device(self.devicename)
+        snapdevice = SnapDevice(self.devicename, self.messages)
         for vectorname, vector in self.data.items():
             snapdevice[vectorname] = vector._snapshot()
-        snapdevice.messages = list(self.messages)
         return snapdevice
