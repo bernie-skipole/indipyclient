@@ -154,6 +154,11 @@ class IPyClient(collections.UserDict):
         "Shuts down the client, sets the flag self._stop to True"
         self._stop = True
 
+    @property
+    def stop(self):
+        "returns self._stop, being the instruction to stop the client"
+        return self._stop
+
     def report(self, message):
         """If logging is enabled message will be logged at level INFO.
            If self.enable_reports is True, the message will be injected into
