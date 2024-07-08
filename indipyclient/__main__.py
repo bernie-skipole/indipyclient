@@ -19,11 +19,7 @@ logger = logging.getLogger()
 
 from . import version
 
-from .console.consoleclient import ConsoleClient, ConsoleControl
-
-
-async def runclient(client, control):
-    await asyncio.gather(client.asyncrun(), control.asyncrun())
+from .console.consoleclient import ConsoleClient
 
 
 def setlogging(client, level, logfile):
@@ -103,12 +99,8 @@ loglevel:4 As 1 plus xml vectors and all contents
             print("Error: If given, the loglevel should be 1, 2, 3 or 4")
             return 1
 
-    # ConsoleClient is a subclass of IPyClient, with its rxevent(event) method created
-    # to add events to a queue. First a queue is created and passed into ConsoleClient
-    eventque = asyncio.Queue(maxsize=4)
 
-    # On receiving an event, the client appends it into eventque
-    client = ConsoleClient(indihost=args.host, indiport=args.port, eventque=eventque)
+    client = ConsoleClient(indihost=args.host, indiport=args.port, blobfolder=blobfolder)
 
     if args.loglevel and args.logfile:
         loglevel = int(args.loglevel)
@@ -120,14 +112,11 @@ loglevel:4 As 1 plus xml vectors and all contents
         logger.addHandler(logging.NullHandler())
 
     try:
-        # Monitors eventque and acts on the events, creates the console screens
-        # and calls the send vector methods of client to transmit data
-        control = ConsoleControl(client, blobfolder=blobfolder)
-
-        asyncio.run(runclient(client, control))
+        # Starts the client, creates the console screens
+        asyncio.run(client.asyncrun())
     finally:
         # clear curses setup
-        control.console_reset()
+        client.console_reset()
 
     return 0
 

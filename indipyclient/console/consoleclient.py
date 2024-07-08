@@ -18,7 +18,7 @@ MINROWS = 22
 MINCOLS = 78
 
 
-class ConsoleClient(IPyClient):
+class _Client(IPyClient):
 
     """Overrides IPyClient
        On receiving an event, appends it into eventque
@@ -29,20 +29,20 @@ class ConsoleClient(IPyClient):
         await self.clientdata['eventque'].put(event)
 
 
-class ConsoleControl:
+class ConsoleClient:
 
-    def __init__(self, client, blobfolder=None):
-        """client is an instance of ConsoleClient
-           If given, blobfolder will be the folder where BLOBs will be saved"""
-        self.client = client
+    def __init__(self, indihost="localhost", indiport=7624, blobfolder=None):
+        """If given, blobfolder will be the folder where BLOBs will be saved"""
+
+        # this is populated with events as they are received
+        self.eventque = asyncio.Queue(maxsize=4)
+
+        self.client = _Client(indihost, indiport, eventque = self.eventque)
         self.blobfolder = blobfolder
         if self.blobfolder:
             self.blobenabled = True
         else:
             self.blobenabled = False
-
-        # this is populated with events as they are received
-        self.eventque = self.client.clientdata['eventque']
 
         # set up screen
         self.stdscr = curses.initscr()
@@ -92,8 +92,13 @@ class ConsoleControl:
         # BLOBfiles, is a dictionary of {(devicename,vectorname,membername):filepath}
         self.BLOBfiles = {}
 
-
-
+    def debug_verbosity(self, verbose):
+        """Set how verbose the debug xml logs will be when created.
+           0 no xml logs will be generated
+           1 for transmitted/received vector tags only,
+           2 for transmitted/received vectors, members and contents (apart from BLOBs)
+           3 for all transmitted/received data including BLOBs."""
+        self.client.debug_verbosity(verbose)
 
     def color(self, state):
         "Returns curses.color_pair given a state"
@@ -425,4 +430,4 @@ class ConsoleControl:
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
         self.stop = False
-        await asyncio.gather(self.updatescreen(), self.getinput(), self._checkshutdown())
+        await asyncio.gather(self.client.asyncrun(), self.updatescreen(), self.getinput(), self._checkshutdown())
