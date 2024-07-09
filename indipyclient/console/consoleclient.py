@@ -77,9 +77,7 @@ class ConsoleClient:
         self.screen = windows.MessagesScreen(self.stdscr, self)
         self.screen.show()
 
-        # this is set to True, to shut down the client
-        self._shutdown = False
-        # and shutdown routine sets this to True to stop coroutines
+        # shutdown routine sets this to True to stop coroutines
         self.stop = False
         # these are set to True when asyncrun is finished
         self.updatescreenstopped = False
@@ -120,22 +118,23 @@ class ConsoleClient:
 
 
     def shutdown(self):
-        "Sets self._shutdown to True which shuts down the client"
-        self._shutdown = True
-
-
-    async def _checkshutdown(self):
-        "If self._shutdown becomes True, shutdown"
-        while (not self._shutdown) and (not self.client.stopped) and (not self.stop):
-            # no shutdown requested, just continue
-            await asyncio.sleep(0.1)
-        # so either shutdown has been requested or the ipyclient has stopped for some reason
+        "Sets self.stop to True which shuts down the client"
         if not self.client.stopped:
             # client is still running, shut it down
             self.client.report("Shutting down client - please wait")
             self.client.shutdown()
         # Now stop console co-routines
         self.stop = True
+
+
+    async def _checkshutdown(self):
+        "If self.client.stopped becomes True, shutdown"
+        while (not self.client.stopped) and (not self.stop):
+            # no shutdown requested, just continue
+            await asyncio.sleep(0.1)
+        # so the ipyclient has stopped for some reason
+        self.shutdown()
+
 
     def console_reset(self):
         "Resets console, called in finally clause at program shutdown"

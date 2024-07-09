@@ -19,7 +19,7 @@ logger = logging.getLogger()
 
 from . import version
 
-from .console.consoleclient import ConsoleClient
+from .console import ConsoleClient
 
 
 def setlogging(client, level, logfile):
