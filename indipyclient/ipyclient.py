@@ -137,10 +137,10 @@ class IPyClient(collections.UserDict):
 
     def debug_verbosity(self, verbose):
         """Set how verbose the debug xml logs will be when created.
-           0 no xml logs will be generated
-           1 for transmitted/received vector tags only,
-           2 for transmitted/received vectors, members and contents (apart from BLOBs)
-           3 for all transmitted/received data including BLOBs."""
+           |  0 no xml logs will be generated
+           |  1 for transmitted/received vector tags only,
+           |  2 for transmitted/received vectors, members and contents (apart from BLOBs)
+           |  3 for all transmitted/received data including BLOBs."""
         if verbose not in (0,1,2,3):
             raise ValueError
         self._verbose = verbose

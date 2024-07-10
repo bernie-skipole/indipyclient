@@ -100,10 +100,10 @@ class ConsoleClient:
 
     def debug_verbosity(self, verbose):
         """Set how verbose the debug xml logs will be when created.
-           0 no xml logs will be generated
-           1 for transmitted/received vector tags only,
-           2 for transmitted/received vectors, members and contents (apart from BLOBs)
-           3 for all transmitted/received data including BLOBs."""
+           |  0 no xml logs will be generated
+           |  1 for transmitted/received vector tags only,
+           |  2 for transmitted/received vectors, members and contents (apart from BLOBs)
+           |  3 for all transmitted/received data including BLOBs."""
         self.client.debug_verbosity(verbose)
 
     def color(self, state):
