@@ -13,6 +13,7 @@ A pure Python INDI terminal client
    usage/propertyvectors
    usage/propertymembers
    usage/events
+   usage/consoleclient
    usage/references
 
 Indices and tables

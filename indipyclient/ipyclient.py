@@ -125,8 +125,8 @@ class IPyClient(collections.UserDict):
 
         # and shutdown routine sets this to True to stop coroutines
         self._stop = False
-        # this is set to True when asyncrun is finished
-        self.stopped = False
+        # this is set when asyncrun is finished
+        self.stopped = asyncio.Event()
 
         # Indicates how verbose the debug xml logs will be when created.
         self._verbose = 1
@@ -718,8 +718,10 @@ class IPyClient(collections.UserDict):
     async def asyncrun(self):
         "Await this method to run the client."
         self._stop = False
-        await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), self.hardware())
-        self.stopped = True
+        try:
+            await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), self.hardware())
+        finally:
+            self.stopped.set()
 
 
 

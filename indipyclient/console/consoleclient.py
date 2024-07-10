@@ -78,7 +78,10 @@ class ConsoleClient:
         self.screen.show()
 
         # shutdown routine sets this to True to stop coroutines
-        self.stop = False
+        self._stop = False
+        # this is set when asyncrun is finished
+        self.stopped = asyncio.Event()
+
         # these are set to True when asyncrun is finished
         self.updatescreenstopped = False
         self.getinputstopped = False
@@ -89,6 +92,11 @@ class ConsoleClient:
 
         # BLOBfiles, is a dictionary of {(devicename,vectorname,membername):filepath}
         self.BLOBfiles = {}
+
+    @property
+    def stop(self):
+        "returns self._stop, being the instruction to stop the client"
+        return self._stop
 
     def debug_verbosity(self, verbose):
         """Set how verbose the debug xml logs will be when created.
@@ -118,20 +126,18 @@ class ConsoleClient:
 
 
     def shutdown(self):
-        "Sets self.stop to True which shuts down the client"
-        if not self.client.stopped:
+        "Shuts down the client"
+        if not self.client.stopped.is_set():
             # client is still running, shut it down
             self.client.report("Shutting down client - please wait")
             self.client.shutdown()
         # Now stop console co-routines
-        self.stop = True
+        self._stop = True
 
 
     async def _checkshutdown(self):
-        "If self.client.stopped becomes True, shutdown"
-        while (not self.client.stopped) and (not self.stop):
-            # no shutdown requested, just continue
-            await asyncio.sleep(0.1)
+        "If the client stops, shutdown"
+        await self.client.stopped.wait()
         # so the ipyclient has stopped for some reason
         self.shutdown()
 
@@ -148,7 +154,7 @@ class ConsoleClient:
     async def updatescreen(self):
         "Update while events are being received"
         try:
-            while not self.stop:
+            while not self._stop:
                 await asyncio.sleep(0)
                 if isinstance(self.screen, windows.TooSmall):
                     await asyncio.sleep(0.1)
@@ -247,7 +253,7 @@ class ConsoleClient:
 
     async def getinput(self):
         try:
-            while not self.stop:
+            while not self._stop:
                 await asyncio.sleep(0)
                 if isinstance(self.screen, windows.TooSmall):
                     result = await self.screen.inputs()
@@ -428,5 +434,8 @@ class ConsoleClient:
 
     async def asyncrun(self):
         """Gathers tasks to be run simultaneously"""
-        self.stop = False
-        await asyncio.gather(self.client.asyncrun(), self.updatescreen(), self.getinput(), self._checkshutdown())
+        self._stop = False
+        try:
+            await asyncio.gather(self.client.asyncrun(), self.updatescreen(), self.getinput(), self._checkshutdown())
+        finally:
+            self.stopped.set()

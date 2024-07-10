@@ -50,7 +50,9 @@ True if a connection has been made.
 
 **self.stopped**
 
-True when asyncrun is finished.
+This is an asyncio.Event object, which is set when asyncrun is finished.
+
+awaiting self.stopped.wait() will wait until the client has shutdown. This could be used to clear up after a client has closed.
 
 **self.messages**
 
