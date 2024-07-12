@@ -40,8 +40,7 @@ The package help is:
 
 A typical sesssion would look like:
 
-![Terminal screenshot](./image.png)
-
+![Terminal screenshot](https://github.com/bernie-skipole/indipyclient/raw/main/docs/source/usage/image.png)
 
 This is a companion package to 'indipydriver' which can be used to create INDI drivers.
 
