@@ -1,9 +1,17 @@
 # indipyclient
 Terminal client to communicate to an INDI service.
 
-This is a pure python package, with no dependencies, providing an INDI terminal client.
+INDI - Instrument Neutral Distributed Interface.
 
-It also provides a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.
+See https://en.wikipedia.org/wiki/Instrument_Neutral_Distributed_Interface
+
+This is a pure Python package, with no dependencies, providing an INDI terminal client.
+
+This is a companion package to 'indipydriver' which can be used to create and serve INDI drivers operating your own instrument code.
+
+https://github.com/bernie-skipole/indipydriver
+
+indipyclient provides a terminal which can be started from the command line, and also a set of classes which can be used to create an INDI client if required. A Python script could use this to generate the INDI protocol, and to create the connection to a port serving INDI drivers.
 
 The client can be run with
 
@@ -42,15 +50,9 @@ A typical sesssion would look like:
 
 ![Terminal screenshot](https://github.com/bernie-skipole/indipyclient/raw/main/docs/source/usage/image.png)
 
-This is a companion package to 'indipydriver' which can be used to create INDI drivers.
+The INDI protocol is defined to operate with any INDI client.
 
-INDI - Instrument Neutral Distributed Interface.
-
-See https://en.wikipedia.org/wiki/Instrument_Neutral_Distributed_Interface
-
-The INDI protocol is defined so that drivers should operate with any INDI client.
-
-The protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object) and the client can send commands to control the instrument.  The client can be general purpose, taking the format of switches, numbers etc., from the protocol.
+The protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object) and the client can send commands to control the instrument.  The client is general purpose, taking the format of switches, numbers etc., from the protocol.
 
 INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control providing drivers are available.
 
