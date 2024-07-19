@@ -209,7 +209,7 @@ class Text:
     def show(self, value):
         # setting show False, also sets focus False
         if not value:
-            self._focus = False
+            self.focus = False
         self._show = value
 
     @property
@@ -221,7 +221,14 @@ class Text:
         if not self._show:
             # focus can only be set if show is True
             return
-        self._focus = value
+        if value:
+            # setting focus on, shows the cursor
+            curses.curs_set(1)
+            self._focus = True
+        else:
+            # setting focus off, hides the cursor
+            curses.curs_set(0)
+            self._focus = False
 
     def draw(self):
         if not self._show:
@@ -823,24 +830,18 @@ class NumberMember(BaseMember):
 
     async def inputfield(self):
         "Input number, set it into self._newvalue"
-        # set cursor visible
-        curses.curs_set(1)
         editstring = self.edit_txt.editstring(self.stdscr)
 
         while not self.control.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                curses.curs_set(0)
                 return key
             if isinstance(key, tuple):
                 if key in self.edit_txt:
                     continue
-                else:
-                    curses.curs_set(0)
-                    return key
+                return key
             if key in (10, 9, 353):       # 10 enter, 9 tab, 353 shift tab
                 self.checknumber()
-                curses.curs_set(0)
                 self.name_btn.focus = True
                 self.name_btn.draw()
                 self.edit_txt.text = self._newvalue
@@ -860,7 +861,6 @@ class NumberMember(BaseMember):
             self.window.noutrefresh()
             editstring.movecurs()
             curses.doupdate()
-        curses.curs_set(0)
 
     def checknumber(self):
         "set self._newvalue, limiting it to correct range"
@@ -1018,23 +1018,17 @@ class TextMember(BaseMember):
 
     async def inputfield(self):
         "Input text, set it into self._newvalue"
-        # set cursor visible
-        curses.curs_set(1)
         editstring = self.edit_txt.editstring(self.stdscr)
 
         while not self.control.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                curses.curs_set(0)
                 return key
             if isinstance(key, tuple):
                 if key in self.edit_txt:
                     continue
-                else:
-                    curses.curs_set(0)
-                    return key
+                return key
             if key in (10, 9, 353):       # 10 enter, 9 tab, 353 shift tab
-                curses.curs_set(0)
                 self.name_btn.focus = True
                 self.name_btn.draw()
                 self.edit_txt.text = self._newvalue
@@ -1054,7 +1048,6 @@ class TextMember(BaseMember):
             self.window.noutrefresh()
             editstring.movecurs()
             curses.doupdate()
-        curses.curs_set(0)
 
 
 
@@ -1291,23 +1284,17 @@ class BLOBMember(BaseMember):
 
     async def inputfield(self):
         "Input text, set it into self._newvalue"
-        # set cursor visible
-        curses.curs_set(1)
         editstring = self.edit_txt.editstring(self.stdscr)
 
         while not self.control.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                curses.curs_set(0)
                 return key
             if isinstance(key, tuple):
                 if key in self.edit_txt:
                     continue
-                else:
-                    curses.curs_set(0)
-                    return key
+                return key
             if key in (9, 10):      # tab, enter
-                curses.curs_set(0)
                 self.send_btn.focus = True
                 self.send_btn.draw()
                 self.edit_txt.text = self._newvalue
@@ -1320,7 +1307,6 @@ class BLOBMember(BaseMember):
                 # calls this widgets setkey method
                 return
             if key == 353:           # shift tab
-                curses.curs_set(0)
                 self.name_btn.focus = True
                 self.name_btn.draw()
                 self.edit_txt.text = self._newvalue
@@ -1339,4 +1325,3 @@ class BLOBMember(BaseMember):
             self.window.noutrefresh()
             editstring.movecurs()
             curses.doupdate()
-        curses.curs_set(0)

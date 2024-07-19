@@ -454,6 +454,10 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         self.messages_btn.focus = True
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 6, onclick="Quit")
 
+        # as self.messages_btn.focus is True, no editable field can have focus at this moment
+        # so ensure the cursor is off
+        curses.curs_set(0)
+
         self.fields = [self.path_txt,
                        self.submit_btn,
                        self.devices_btn,
@@ -642,23 +646,17 @@ class EnableBLOBsScreen(ConsoleClientScreen):
 
     async def textinput(self):
         "Input text, set it into self._newvalue"
-        # set cursor visible
-        curses.curs_set(1)
         editstring = self.path_txt.editstring(self.stdscr)
 
         while not self.control.stop:
             key = await self.keyinput()
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                curses.curs_set(0)
                 return key
             if isinstance(key, tuple):
                 if key in self.path_txt:
                     continue
-                else:
-                    curses.curs_set(0)
-                    return key
+                return key
             if key == 10:
-                curses.curs_set(0)
                 return 9
             # key is to be inserted into the editable field, and self._newpath updated
             value = editstring.gettext(key)
@@ -669,7 +667,6 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             self.pathwin.noutrefresh()
             editstring.movecurs()
             curses.doupdate()
-        curses.curs_set(0)
 
 
 class DevicesScreen(ConsoleClientScreen):
@@ -2553,6 +2550,10 @@ class VectorScreen(ConsoleClientScreen):
 
         self.vectors_btn = widgets.Button(self.buttwin, "Vectors", 0, self.maxcols//2 - 20)
         self.vectors_btn.focus = True
+
+        # as self.vectors_btn.focus is True, no editable field can have focus at this moment
+        # so ensure the cursor is off
+        curses.curs_set(0)
 
         self.devices_btn = widgets.Button(self.buttwin, "Devices", 0, self.maxcols//2 - 10)
         self.messages_btn = widgets.Button(self.buttwin, "Messages", 0, self.maxcols//2)
