@@ -723,6 +723,7 @@ class IPyClient(collections.UserDict):
             await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), self.hardware())
         finally:
             self.stopped.set()
+            self._stop = True
 
 
 

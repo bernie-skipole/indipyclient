@@ -3343,6 +3343,8 @@ class MembersWin(ParentScreen):
         if result == "edit":
             widget = self.displayed[windex]
             self._inputfield = widget.inputfield
+            # and if an editable field is chosen, show the cursor
+            curses.curs_set(1)
         return result
 
 

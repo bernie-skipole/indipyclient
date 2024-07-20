@@ -440,3 +440,4 @@ class ConsoleClient:
             await asyncio.gather(self.client.asyncrun(), self.updatescreen(), self.getinput(), self._checkshutdown())
         finally:
             self.stopped.set()
+            self._stop = True
