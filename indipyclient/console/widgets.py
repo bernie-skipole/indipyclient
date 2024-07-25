@@ -156,6 +156,13 @@ class Button:
 
 class Text:
 
+    """An object which creates and draws a text input field.
+       Has a contains method so can be used to check if a mouse
+       is in the field and a focus property to indicate the field
+       is in focus.
+       The editstring method returns an EditString object which
+       has methods to accept a key, and return the text"""
+
     def __init__(self, window, text, row, col, txtlen=None):
         self.window = window
         self.row = row
@@ -254,6 +261,10 @@ class Text:
 
 
 class EditString():
+
+    """Object to edit characters in a field, has gettext(key) and
+       getnumber(key) methods which given a key press, edits and returns
+       the fields string"""
 
     def __init__(self, stdscr, row, startcol, endcol, text):
         "Class to input text"
@@ -419,7 +430,8 @@ class BaseMember:
            if self.control.stop is True, returns 'Stop',
            if screen has been resized, returns 'Resize',
            if self._close has been given a value, returns that value
-           Otherwise returns the key pressed."""
+           Otherwise returns the key pressed, or a mouse tuple
+           if the mouse has been pressed."""
         while True:
             await asyncio.sleep(0)
             if self.control.stop:
@@ -512,7 +524,13 @@ class SwitchMember(BaseMember):
 
 
     def handlemouse(self, key):
-        "Handles a mouse input"
+        """Handles a mouse input
+           Sets On, Off buttons bold as appropriate.
+           Returns None if mouse not on any button
+                   or if on name, and already focused, and ro
+           Returns 'focused' if on any button to indicate
+                   a button has focus
+           Returns "set_on" if on chosen and rule requires this to be only button"""
         if key in self.name_btn:
             if self.name_btn.focus:
                 if self.vector.perm == "ro":
@@ -569,11 +587,17 @@ class SwitchMember(BaseMember):
                 return "focused"
 
 
-
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
     def setkey(self, key):
-        "This widget is in focus, and deals with keystroke inputs"
+        """This deals with keystroke inputs - not mouse input
+           If no button is in focus, returns None
+           if next/prev widget, returns key
+           Returns None if key not relevant or if
+           a focus change can be handled here, and no further
+           action is necessary.
+           Returns "set_on" if on chosen and rule requires this to be only button
+           """
 
         if self.name_btn.focus:
             if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -726,8 +750,8 @@ class NumberMember(BaseMember):
             self.linecount = 4
         # the newvalue to be edited and sent
         self._newvalue = self.member.getformattedvalue()
-
-                                    # window         text        row col, length of field
+        # create a string input field
+                                # window         text        row               col,         length of field
         self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
 
     @property
@@ -739,7 +763,7 @@ class NumberMember(BaseMember):
         "Sets focus to be either False, or if True, set the name_btn focus as True"
         self._focus = value
         self.name_btn.focus = value
-        # and regardless of value, set self.edit_txt to False, but check number ok
+        # and regardless of value, set self.edit_txt.focus to False, but check number ok
         if self.edit_txt.focus:
             self.checknumber()
             self.edit_txt.text = self._newvalue
@@ -775,7 +799,15 @@ class NumberMember(BaseMember):
 
 
     def handlemouse(self, key):
-        "Handles a mouse input"
+        """Handles a mouse input
+           Returns None if mouse not in name btn or edit field
+                   or if in name, but perm is ro
+                   or if mouse in edit field which already has focus
+
+           If mouse in name button and not focused return focused
+           If mouse in name button and focused, make edit field focus and return edit
+           If mouse in edit field without focus, set focus and return 'edit'
+            """
         if key in self.name_btn:
             if self.name_btn.focus:
                 if self.vector.perm == "ro":
@@ -810,9 +842,11 @@ class NumberMember(BaseMember):
                 return "edit"
 
 
-
     def setkey(self, key):
-        "This widget is in focus, and deals with inputs"
+        """Handles key input if name button is in focus
+           Return None if name not in focus
+           Return key for next/prev widget
+           Return 'edit' if moving to edit field"""
         if self.name_btn.focus:
             if key in (9, 353, 260, 339, 338, 259, 258):  # 9 tab, 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
@@ -829,7 +863,8 @@ class NumberMember(BaseMember):
 
 
     async def inputfield(self):
-        "Input number, set it into self._newvalue"
+        """Input number, set it into self._newvalue
+           If mouse pressed outside edit field, return the mouse tuple"""
         editstring = self.edit_txt.editstring(self.stdscr)
 
         while not self.control.stop:
@@ -1017,7 +1052,8 @@ class TextMember(BaseMember):
 
 
     async def inputfield(self):
-        "Input text, set it into self._newvalue"
+        """Input text, set it into self._newvalue
+           If mouse pressed outside edit field, return the mouse tuple"""
         editstring = self.edit_txt.editstring(self.stdscr)
 
         while not self.control.stop:

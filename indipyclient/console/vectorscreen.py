@@ -397,6 +397,7 @@ class VectorScreen(ConsoleClientScreen):
                     # Handled, continue with while loop and get next key
                     continue
 
+
             # At this point, result is None if key is a keystroke,
             # or result is value returned by memberswin.handlemouse(key)
 
@@ -803,12 +804,20 @@ class MembersWin():
         # next check - has the mouse key been pressed on a widget
         result = None
         windex = None
+        editfocus = False
         for index, widget in enumerate(self.displayed):
+            if hasattr(widget, 'edit_txt') and widget.edit_txt.focus:
+                editfocus = True
             result = widget.handlemouse(key)
             # result is "focused' or 'edit' if mouse landed on a field
             if result:
                 windex = index
                 break
+        else:
+            # mouse landed outside of any field, if an editable field
+            # is already in focus, return edit
+            if editfocus:
+                return "edit"
 
 
         if result == "set_on":  ###
