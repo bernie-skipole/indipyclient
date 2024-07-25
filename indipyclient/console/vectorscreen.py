@@ -2,9 +2,7 @@ import asyncio, curses, sys, os, pathlib, time
 
 from . import widgets
 
-from .windows import ConsoleClientScreen, ParentScreen
-
-
+from .windows import ConsoleClientScreen
 
 
 class VectorScreen(ConsoleClientScreen):
@@ -357,9 +355,9 @@ class VectorScreen(ConsoleClientScreen):
         # so just return the key
         return key
 
+
     async def inputs(self):
         "Gets inputs from the screen"
-
         # two loops formed here, one for the entire screen
         # and one for an editable field
         # result tracks the results of tests to see if an editable field loop is needed
@@ -498,14 +496,16 @@ class VectorScreen(ConsoleClientScreen):
 # MembersWin is created within VectorScreen
 
 
-class MembersWin(ParentScreen):
+class MembersWin():
 
     "Used to display the vector members"
 
 
     def __init__(self, stdscr, control, tstatewin, vector):
-        super().__init__(stdscr, control)
-
+        self.stdscr = stdscr
+        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+        self.control = control
+        self.client = control.client
         self.tstatewin = tstatewin
         self.vector = vector
         self.vectorname = vector.name
@@ -848,6 +848,7 @@ class MembersWin(ParentScreen):
             self._inputfield = widget.inputfield
             # and if an editable field is chosen, show the cursor
             curses.curs_set(1)
+
         return result
 
 
