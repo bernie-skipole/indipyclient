@@ -13,6 +13,8 @@ from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVect
 from . import windows
 from . import widgets
 
+from .vectorscreen import VectorScreen
+
 # set limit to terminal size
 MINROWS = 22
 MINCOLS = 78
@@ -182,7 +184,7 @@ class ConsoleClient:
                     if isinstance(self.screen, windows.ChooseVectorScreen):
                         self.screen.timeout(event)
                         continue
-                    if isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                    if isinstance(self.screen, VectorScreen) and (self.screen.vectorname == event.vectorname):
                         self.screen.timeout(event)
                         continue
                 if hasattr(event, 'devicename'):
@@ -236,13 +238,13 @@ class ConsoleClient:
                         elif isinstance(self.screen, windows.ChooseVectorScreen):
                             # one vector has been disabled, update the ChooseVectorScreen
                             self.screen.update(event)
-                        elif isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                        elif isinstance(self.screen, VectorScreen) and (self.screen.vectorname == event.vectorname):
                             # This vector has been disabled, show ChooseVectorScreen
                             self.screen.close("Vectors")
                     # so its not a delete property
                     elif isinstance(self.screen, windows.ChooseVectorScreen):
                         self.screen.update(event)
-                    elif isinstance(self.screen, windows.VectorScreen) and (self.screen.vectorname == event.vectorname):
+                    elif isinstance(self.screen, VectorScreen) and (self.screen.vectorname == event.vectorname):
                         # The event refers to this vector
                         self.screen.update(event)
         except Exception:
@@ -379,10 +381,10 @@ class ConsoleClient:
                         continue
                     if result == "Vectors":
                         # get device, vector and show VectorScreen
-                        self.screen = windows.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
+                        self.screen = VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
                         continue
-                if isinstance(self.screen, windows.VectorScreen):
+                if isinstance(self.screen, VectorScreen):
                     result = await self.screen.inputs()
                     if result == "Resize":
                         self.maxrows, self.maxcols = self.stdscr.getmaxyx()
@@ -393,7 +395,7 @@ class ConsoleClient:
                             self.screen = windows.TooSmall(self.stdscr, self)
                             self.screen.show()
                             continue
-                        self.screen = windows.VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
+                        self.screen = VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
                     elif result == "Quit":
                         self.shutdown()
