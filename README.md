@@ -1,17 +1,20 @@
 # indipyclient
-Terminal client to communicate to an INDI service.
+
+This indipyclient package provides a terminal client, which connects to a port, allowing an instrument to be viewed and controlled from a terminal session.
+
+The instrument port is typically served using the indipydriver package which provides classes which can be used by your own Python program controlling some form of instrument, with switches, indicators or measurement data.
+
+indipydriver and indipyclient communicate with the INDI protocol.
 
 INDI - Instrument Neutral Distributed Interface.
 
 See https://en.wikipedia.org/wiki/Instrument_Neutral_Distributed_Interface
 
-This is a pure Python package, with no dependencies, providing an INDI terminal client.
-
-This is a companion package to 'indipydriver' which can be used to create and serve INDI drivers operating your own instrument code.
+The companion package 'indipydriver' is available on Pypi and developed at.
 
 https://github.com/bernie-skipole/indipydriver
 
-indipyclient provides a terminal which can be started from the command line, and also a set of classes which can be used to create an INDI client if required. A Python script could use this to generate the INDI protocol, and to create the connection to a port serving INDI drivers.
+The indipyclient terminal client can be started from the command line, and can also be imported if required, in which case it provides a set of classes which can be used to create scripts to control the remote instrument.
 
 The client can be run with
 
@@ -52,7 +55,7 @@ A typical sesssion would look like:
 
 The INDI protocol is defined to operate with any INDI client.
 
-The protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object) and the client can send commands to control the instrument.  The client is general purpose, taking the format of switches, numbers etc., from the protocol.
+The protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object). The client is general purpose, taking the format of switches, numbers etc., from the protocol.
 
 INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control providing drivers are available.
 
@@ -63,13 +66,3 @@ https://indipyclient.readthedocs.io
 The package can be installed from:
 
 https://pypi.org/project/indipyclient
-
-indipyclient requires python 3.10 or later.
-
-If you are only using the terminal client, I recommend pipx, so to install you would use:
-
-pipx install indipyclient
-
-or if you want to run it, without installing:
-
-pipx run indipyclient

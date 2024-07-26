@@ -436,7 +436,7 @@ class ConsoleClient:
 
 
     async def asyncrun(self):
-        """Gathers tasks to be run simultaneously"""
+        """Await this method to run the client."""
         self._stop = False
         try:
             await asyncio.gather(self.client.asyncrun(), self.updatescreen(), self.getinput(), self._checkshutdown())
