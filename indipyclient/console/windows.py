@@ -140,10 +140,9 @@ class MessagesScreen(ConsoleClientScreen):
 
         # info window 6 lines, width 70
         self.infowin = self.stdscr.subwin(6, 70, self.maxrows-8, self.maxcols//2 - 35)
-        self.infowin.addstr(0, 14, "All Timestamps are UTC")
-        self.infowin.addstr(1, 0, "Once connected, choose 'Devices' and press Enter. Then use")
-        self.infowin.addstr(2, 0, "mouse or Tab/Shift-Tab to move between fields, Enter to select,")
-        self.infowin.addstr(3, 0, "and Arrow/Page keys to show further fields where necessary.")
+        self.infowin.addstr(0, 0, "Once connected, choose 'Devices' and press Enter. Then use")
+        self.infowin.addstr(1, 0, "mouse or Tab/Shift-Tab to move between fields, Enter to select,")
+        self.infowin.addstr(2, 0, "and Arrow/Page keys to show further fields where necessary.")
         self.infowin.addstr(5, 5, "Enable/Disable Received BLOB's:")
 
         self.enable_btn = widgets.Button(self.infowin, "Enabled", 5, 38, onclick="EnableBLOBs")
@@ -224,7 +223,7 @@ class MessagesScreen(ConsoleClientScreen):
         self.messwin.clear()
         messages = self.client.messages
         lastmessagenumber = len(messages) - 1
-        mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
+        mlist = reversed([ widgets.localtimestring(t) + "  " + m for t,m in messages ])
         for count, message in enumerate(mlist):
             displaytext = widgets.shorten(message, width=self.maxcols-10, placeholder="...")
             if count == lastmessagenumber:
@@ -254,7 +253,7 @@ class MessagesScreen(ConsoleClientScreen):
         self.messwin.clear()
         messages = self.client.messages
         lastmessagenumber = len(messages) - 1
-        mlist = reversed([ t.isoformat(sep='T')[11:21] + "  " + m for t,m in messages ])
+        mlist = reversed([ widgets.localtimestring(t) + "  " + m for t,m in messages ])
         for count, message in enumerate(mlist):
             displaytext = widgets.shorten(message, width=self.maxcols-10, placeholder="...")
             if count == lastmessagenumber:

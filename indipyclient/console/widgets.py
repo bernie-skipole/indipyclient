@@ -1,6 +1,8 @@
 
 import asyncio, curses, sys, pathlib, time
 
+from datetime import timezone
+
 from decimal import Decimal
 
 from curses import ascii
@@ -22,6 +24,11 @@ def shorten(text, width=0, placeholder="..."):
     return txt[:width - len(placeholder)] + placeholder
 
 
+def localtimestring(t):
+    "Return a string of the local time (not date)"
+    return t.replace(tzinfo=timezone.utc).astimezone(tz=None).isoformat(sep='T')[11:21]
+
+
 def drawmessage(window, message, bold=False, maxcols=None):
     """Shows message, message is either a text string, or a tuple of (timestamp, message text)"""
     window.clear()
@@ -29,7 +36,7 @@ def drawmessage(window, message, bold=False, maxcols=None):
         maxrows, maxcols = window.getmaxyx()
     maxcols = maxcols - 5
     if not isinstance(message, str):
-        message = message[0].isoformat(sep='T')[11:21] + "  " + message[1]
+        message = localtimestring(message[0]) + "  " + message[1]
 
     if len(message) > maxcols:
         messagetoshow = "    " + shorten(message, width=maxcols, placeholder="...")
@@ -48,8 +55,7 @@ def draw_timestamp_state(control, window, vector):
     window.clear()
 
     state = vector.state
-    timestamp = vector.timestamp.isoformat(sep='T')[11:21]
-    window.addstr(0, 1, timestamp)
+    window.addstr(0, 1, localtimestring(vector.timestamp))
 
     lowerstate = state.lower()
     if lowerstate == "idle":
