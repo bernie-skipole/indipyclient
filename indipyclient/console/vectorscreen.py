@@ -19,20 +19,18 @@ class VectorScreen(ConsoleClientScreen):
         self.device = self.client[self.devicename]
         self.vector = self.device[self.vectorname]
 
-        # title window  (3 lines, full row, starting at 0,0)
-        self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
+        # title window  (2 lines, full row, starting at 0,0)
+        self.titlewin = self.stdscr.subwin(2, self.maxcols, 0, 0)
         devicetitle = widgets.shorten("Device: " + self.devicename, width=self.maxcols-5, placeholder="...")
         self.titlewin.addstr(0, 1, devicetitle)
-        vectortitle = widgets.shorten("Vector: " + self.vectorname, width=self.maxcols-5, placeholder="...")
-        self.titlewin.addstr(1, 1, vectortitle)
         labeltitle = widgets.shorten(self.vector.label, width=self.maxcols-5, placeholder="...")
-        self.titlewin.addstr(2, 1, labeltitle, curses.A_BOLD)
+        self.titlewin.addstr(1, 1, labeltitle, curses.A_BOLD)
 
-        # messages window (1 line, full row, starting at 3,0)
-        self.messwin = self.stdscr.subwin(1, self.maxcols, 3, 0)
+        # messages window (1 line, full row, starting at 2,0)
+        self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)
 
-        # timestamp and state window (1 line, full row, starting at 4,0)
-        self.tstatewin = self.stdscr.subwin(1, self.maxcols, 4, 0)
+        # timestamp and state window (1 line, full row, starting at 3,0)
+        self.tstatewin = self.stdscr.subwin(1, self.maxcols, 3, 0)
 
         # window showing the members of the vector
         self.memberswin = MembersWin(self.stdscr, self.control, self.tstatewin, self.vector)
@@ -224,10 +222,8 @@ class VectorScreen(ConsoleClientScreen):
 
         devicetitle = widgets.shorten("Device: " + self.devicename, width=self.maxcols-5, placeholder="...")
         self.titlewin.addstr(0, 1, devicetitle)
-        vectortitle = widgets.shorten("Vector: " + self.vectorname, width=self.maxcols-5, placeholder="...")
-        self.titlewin.addstr(1, 1, vectortitle)
         labeltitle = widgets.shorten(self.vector.label, width=self.maxcols-5, placeholder="...")
-        self.titlewin.addstr(2, 1, labeltitle, curses.A_BOLD)
+        self.titlewin.addstr(1, 1, labeltitle, curses.A_BOLD)
 
         self.messwin.clear()
         self.tstatewin.clear()
@@ -511,21 +507,24 @@ class MembersWin():
         self.vector = vector
         self.vectorname = vector.name
 
-        # top more btn on 7th line ( coords 0 to 6 )
+        # topmore button at index 5
+        topindex = 5
+
+        # top more btn on 6th line ( coords 0 to 5 )
         # bot more btn on line (self.maxrows - 3) + 1
-        # displaylines = (self.maxrows - 2) - 7  - 1
+        # displaylines = (self.maxrows - 2) - 6  - 1
 
 
         # members window
-        memwintop = 8                                          # row index 8
+        memwintop = topindex + 2                               # row index 7
         memwinbot = self.maxrows - 4                           # row index 20
 
         # botmorerow is one below the members window
         botmorerow = memwinbot + 1                             # row index 21
-        self.displaylines = memwinbot - memwintop + 1          # self.maxrows - 4  - 8 + 1 = 13
+        self.displaylines = memwinbot - memwintop + 1
 
-        # topmorewin (1 line, full row, starting at 6, 0)
-        self.topmorewin = self.stdscr.subwin(1, self.maxcols, 6, 0)
+        # topmorewin (1 line, full row, starting at topindex, 0)
+        self.topmorewin = self.stdscr.subwin(1, self.maxcols, topindex, 0)
         self.topmore_btn = widgets.Button(self.topmorewin, "<More>", 0, self.maxcols//2 - 7, onclick="TopMore")
         self.topmore_btn.show = False
 
