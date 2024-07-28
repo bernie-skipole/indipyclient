@@ -188,6 +188,8 @@ class Text:
             self._text = text
             self.txtlen = len(self._text) + 2
 
+        self._editstring = None
+
 
     @property
     def text(self):
@@ -258,15 +260,21 @@ class Text:
             self.window.addstr( self.row, self.col, "["+self._text)
             self.window.addstr( self.row, self.col+self.txtlen-1, "]")
 
+    def movespacecurs(self):
+        "Moves the cursor including spaces"
+        if self._editstring is None:
+            return
+        self._editstring.movecurs()
+
     def editstring(self, stdscr):
         "Returns an object to edit the string"
         originrow, origincol = self.window.getbegyx()
-        return   EditString(stdscr,
+        self._editstring = EditString(stdscr,
                             originrow + self.row,                     # row
                             origincol + self.col + 1,                 # start col
                             origincol + self.col + self.txtlen - 2,   # endcol
                             self.text )                               # the actual text
-
+        return self._editstring
 
 
 class EditString():
