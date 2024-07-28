@@ -26,7 +26,10 @@ def shorten(text, width=0, placeholder="..."):
 
 def localtimestring(t):
     "Return a string of the local time (not date)"
-    return t.replace(tzinfo=timezone.utc).astimezone(tz=None).isoformat(sep='T')[11:21]
+    localtime = t.astimezone(tz=None)
+    # convert microsecond to integer between 0 and 100
+    ms = localtime.microsecond//10000
+    return f"{localtime.strftime('%H:%M:%S')}.{ms:0>2d}"
 
 
 def drawmessage(window, message, bold=False, maxcols=None):
