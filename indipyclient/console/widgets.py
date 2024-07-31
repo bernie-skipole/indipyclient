@@ -778,8 +778,9 @@ class NumberMember(BaseMember):
         # the newvalue to be edited and sent
         self._newvalue = self.member.getformattedvalue()
         # create a string input field
-                                # window         text        row               col,         length of field
-        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
+                                     # window         text        row               col,               length of field
+        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols//2+2, txtlen=self.maxcols//2 - 6)
+
 
     @property
     def focus(self):
@@ -809,15 +810,16 @@ class NumberMember(BaseMember):
 
     def draw(self, startline=None):
         super().draw(startline)
+        txtlen=self.maxcols//2 - 6
 
         # draw the number value
         text = self.member.getformattedvalue().strip()
-        if len(text) > 16:
-            text = text[:16]
+        if len(text) > txtlen:
+            text = text[:txtlen]
         else:
-            text = text.ljust(16)
+            text = text.ljust(txtlen)
         # draw the value
-        self.window.addstr(self.startline+1, self.maxcols-20, text, curses.A_BOLD)
+        self.window.addstr(self.startline+1, self.maxcols//2+3, text, curses.A_BOLD)
 
         if self.vector.perm == "ro":
             return
@@ -981,8 +983,8 @@ class TextMember(BaseMember):
         # the newvalue to be edited and sent
         self._newvalue = self.vector[self.name]
 
-                               # window         text        row                col           length of field
-        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols-35, txtlen=30)
+                                     # window         text        row                col           length of field
+        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols//2+2, txtlen=self.maxcols//2 - 6)
 
     @property
     def focus(self):
@@ -1006,23 +1008,25 @@ class TextMember(BaseMember):
         self.edit_txt.text = self._newvalue
         self.edit_txt.draw()
 
-
     def draw(self, startline=None):
         super().draw(startline)
 
+        txtlen=self.maxcols//2 - 6
+
         # draw the text
         text = self.member.membervalue
-        if len(text) > 30:
-            text = text[:30]
+        if len(text) > txtlen:
+            text = text[:txtlen]
         else:
-            text = text.ljust(30)
+            text = text.ljust(txtlen)
         # draw the value
-        self.window.addstr(self.startline+1, self.maxcols-34, text, curses.A_BOLD)
+        self.window.addstr(self.startline+1, self.maxcols//2+3, text, curses.A_BOLD)
 
         if self.vector.perm == "ro":
             return
         self.edit_txt.row = self.startline+2
         self.edit_txt.draw()
+
 
     def handlemouse(self, key):
         "Handles a mouse input"
