@@ -169,10 +169,10 @@ class Text:
        Has a contains method so can be used to check if a mouse
        is in the field and a focus property to indicate the field
        is in focus.
-       The editstring method returns an EditString object which
        has methods to accept a key, and return the text"""
 
-    def __init__(self, window, text, row, col, txtlen=None):
+    def __init__(self, stdscr, window, text, row, col, txtlen=None):
+        self.stdscr = stdscr
         self.window = window
         self.row = row
         self.col = col
@@ -181,14 +181,14 @@ class Text:
         if txtlen:
             # txtlen includes the two [ ] brackets
             self.txtlen = txtlen
-            # call text property setter
-            self.text = text
         else:
             # no txtlen given
-            self._text = text
-            self.txtlen = len(self._text) + 2
+            self.txtlen = len(text) + 2
 
-        self._editstring = None
+        self.text = text
+
+        # create a new texteditor
+        self.new_texteditor()
 
 
     @property
@@ -197,6 +197,7 @@ class Text:
 
     @text.setter
     def text(self, text):
+        # set text into self._text
         if len(text) > self.txtlen-2:
             self._text = shorten(text, width=self.txtlen-2, placeholder="...")
         elif len(text) == self.txtlen-2:
@@ -260,21 +261,30 @@ class Text:
             self.window.addstr( self.row, self.col, "["+self._text)
             self.window.addstr( self.row, self.col+self.txtlen-1, "]")
 
-    def movespacecurs(self):
+    def movecurs(self):
         "Moves the cursor including spaces"
-        if self._editstring is None:
-            return
         self._editstring.movecurs()
 
-    def editstring(self, stdscr):
-        "Returns an object to edit the string"
+    def new_texteditor(self):
         originrow, origincol = self.window.getbegyx()
-        self._editstring = EditString(stdscr,
+        self._editstring = EditString(self.stdscr,
                             originrow + self.row,                     # row
                             origincol + self.col + 1,                 # start col
                             origincol + self.col + self.txtlen - 2,   # endcol
                             self.text )                               # the actual text
-        return self._editstring
+
+    def gettext(self, key):
+        "called with each keypress, returns new text"
+        newvalue = self._editstring.gettext(key)
+        self.text = newvalue
+        return newvalue
+
+
+    def getnumber(self, key):
+        "called with each keypress, returns new number string"
+        newvalue = self._editstring.getnumber(key)
+        self.text = newvalue
+        return newvalue
 
 
 class EditString():
@@ -769,7 +779,7 @@ class NumberMember(BaseMember):
         self._newvalue = self.member.getformattedvalue()
         # create a string input field
                                 # window         text        row               col,         length of field
-        self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
+        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols-21, txtlen=16)
 
     @property
     def focus(self):
@@ -882,7 +892,7 @@ class NumberMember(BaseMember):
     async def inputfield(self):
         """Input number, set it into self._newvalue
            If mouse pressed outside edit field, return the mouse tuple"""
-        editstring = self.edit_txt.editstring(self.stdscr)
+        self.edit_txt.new_texteditor()
 
         while not self.control.stop:
             key = await self.keyinput()
@@ -906,12 +916,10 @@ class NumberMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9 # tab key for next item
-            self._newvalue = editstring.getnumber(key)
-            # set new value back into self.edit_txt
-            self.edit_txt.text = self._newvalue
+            self._newvalue = self.edit_txt.getnumber(key)
             self.edit_txt.draw()
             self.window.noutrefresh()
-            editstring.movecurs()
+            self.edit_txt.movecurs()
             curses.doupdate()
 
     def checknumber(self):
@@ -974,7 +982,7 @@ class TextMember(BaseMember):
         self._newvalue = self.vector[self.name]
 
                                # window         text        row                col           length of field
-        self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-35, txtlen=30)
+        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols-35, txtlen=30)
 
     @property
     def focus(self):
@@ -1071,7 +1079,7 @@ class TextMember(BaseMember):
     async def inputfield(self):
         """Input text, set it into self._newvalue
            If mouse pressed outside edit field, return the mouse tuple"""
-        editstring = self.edit_txt.editstring(self.stdscr)
+        self.edit_txt.new_texteditor()
 
         while not self.control.stop:
             key = await self.keyinput()
@@ -1094,12 +1102,10 @@ class TextMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9 # tab key for next item
-            self._newvalue = editstring.gettext(key)
-            # set new value back into self.edit_txt
-            self.edit_txt.text = self._newvalue
+            self._newvalue = self.edit_txt.gettext(key)
             self.edit_txt.draw()
             self.window.noutrefresh()
-            editstring.movecurs()
+            self.edit_txt.movecurs()
             curses.doupdate()
 
 
@@ -1136,7 +1142,7 @@ class BLOBMember(BaseMember):
             self.linecount = 4
         # length of editable field, start with nominal 40
                                # window         text        row                col           length of field
-        self.edit_txt = Text(self.window, self._newvalue, self.startline+2, self.maxcols-55, txtlen=40)
+        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols-55, txtlen=40)
         self.send_btn = Button(window, "Send", 0, self.maxcols-9, 6)
 
 
@@ -1337,7 +1343,7 @@ class BLOBMember(BaseMember):
 
     async def inputfield(self):
         "Input text, set it into self._newvalue"
-        editstring = self.edit_txt.editstring(self.stdscr)
+        self.edit_txt.new_texteditor()
 
         while not self.control.stop:
             key = await self.keyinput()
@@ -1371,10 +1377,8 @@ class BLOBMember(BaseMember):
                 # which gets a key, and as this widget is still in focus
                 # calls this widgets setkey method
                 return
-            self._newvalue = editstring.gettext(key)
-            # set new value back into self.edit_txt
-            self.edit_txt.text = self._newvalue
+            self._newvalue = self.edit_txt.gettext(key)
             self.edit_txt.draw()
             self.window.noutrefresh()
-            editstring.movecurs()
+            self.edit_txt.movecurs()
             curses.doupdate()

@@ -240,7 +240,7 @@ class VectorScreen(ConsoleClientScreen):
                 widget = self.memberswin.memberwidgets[index]
                 if hasattr(widget, "edit_txt"):
                     if widget.edit_txt.focus:
-                        widget.edit_txt.movespacecurs()
+                        widget.edit_txt.movecurs()
                         curses.doupdate()
 
 

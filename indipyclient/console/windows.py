@@ -440,8 +440,8 @@ class EnableBLOBsScreen(ConsoleClientScreen):
         else:
             self._newpath = str(self.control.blobfolder)
 
-                                    # window         text        row col, length of field
-        self.path_txt = widgets.Text(self.pathwin, self._newpath, 8, 0, txtlen=self.maxcols-8)
+                                             # window         text        row col, length of field
+        self.path_txt = widgets.Text(stdscr, self.pathwin, self._newpath, 8, 0, txtlen=self.maxcols-8)
 
         self.submit_btn = widgets.Button(self.pathwin, "Submit", 10, self.maxcols//2 - 3, onclick="Submit")
 
@@ -645,7 +645,7 @@ class EnableBLOBsScreen(ConsoleClientScreen):
 
     async def textinput(self):
         "Input text, set it into self._newvalue"
-        editstring = self.path_txt.editstring(self.stdscr)
+        self.path_txt.new_texteditor()
 
         while not self.control.stop:
             key = await self.keyinput()
@@ -658,13 +658,11 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             if key == 10:
                 return 9
             # key is to be inserted into the editable field, and self._newpath updated
-            value = editstring.gettext(key)
+            value = self.path_txt.gettext(key)
             self._newpath = value.strip()
-            # set new value back into self.path_txt
-            self.path_txt.text = value
             self.path_txt.draw()
             self.pathwin.noutrefresh()
-            editstring.movecurs()
+            self.path_txt.movecurs()
             curses.doupdate()
 
 
