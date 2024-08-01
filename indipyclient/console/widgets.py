@@ -1144,9 +1144,8 @@ class BLOBMember(BaseMember):
             self.linecount = 3
         else:
             self.linecount = 4
-        # length of editable field, start with nominal 40
-                               # window         text        row                col           length of field
-        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols-55, txtlen=40)
+                                     # window         text        row               col,               length of field
+        self.edit_txt = Text(stdscr, self.window, self._newvalue, self.startline+2, self.maxcols//2-15, txtlen=self.maxcols//2+4)
         self.send_btn = Button(window, "Send", 0, self.maxcols-9, 6)
 
 
