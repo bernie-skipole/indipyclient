@@ -90,6 +90,9 @@ class Button:
         else:
             # no btnlen given
             self.btnlen = len(self.btntext) + 2
+        # Set this True to make the whole button reverse when in focus
+        self.focusreverse = True
+        # if it is False, then only the [] will go bold on focus
 
 
     def __contains__(self, mouse):
@@ -144,9 +147,20 @@ class Button:
             self.window.addstr( self.row, self.col, " "*self.btnlen)
             return
         if self._focus:
-            self.window.addstr( self.row, self.col, f"[{self.text()}]", curses.A_REVERSE)
+            if self.focusreverse:
+                self.window.addstr( self.row, self.col, f"[{self.text()}]", curses.A_REVERSE)
+            elif self.bold:
+                # both in focus and bold
+                self.window.addstr( self.row, self.col, f"[{self.text()}]", curses.A_BOLD)
+            else:
+                self.window.addstr( self.row, self.col, "[", curses.A_BOLD)
+                self.window.addstr( self.row, self.col+1, f"{self.text()}")
+                self.window.addstr( self.row, self.col+self.btnlen-1, "]", curses.A_BOLD)
         elif self.bold:
-            self.window.addstr( self.row, self.col, f"[{self.text()}]", curses.A_BOLD)
+            # bold, but not in focus
+            self.window.addstr( self.row, self.col, "[")
+            self.window.addstr( self.row, self.col+1, f"{self.text()}", curses.A_BOLD)
+            self.window.addstr( self.row, self.col+self.btnlen-1, "]")
         else:
             self.window.addstr( self.row, self.col, f"[{self.text()}]")
 
@@ -490,9 +504,11 @@ class SwitchMember(BaseMember):
         super().__init__(stdscr, control, window, tstatewin, vector, name, namelen)
         # create  ON, OFF buttons
         self.on = Button(window, 'ON', 0, 0)
+        self.on.focusreverse = False
         self.on.bold = True if self.value() == "On" else False
         self.on.show = False
         self.off = Button(window, 'OFF', 0, 0)
+        self.off.focusreverse = False
         self.off.bold = not self.on.bold
         self.off.show = False
         self.linecount = 3
