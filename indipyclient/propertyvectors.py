@@ -21,6 +21,9 @@ class Vector(collections.UserDict):
     def __init__(self, name, label, group, state, timestamp, message):
         super().__init__()
 
+        # UserDict will create self.data which will be a dictionary of
+        # member name to member this vector owns
+
         self.name = name
         self.label = label
         self.group = group
@@ -35,8 +38,6 @@ class Vector(collections.UserDict):
         # if self.enable is False, this property is 'deleted'
         self.enable = True
 
-        # this is a dictionary of member name to member this vector owns
-        self.data = {}
 
     @property
     def state(self):

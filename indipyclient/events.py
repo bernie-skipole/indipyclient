@@ -202,8 +202,8 @@ class defSwitchVector(defVector):
         if not self.data:
             raise ParseException("defSwitchVector has no valid contents")
 
-        # properties is a dictionary of property name to propertyvector this device owns
-        # This method updates a property vector and sets it into properties
+        # This method updates a property vector and sets it into the device 'data' dictionary
+        # which is a dictionary of property name to propertyvector this device owns
         properties = device.data
 
         # does this vector already exist
@@ -259,8 +259,8 @@ class defTextVector(defVector):
         if not self.data:
             raise ParseException
 
-        # properties is a dictionary of property name to propertyvector this device owns
-        # This method updates a property vector and sets it into properties
+        # This method updates a property vector and sets it into the device 'data' dictionary
+        # which is a dictionary of property name to propertyvector this device owns
         properties = device.data
 
         # does this vector already exist
@@ -330,8 +330,8 @@ class defNumberVector(defVector):
             raise ParseException
 
 
-        # properties is a dictionary of property name to propertyvector this device owns
-        # This method updates a property vector and sets it into properties
+        # This method updates a property vector and sets it into the device 'data' dictionary
+        # which is a dictionary of property name to propertyvector this device owns
         properties = device.data
 
         # does this vector already exist
@@ -376,8 +376,8 @@ class defLightVector(defVector):
             raise ParseException("No member values present")
 
 
-        # properties is a dictionary of property name to propertyvector this device owns
-        # This method updates a property vector and sets it into properties
+        # This method updates a property vector and sets it into the device 'data' dictionary
+        # which is a dictionary of property name to propertyvector this device owns
         properties = device.data
 
         # does this vector already exist

@@ -74,6 +74,10 @@ class IPyClient(collections.UserDict):
 
     def __init__(self, indihost="localhost", indiport=7624, **clientdata):
         "An instance of this is a mapping of devicename to device object"
+        super().__init__()
+
+        # The UserDict will create self.data which will become
+        # a dictionary of devicename to device object
 
         self.indihost = indihost
         self.indiport = indiport
@@ -86,8 +90,7 @@ class IPyClient(collections.UserDict):
 
         # and create readerque where received xmldata will be put
         self.readerque = asyncio.Queue(4)
-        # self.data is a dictionary of devicename to device object
-        self.data = {}
+
         # self.messages is a deque of (Timestamp, message) tuples
         self.messages = collections.deque(maxlen=8)
 
@@ -776,12 +779,12 @@ class _ParentDevice(collections.UserDict):
 
     def __init__(self, devicename):
         super().__init__()
+        # self.data is created by UserDict and will become a
+        # dictionary of vector name to vector this device owns
 
         # This device name
         self.devicename = devicename
 
-        # this is a dictionary of vector name to vector this device owns
-        self.data = {}
 
     @property
     def enable(self):
