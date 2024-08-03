@@ -428,23 +428,17 @@ class VectorScreen(ConsoleClientScreen):
                 # as 9 for tab
 
             while result == "edit":
-               # An editable field is in focus
-                inputfield = self.memberswin.inputfield()
-                if inputfield is None:
-                    break
-                result = await inputfield()
-                if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                    return result
+                # An editable field is in focus
+                result = await self.memberswin.inputfield()
                 if not result:
                     break
+                if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+                    return result
                 if result in ("submitted", "next", "previous"):
                     break
                 if isinstance(result, tuple):
                     # a mouse press, go to outer loop with result set
                     break
-                # inputfield has returned a keystroke, typically 9 for next tab
-                # which is now tested again with self.memberswin.setkey(key)
-                result = self.memberswin.setkey(result)
 
             if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                 return result
@@ -727,6 +721,7 @@ class MembersWin():
             if widget.focus:
                 return index
 
+
     def displayed_widgetindex_in_focus(self):
         "Returns the self.displayed index which has focus, or None"
         for index,widget in enumerate(self.displayed):
@@ -734,11 +729,23 @@ class MembersWin():
                 return index
 
 
-    def inputfield(self):
-        "Returns None, or an awaitable widget inputfield"
+    async def inputfield(self):
+        "Returns None, or result of awaitable widget.inputfield"
         if self.vector.perm == "ro":
             return
-        return self._inputfield
+        if self._inputfield is None:
+            return
+        result = await self._inputfield()
+        if not result:
+            result
+        if result in ("Resize", "Messages", "Devices", "Vectors", "Stop", "submitted", "next", "previous"):
+            return result
+        if isinstance(result, tuple):
+            # a mouse press, go to outer loop with result set
+            return result
+        # inputfield has returned a keystroke, typically 9 for next tab
+        # which is now tested again with setkey(key)
+        return self.setkey(result)
 
 
     def handlemouse(self, key):
