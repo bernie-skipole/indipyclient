@@ -430,15 +430,7 @@ class VectorScreen(ConsoleClientScreen):
             while result == "edit":
                 # An editable field is in focus
                 result = await self.memberswin.inputfield()
-                if not result:
-                    break
-                if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
-                    return result
-                if result in ("submitted", "next", "previous"):
-                    break
-                if isinstance(result, tuple):
-                    # a mouse press, go to outer loop with result set
-                    break
+
 
             if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                 return result
