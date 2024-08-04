@@ -365,6 +365,7 @@ class VectorScreen(ConsoleClientScreen):
                 result = None
             else:
                 key = await self.keyinput()
+                # self.keyinput returns either key, or a tuple or "Stop" or "Resize"
 
             if key in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
                 return key
