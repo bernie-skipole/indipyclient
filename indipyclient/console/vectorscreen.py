@@ -730,7 +730,7 @@ class MembersWin():
             return
         result = await self._inputfield()
         if not result:
-            result
+            return
         if result in ("Resize", "Messages", "Devices", "Vectors", "Stop", "submitted", "next", "previous"):
             return result
         if isinstance(result, tuple):

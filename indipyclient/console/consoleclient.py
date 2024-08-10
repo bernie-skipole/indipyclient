@@ -255,158 +255,131 @@ class ConsoleClient:
 
 
     async def getinput(self):
+        """This is awaited in the gather run by the asyncrun method. It is a continuously
+           running loop that awaits self.screen.inputs() which returns an 'action'. This
+           action may shut down the screen, or start another screen object"""
         try:
             while not self._stop:
-                await asyncio.sleep(0)
+                action = await self.screen.inputs()
+                if action == "Quit":
+                    self.shutdown()
+                    break
+
+                if action == "Resize":
+                    self.maxrows, self.maxcols = self.stdscr.getmaxyx()
+                    # toosmall screen can have less rows than other screens
+                    # before the program can shutdown
+                    if isinstance(self.screen, windows.TooSmall):
+                        shutdownrows = 10
+                    else:
+                        shutdownrows = 16
+
+                    if self.maxrows < shutdownrows or self.maxcols < 40:
+                        self.shutdown()
+                        break
+                    if self.maxrows < MINROWS or self.maxcols < MINCOLS:
+                        self.screen = windows.TooSmall(self.stdscr, self)
+                        self.screen.show()
+                        continue
+
+                # note action can be one of Quit, Resize, Devices, Messages, EnableBLOBs, Vectors
+                # or it can be a lowercase devicename, if that device is enabled
+
+                # if the screen is a TooSmall screen then either accept
+                # a resize or quit, if resized to a reasonable size, then open
+                # a MessagesScreen
+
                 if isinstance(self.screen, windows.TooSmall):
-                    result = await self.screen.inputs()
-                    if result == "Resize":
-                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 10 or self.maxcols < 40:
-                            self.shutdown()
-                            break
-                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
-                            self.screen = windows.TooSmall(self.stdscr, self)
-                            self.screen.show()
-                            continue
-                        # so resize has increased to proper size
+                    if action == "Resize":
+                        # To get here the screen must be greater than MINROWS, MINCOLS
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    if result == "Quit":
-                        self.shutdown()
-                        break
+
+                # MessagesScreen
 
                 if isinstance(self.screen, windows.MessagesScreen):
-                    result = await self.screen.inputs()
-                    if result == "Resize":
-                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 16 or self.maxcols < 40:
-                            self.shutdown()
-                            break
-                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
-                            self.screen = windows.TooSmall(self.stdscr, self)
-                            self.screen.show()
-                            continue
+                    if action == "Resize":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    if result == "Quit":
-                        self.shutdown()
-                        break
-                    if result == "Devices":
+                    if action == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    if result == "EnableBLOBs":
+                    if action == "EnableBLOBs":
                         self.screen = windows.EnableBLOBsScreen(self.stdscr, self)
                         self.screen.show()
                         continue
+
+                # EnableBLOBsScreen
+
                 if isinstance(self.screen, windows.EnableBLOBsScreen):
-                    result = await self.screen.inputs()
-                    if result == "Resize":
-                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 16 or self.maxcols < 40:
-                            self.shutdown()
-                            break
-                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
-                            self.screen = windows.TooSmall(self.stdscr, self)
-                            self.screen.show()
-                            continue
+                    if action == "Resize":
                         self.screen = windows.EnableBLOBsScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    if result == "Quit":
-                        self.shutdown()
-                        break
-                    if result == "Messages":
+                    if action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    if result == "Devices":
+                    if action == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
+
+                # DevicesScreen
+
                 if isinstance(self.screen, windows.DevicesScreen):
-                    result = await self.screen.inputs()
-                    if result == "Resize":
-                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 16 or self.maxcols < 40:
-                            self.shutdown()
-                            break
-                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
-                            self.screen = windows.TooSmall(self.stdscr, self)
-                            self.screen.show()
-                            continue
+                    if action == "Resize":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    if result == "Quit":
-                        self.shutdown()
-                        break
-                    if result == "Messages":
+                    if action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
                     devices = {devicename.lower():device for devicename, device in self.client.items() if device.enable}
-                    if result in devices:
-                        devicename = devices[result].devicename
+                    if action in devices:
+                        devicename = devices[action].devicename
                         self.screen = windows.ChooseVectorScreen(self.stdscr, self, devicename)
                         self.screen.show()
                         continue
+
+                # ChooseVectorScreen
+
                 if isinstance(self.screen, windows.ChooseVectorScreen):
-                    result = await self.screen.inputs()
-                    if result == "Resize":
-                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 16 or self.maxcols < 40:
-                            self.shutdown()
-                            break
-                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
-                            self.screen = windows.TooSmall(self.stdscr, self)
-                            self.screen.show()
-                            continue
+                    if action == "Resize":
                         self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.groupwin.active)
                         self.screen.show()
                         continue
-                    if result == "Quit":
-                        self.shutdown()
-                        break
-                    if result == "Messages":
+                    if action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    if result == "Devices":
+                    if action == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
                         continue
-                    if result == "Vectors":
+                    if action == "Vectors":
                         # get device, vector and show VectorScreen
                         self.screen = VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
                         continue
+
+                # VectorScreen
+
                 if isinstance(self.screen, VectorScreen):
-                    result = await self.screen.inputs()
-                    if result == "Resize":
-                        self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                        if self.maxrows < 16 or self.maxcols < 40:
-                            self.shutdown()
-                            break
-                        if self.maxrows < MINROWS or self.maxcols < MINCOLS:
-                            self.screen = windows.TooSmall(self.stdscr, self)
-                            self.screen.show()
-                            continue
+                    if action == "Resize":
                         self.screen = VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
-                    elif result == "Quit":
-                        self.shutdown()
-                        break
-                    elif result == "Messages":
+                    elif action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
-                    elif result == "Devices":
+                    elif action == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
-                    elif result == "Vectors":
+                    elif action == "Vectors":
                         self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.vector.group)
                         self.screen.show()
 
