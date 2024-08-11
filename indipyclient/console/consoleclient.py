@@ -276,8 +276,7 @@ class ConsoleClient:
                         continue
 
                 # action can be one of Quit, Resize, Devices, Messages, EnableBLOBs, Vectors
-                # or it can be a lowercase devicename, if that device is enabled
-
+ 
                 # if the screen is a TooSmall screen then either accept
                 # a resize or quit, if resized to a reasonable size, then open
                 # a MessagesScreen
