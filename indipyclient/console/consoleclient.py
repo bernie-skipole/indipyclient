@@ -24,7 +24,7 @@ class _Client(IPyClient):
 
     """Overrides IPyClient
        On receiving an event, appends it into eventque
-       Which will pass the received event into ConsoleControl"""
+       Which will pass the received event into ConsoleClient"""
 
     async def rxevent(self, event):
         """Add event to eventque"""
@@ -267,14 +267,7 @@ class ConsoleClient:
 
                 if action == "Resize":
                     self.maxrows, self.maxcols = self.stdscr.getmaxyx()
-                    # toosmall screen can have less rows than other screens
-                    # before the program can shutdown
-                    if isinstance(self.screen, windows.TooSmall):
-                        shutdownrows = 10
-                    else:
-                        shutdownrows = 16
-
-                    if self.maxrows < shutdownrows or self.maxcols < 40:
+                    if self.maxrows < 10 or self.maxcols < 40:
                         self.shutdown()
                         break
                     if self.maxrows < MINROWS or self.maxcols < MINCOLS:
@@ -282,7 +275,7 @@ class ConsoleClient:
                         self.screen.show()
                         continue
 
-                # note action can be one of Quit, Resize, Devices, Messages, EnableBLOBs, Vectors
+                # action can be one of Quit, Resize, Devices, Messages, EnableBLOBs, Vectors
                 # or it can be a lowercase devicename, if that device is enabled
 
                 # if the screen is a TooSmall screen then either accept
@@ -294,7 +287,7 @@ class ConsoleClient:
                         # To get here the screen must be greater than MINROWS, MINCOLS
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
+                    continue
 
                 # MessagesScreen
 
@@ -302,15 +295,13 @@ class ConsoleClient:
                     if action == "Resize":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if action == "Devices":
+                    elif action == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if action == "EnableBLOBs":
+                    elif action == "EnableBLOBs":
                         self.screen = windows.EnableBLOBsScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
+                    continue
 
                 # EnableBLOBsScreen
 
@@ -318,15 +309,13 @@ class ConsoleClient:
                     if action == "Resize":
                         self.screen = windows.EnableBLOBsScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if action == "Messages":
+                    elif action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if action == "Devices":
+                    elif action == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
+                    continue
 
                 # DevicesScreen
 
@@ -334,17 +323,16 @@ class ConsoleClient:
                     if action == "Resize":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if action == "Messages":
+                    elif action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    devices = {devicename.lower():device for devicename, device in self.client.items() if device.enable}
-                    if action in devices:
-                        devicename = devices[action].devicename
-                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, devicename)
-                        self.screen.show()
-                        continue
+                    else:
+                        devices = {devicename.lower():device for devicename, device in self.client.items() if device.enable}
+                        if action in devices:
+                            devicename = devices[action].devicename
+                            self.screen = windows.ChooseVectorScreen(self.stdscr, self, devicename)
+                            self.screen.show()
+                    continue
 
                 # ChooseVectorScreen
 
@@ -352,20 +340,17 @@ class ConsoleClient:
                     if action == "Resize":
                         self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.groupwin.active)
                         self.screen.show()
-                        continue
-                    if action == "Messages":
+                    elif action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if action == "Devices":
+                    elif action == "Devices":
                         self.screen = windows.DevicesScreen(self.stdscr, self)
                         self.screen.show()
-                        continue
-                    if action == "Vectors":
+                    elif action == "Vectors":
                         # get device, vector and show VectorScreen
                         self.screen = VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
-                        continue
+                    continue
 
                 # VectorScreen
 
