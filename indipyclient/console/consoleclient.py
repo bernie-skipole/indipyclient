@@ -326,12 +326,9 @@ class ConsoleClient:
                     elif action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
-                    else:
-                        devices = {devicename.lower():device for devicename, device in self.client.items() if device.enable}
-                        if action in devices:
-                            devicename = devices[action].devicename
-                            self.screen = windows.ChooseVectorScreen(self.stdscr, self, devicename)
-                            self.screen.show()
+                    elif action == "Vectors":
+                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
+                        self.screen.show()
                     continue
 
                 # ChooseVectorScreen

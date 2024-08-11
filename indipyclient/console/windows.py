@@ -729,6 +729,10 @@ class DevicesScreen(ConsoleClientScreen):
         # devicename to buttons
         self.devbuttons = {}             # devicenames are original case
 
+    @property
+    def devicename(self):
+        return self.focus
+
 
     def show(self):
         "Displays the screen with list of devices"
@@ -763,7 +767,7 @@ class DevicesScreen(ConsoleClientScreen):
         curses.doupdate()
 
     def defocus(self):
-        "Remove focus from all buttons, and re-draw the button which had focus"
+        "Remove focus from all buttons"
         if self.focus:
             btn = self.devbuttons[self.focus]
             btn.focus = False
@@ -826,7 +830,7 @@ class DevicesScreen(ConsoleClientScreen):
                 continue
             if idx > bottomidx:
                 break
-            self.devbuttons[devicename] = widgets.Button(self.devwin, devicename, linenumber, colnumber, onclick=devicename.lower())
+            self.devbuttons[devicename] = widgets.Button(self.devwin, devicename, linenumber, colnumber)
             linenumber += 2  # two lines per button
 
         # self.devbuttons is a devicename to button dictionary, but only for buttons displayed
@@ -992,6 +996,7 @@ class DevicesScreen(ConsoleClientScreen):
                         self.buttwin.noutrefresh()
                     else:
                         # either a top or bottom more button or a device has focus
+                        # and now the quit btn has been given focus
                         self.defocus()
                         self.devwinrefresh()
                         self.quit_btn.focus = True
@@ -1010,6 +1015,7 @@ class DevicesScreen(ConsoleClientScreen):
                         self.buttwin.noutrefresh()
                     else:
                         # either a top or bottom more button or a device has focus
+                        # and now the messages_btn has focus
                         self.defocus()
                         self.devwinrefresh()
                         self.messages_btn.focus = True
@@ -1051,7 +1057,9 @@ class DevicesScreen(ConsoleClientScreen):
                 for idx, btn in enumerate(displayedbtns):
                     if key in btn:
                         if btn.focus:
-                            return btn.onclick
+                            # this indicates a devicename is in focus
+                            # and has been clicked
+                            return "Vectors"
                         else:
                             # button not in focus, so set it
                             self.defocus()
@@ -1084,10 +1092,10 @@ class DevicesScreen(ConsoleClientScreen):
                     curses.doupdate()
                     continue
 
-                # If not Quit or Messages, return the lower case name
-                # of the device in focus
+                # If not Quit or Messages, and a device is in focus
+                # return the action Vectors, whic indicates a device is chosen, and now its vectors will be shown
                 if self.focus:
-                    return self.focus.lower()
+                    return "Vectors"
                 continue
 
 
