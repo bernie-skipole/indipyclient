@@ -2,16 +2,19 @@ import asyncio, curses, sys, os, pathlib, time
 
 from . import widgets
 
-from .windows import ConsoleClientScreen
+from .windows import ParentScreen
 
 
-class VectorScreen(ConsoleClientScreen):
+class VectorScreen(ParentScreen):
 
     "This displays the chosen vector and its members"
 
 
     def __init__(self, stdscr, control, devicename, vectorname):
         super().__init__(stdscr, control)
+        self.stdscr.clear()
+        curses.flushinp()
+
 
         self.devicename = devicename
         self.vectorname = vectorname

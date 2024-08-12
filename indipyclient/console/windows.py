@@ -61,46 +61,12 @@ class ParentScreen:
             return key
 
 
-class ConsoleClientScreen(ParentScreen):
-
-    "Parent to windows which are set in self.control.screen"
+class TooSmall(ParentScreen):
 
     def __init__(self, stdscr, control):
         super().__init__(stdscr, control)
         self.stdscr.clear()
-
-    async def keyinput(self):
-        """Waits for a key press,
-           if self.control.screen is not self, returns 'Stop'
-           if self.control.stop is True, returns 'Stop',
-           if screen has been resized, returns 'Resize',
-           if self._close has been given a value, returns that value
-           Otherwise returns the key pressed."""
-        while self.control.screen is self:
-            await asyncio.sleep(0)
-            if self.control.stop:
-                return "Stop"
-            if self._close:
-                return self._close
-            key = self.stdscr.getch()
-            if key == -1:
-                await asyncio.sleep(0.02)
-                continue
-            if key == curses.KEY_RESIZE:
-                return "Resize"
-            if key == curses.KEY_MOUSE:
-                mouse = curses.getmouse()
-                # mouse is (id, x, y, z, bstate)
-                if mouse[4] == curses.BUTTON1_RELEASED:
-                    # return a tuple of the mouse coordinates
-                    #         row        col
-                    return (mouse[2], mouse[1])
-                continue
-            return key
-        return "Stop"
-
-
-class TooSmall(ConsoleClientScreen):
+        curses.flushinp()
 
     def update(self, event):
         pass
@@ -124,10 +90,12 @@ class TooSmall(ConsoleClientScreen):
 
 
 
-class MessagesScreen(ConsoleClientScreen):
+class MessagesScreen(ParentScreen):
 
     def __init__(self, stdscr, control):
         super().__init__(stdscr, control)
+        self.stdscr.clear()
+        curses.flushinp()
 
         self.disconnectionflag = False
 
@@ -412,10 +380,13 @@ class MessagesScreen(ConsoleClientScreen):
                             return value
 
 
-class EnableBLOBsScreen(ConsoleClientScreen):
+class EnableBLOBsScreen(ParentScreen):
 
     def __init__(self, stdscr, control):
         super().__init__(stdscr, control)
+        self.stdscr.clear()
+        curses.flushinp()
+
 
         # title window  (1 line, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)
@@ -666,10 +637,13 @@ class EnableBLOBsScreen(ConsoleClientScreen):
             curses.doupdate()
 
 
-class DevicesScreen(ConsoleClientScreen):
+class DevicesScreen(ParentScreen):
 
     def __init__(self, stdscr, control):
         super().__init__(stdscr, control)
+        self.stdscr.clear()
+        curses.flushinp()
+
 
         # assume screen 80 x 24                                      # row 0 to 23
         # self.maxrows = 24
@@ -1200,10 +1174,13 @@ class DevicesScreen(ConsoleClientScreen):
             curses.doupdate()
 
 
-class ChooseVectorScreen(ConsoleClientScreen):
+class ChooseVectorScreen(ParentScreen):
 
     def __init__(self, stdscr, control, devicename, group=None):
         super().__init__(stdscr, control)
+        self.stdscr.clear()
+        curses.flushinp()
+
 
         # devicename is the actual devicename given by the device (not set to lower case)
         self.devicename = devicename
