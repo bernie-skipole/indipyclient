@@ -37,9 +37,8 @@ class ParentScreen:
            if self.control.stop is True, returns 'Stop',
            if screen has been resized, returns 'Resize',
            if self._close has been given a value, returns that value
-           Otherwise returns the key pressed."""
+           Otherwise returns the key pressed or a tuple of mouse button release coordinates."""
         while True:
-            await asyncio.sleep(0)
             if self.control.stop:
                 return "Stop"
             if self._close:
@@ -57,6 +56,8 @@ class ParentScreen:
                     # return a tuple of the mouse coordinates
                     #          row     col
                     return (mouse[2], mouse[1])
+                # mouse action not recognised
+                await asyncio.sleep(0)
                 continue
             return key
 
