@@ -474,7 +474,6 @@ class BaseMember:
            Otherwise returns the key pressed, or a mouse tuple
            if the mouse has been pressed."""
         while True:
-            await asyncio.sleep(0)
             if self.control.stop:
                 return "Stop"
             if self._close:
@@ -492,6 +491,7 @@ class BaseMember:
                     # return a tuple of the mouse coordinates
                     #          row     col
                     return (mouse[2], mouse[1])
+                await asyncio.sleep(0)
                 continue
             return key
 
@@ -927,12 +927,10 @@ class NumberMember(BaseMember):
                 self.edit_txt.text = self._newvalue
                 self.edit_txt.focus = False
                 self.edit_txt.draw()
-                if key == 353:
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    return
                 self.window.noutrefresh()
                 curses.doupdate()
+                if key == 353:
+                    return
                 return 9 # tab key for next item
             self._newvalue = self.edit_txt.getnumber(key)
             self.edit_txt.draw()
@@ -1014,6 +1012,13 @@ class TextMember(BaseMember):
         self.name_btn.focus = value
         self.edit_txt.focus = False
 
+    def set_edit_focus(self):
+        self._focus = True
+        self.name_btn.focus = False
+        self.name_btn.draw()
+        self.edit_txt.focus = True
+        self.edit_txt.draw()
+
 
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
@@ -1071,11 +1076,7 @@ class TextMember(BaseMember):
                 # already in focus, do nothing
                 return
             else:
-                self._focus = True
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 return "edit"
 
 
@@ -1094,6 +1095,15 @@ class TextMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
+        else:
+            # name button not in focus, so this key must come from the editable field
+            if key in (339, 259):  # 339 page up, 259 up arrow
+                # go previous member widget edit field
+                return "editup"
+            if key in (338, 258):  # 338 page down, 258 down arrow
+                # go to next widget edit field
+                return "editdown"
+
 
 
     async def inputfield(self):
@@ -1115,13 +1125,18 @@ class TextMember(BaseMember):
                 self.edit_txt.text = self._newvalue
                 self.edit_txt.focus = False
                 self.edit_txt.draw()
-                if key == 353:
-                    self.window.noutrefresh()
-                    curses.doupdate()
-                    return
                 self.window.noutrefresh()
                 curses.doupdate()
+                if key == 353:
+                    return
                 return 9 # tab key for next item
+            if key in (339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                self.edit_txt.text = self._newvalue
+                self.edit_txt.focus = False
+                self.edit_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return key
             self._newvalue = self.edit_txt.gettext(key)
             self.edit_txt.draw()
             self.window.noutrefresh()
