@@ -13,6 +13,8 @@ from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVect
 from . import windows
 from . import widgets
 
+from .devicesscreen import DevicesScreen
+from .choosevectorscreen import ChooseVectorScreen
 from .vectorscreen import VectorScreen
 
 # set limit to terminal size
@@ -181,7 +183,7 @@ class ConsoleClient:
                     await asyncio.sleep(0.02)
                     continue
                 if isinstance(event, VectorTimeOut) and (event.devicename == self.screen.devicename):
-                    if isinstance(self.screen, windows.ChooseVectorScreen):
+                    if isinstance(self.screen, ChooseVectorScreen):
                         self.screen.timeout(event)
                         continue
                     if isinstance(self.screen, VectorScreen) and (self.screen.vectorname == event.vectorname):
@@ -221,7 +223,7 @@ class ConsoleClient:
                         self.BLOBfiles[(event.devicename, event.vectorname, membername)] = filepath
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
-                elif isinstance(self.screen, windows.DevicesScreen):
+                elif isinstance(self.screen, DevicesScreen):
                     self.screen.update(event)
                 elif isinstance(self.screen, windows.EnableBLOBsScreen):
                     self.screen.update(event)
@@ -235,14 +237,14 @@ class ConsoleClient:
                                 self.devicenames.remove(event.devicename)
                             # show devicesscreen
                             self.screen.close("Devices")
-                        elif isinstance(self.screen, windows.ChooseVectorScreen):
+                        elif isinstance(self.screen, ChooseVectorScreen):
                             # one vector has been disabled, update the ChooseVectorScreen
                             self.screen.update(event)
                         elif isinstance(self.screen, VectorScreen) and (self.screen.vectorname == event.vectorname):
                             # This vector has been disabled, show ChooseVectorScreen
                             self.screen.close("Vectors")
                     # so its not a delete property
-                    elif isinstance(self.screen, windows.ChooseVectorScreen):
+                    elif isinstance(self.screen, ChooseVectorScreen):
                         self.screen.update(event)
                     elif isinstance(self.screen, VectorScreen) and (self.screen.vectorname == event.vectorname):
                         # The event refers to this vector
@@ -295,7 +297,7 @@ class ConsoleClient:
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "Devices":
-                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen = DevicesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "EnableBLOBs":
                         self.screen = windows.EnableBLOBsScreen(self.stdscr, self)
@@ -312,35 +314,35 @@ class ConsoleClient:
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "Devices":
-                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen = DevicesScreen(self.stdscr, self)
                         self.screen.show()
                     continue
 
                 # DevicesScreen
 
-                if isinstance(self.screen, windows.DevicesScreen):
+                if isinstance(self.screen, DevicesScreen):
                     if action == "Resize":
-                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen = DevicesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "Vectors":
-                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
+                        self.screen = ChooseVectorScreen(self.stdscr, self, self.screen.devicename)
                         self.screen.show()
                     continue
 
                 # ChooseVectorScreen
 
-                if isinstance(self.screen, windows.ChooseVectorScreen):
+                if isinstance(self.screen, ChooseVectorScreen):
                     if action == "Resize":
-                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.groupwin.active)
+                        self.screen = ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.groupwin.active)
                         self.screen.show()
                     elif action == "Messages":
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "Devices":
-                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen = DevicesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "Vectors":
                         # get device, vector and show VectorScreen
@@ -358,10 +360,10 @@ class ConsoleClient:
                         self.screen = windows.MessagesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "Devices":
-                        self.screen = windows.DevicesScreen(self.stdscr, self)
+                        self.screen = DevicesScreen(self.stdscr, self)
                         self.screen.show()
                     elif action == "Vectors":
-                        self.screen = windows.ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.vector.group)
+                        self.screen = ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.vector.group)
                         self.screen.show()
 
         except Exception:
