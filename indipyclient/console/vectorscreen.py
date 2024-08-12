@@ -1158,19 +1158,48 @@ class MembersWin():
                 curses.doupdate()
                 return
 
-    def editup(self, index, widget):
-        return
+    def editup(self, displayedindex, widget):
+        "A widget edit field has requested next up"
+        # this sets an input awaitable
+        self._inputfield = None
+        widget.focus = False
+        widget.draw()
+        if displayedindex:
+            # not zero, so focus can just move up one
+            prevwidget = self.displayed[displayedindex-1]
+            prevwidget.set_edit_focus()
+            self._inputfield = prevwidget.inputfield
+            self.memwin.noutrefresh()
+            curses.doupdate()
+            return "edit"
+        # showing top widget of the displayed widgets
+        # Either scroll down, or jump to more ....
+        # self.topindex is the widget index
+        if not self.topindex:
+            # This is the first widget, the more button will not be shown
+            return "previous"
+        # top displayed widgets, but more can be shown
+        # so scroll the window down
+        self.topindex -= 1
+        self.displayedwidgets()
+        prevwidget = self.displayed[0]
+        prevwidget.set_edit_focus()
+        self._inputfield = prevwidget.inputfield
+        self.draw()
+        self.noutrefresh()
+        curses.doupdate()
+        return "edit"
 
 
     def editdown(self, displayedindex, widget):
         "A widget edit field has requested next down"
         # this sets an input awaitable
         self._inputfield = None
+        widget.focus = False
+        widget.draw()
         if displayedindex != len(self.displayed) - 1:
             # the displayed widget is not the last widget on the list of displayed widgets
             # so simply set the next widget into focus
-            widget.focus = False
-            widget.draw()
             nextwidget = self.displayed[displayedindex+1]
             nextwidget.set_edit_focus()
             self._inputfield = nextwidget.inputfield
@@ -1183,8 +1212,6 @@ class MembersWin():
         if widgetindex == len(self.memberwidgets) -1:
             # This is the last widget, the more button will not be shown, but the submit button may be
             if self.submit_btn.show:
-                widget.focus = False
-                widget.draw()
                 self.submit_btn.focus = True
                 self.submit_btn.draw()
                 self.memwin.noutrefresh()
@@ -1196,8 +1223,6 @@ class MembersWin():
         else:
             # last displayed widgets, but there are further widgets to be shown
             # so scroll the window up
-            widget.focus = False
-            widget.draw()
             self.topindex += 1
             self.displayedwidgets()
             nextwidget = self.displayed[-1]
