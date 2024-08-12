@@ -1,4 +1,7 @@
-import asyncio, curses, sys, os, pathlib, time
+"""This displays the screen showing a list of devices, allowing one to be chosen"""
+
+
+import asyncio, curses
 
 from . import widgets
 
@@ -12,14 +15,13 @@ class DevicesScreen(ParentScreen):
         self.stdscr.clear()
         curses.flushinp()
 
+        # example - if screen 80 x 24                                      # row 0 to 23
+        # then self.maxrows will be 24   set in ParentScreen
 
-        # assume screen 80 x 24                                      # row 0 to 23
-        # self.maxrows = 24
-
-        # title window  (1 line, full row, starting at 0,0)
+        # title window  (1 line, full row of columns, starting at 0,0)
         self.titlewin = self.stdscr.subwin(1, self.maxcols, 0, 0)    # row 0
         self.titlewin.addstr(0, 0, "Devices", curses.A_BOLD)
-
+                                                                     # row 1 empty
         # messages window (1 line, full row, starting at 2,0)
         self.messwin = self.stdscr.subwin(1, self.maxcols, 2, 0)     # row 2
 
