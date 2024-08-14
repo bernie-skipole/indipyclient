@@ -865,11 +865,7 @@ class NumberMember(BaseMember):
                 if self.vector.perm == "ro":
                     # do nothing
                     return
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                # input a number here
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 return "edit"
             else:
                 self._focus = True
@@ -886,11 +882,7 @@ class NumberMember(BaseMember):
                 # already in focus, do nothing
                 return
             else:
-                self._focus = True
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 return "edit"
 
 
@@ -904,11 +896,7 @@ class NumberMember(BaseMember):
                 # go to next or previous member widget
                 return key
             if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                # input a number here
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
@@ -920,6 +908,7 @@ class NumberMember(BaseMember):
             if key in (338, 258):  # 338 page down, 258 down arrow
                 # go to next widget edit field
                 return "editdown"
+
 
 
     async def inputfield(self):
@@ -1080,11 +1069,7 @@ class TextMember(BaseMember):
                 if self.vector.perm == "ro":
                     # do nothing
                     return
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                # input text here
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 return "edit"
             else:
                 self._focus = True
@@ -1111,11 +1096,7 @@ class TextMember(BaseMember):
                 # go to next or previous member widget
                 return key
             if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                # input a text string here
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
