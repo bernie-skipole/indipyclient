@@ -7,6 +7,8 @@ from . import widgets
 
 from .windows import ParentScreen
 
+from .. import events
+
 
 class DevicesScreen(ParentScreen):
 
@@ -542,5 +544,3 @@ class DevicesScreen(ParentScreen):
             self.devwinrefresh()
             self.buttwin.noutrefresh()
             curses.doupdate()
-
-
