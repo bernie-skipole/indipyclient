@@ -813,6 +813,13 @@ class NumberMember(BaseMember):
             self.edit_txt.text = self._newvalue
             self.edit_txt.focus = False
 
+    def set_edit_focus(self):
+        self._focus = True
+        self.name_btn.focus = False
+        self.name_btn.draw()
+        self.edit_txt.focus = True
+        self.edit_txt.draw()
+
 
     def reset(self):
         "Reset the widget removing any value updates, called by cancel"
@@ -905,6 +912,14 @@ class NumberMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
+        else:
+            # name button not in focus, so this key must come from the editable field
+            if key in (339, 259):  # 339 page up, 259 up arrow
+                # go previous member widget edit field
+                return "editup"
+            if key in (338, 258):  # 338 page down, 258 down arrow
+                # go to next widget edit field
+                return "editdown"
 
 
     async def inputfield(self):
@@ -932,11 +947,20 @@ class NumberMember(BaseMember):
                 if key == 353:
                     return
                 return 9 # tab key for next item
+            if key in (339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                self.checknumber()
+                self.edit_txt.text = self._newvalue
+                self.edit_txt.focus = False
+                self.edit_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return key
             self._newvalue = self.edit_txt.getnumber(key)
             self.edit_txt.draw()
             self.window.noutrefresh()
             self.edit_txt.movecurs()
             curses.doupdate()
+
 
     def checknumber(self):
         "set self._newvalue, limiting it to correct range"
