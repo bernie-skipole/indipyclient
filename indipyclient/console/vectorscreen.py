@@ -873,11 +873,15 @@ class MembersWin():
                 if widget.focus:
                     # a widget is in focus
                     result = widget.setkey(key)
-                    if result == "editup":
+                    if result == "editup":                  # up arrow pressed in editable field
                         return self.editup(index, widget)
-                    elif result == "editdown":
+                    elif result == "editdown":              # down arrow pressed in editable field
                         return self.editdown(index, widget)
-                    elif result == "edit":
+                    if result == "sendup":                  # up arrow pressed in blob send button
+                        return self.sendup(index, widget)
+                    elif result == "senddown":              # down arrow pressed in blob send button
+                        return self.senddown(index, widget)
+                    elif result == "edit":                  # an editable field has been chosen
                         # this sets an input awaitable
                         self._inputfield = widget.inputfield
                         return result
@@ -1236,6 +1240,69 @@ class MembersWin():
             self.noutrefresh()
             curses.doupdate()
             return "edit"
+
+    def sendup(self, displayedindex, widget):
+        "A blob send button has up arrow pressed"
+        widget.focus = False
+        widget.draw()
+        if displayedindex:
+            # not zero, so focus can just move up one
+            prevwidget = self.displayed[displayedindex-1]
+            prevwidget.set_send_focus()
+            self.memwin.noutrefresh()
+            curses.doupdate()
+            return
+        # showing top widget of the displayed widgets
+        # Either scroll down, or jump to more ....
+        # self.topindex is the widget index
+        if not self.topindex:
+            # This is the first widget, the more button will not be shown
+            self.memwin.noutrefresh()
+            curses.doupdate()
+            return "previous"
+        # top displayed widgets, but more can be shown
+        # so scroll the window down
+        self.topindex -= 1
+        self.displayedwidgets()
+        prevwidget = self.displayed[0]
+        prevwidget.set_send_focus()
+        self.draw()
+        self.noutrefresh()
+        curses.doupdate()
+        return
+
+    def senddown(self, displayedindex, widget):
+        "A blob send button has down arrow pressed"
+        widget.focus = False
+        widget.draw()
+        if displayedindex != len(self.displayed) - 1:
+            # the displayed widget is not the last widget on the list of displayed widgets
+            # so simply set the next widget into focus
+            nextwidget = self.displayed[displayedindex+1]
+            nextwidget.set_send_focus()
+            self.memwin.noutrefresh()
+            curses.doupdate()
+            return
+        # The widget in focus is the last of the displayed widgets
+        # Either scroll up, or jump to more ....
+        widgetindex = displayedindex + self.topindex
+        if widgetindex == len(self.memberwidgets) -1:
+            # This is the last widget
+            self.memwin.noutrefresh()
+            curses.doupdate()
+            return "next"
+        else:
+            # last displayed widgets, but there are further widgets to be shown
+            # so scroll the window up
+            self.topindex += 1
+            self.displayedwidgets()
+            nextwidget = self.displayed[-1]
+            nextwidget.set_send_focus()
+            self.draw()
+            self.noutrefresh()
+            curses.doupdate()
+            return
+
 
 
 def submitvector(vector, memberwidgets):

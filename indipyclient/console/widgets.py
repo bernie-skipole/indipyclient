@@ -1202,6 +1202,16 @@ class BLOBMember(BaseMember):
         self.edit_txt.focus = True
         self.edit_txt.draw()
 
+    def set_send_focus(self):
+        self._focus = True
+        self.name_btn.focus = False
+        self.name_btn.draw()
+        self.send_btn.focus = True
+        self.send_btn.draw()
+        self.edit_txt.focus = False
+        self.edit_txt.draw()
+
+
     def filename(self):
         "Returns filename of last file received and saved"
         nametuple = (self.vector.devicename, self.vector.name, self.name)
@@ -1328,12 +1338,18 @@ class BLOBMember(BaseMember):
                 curses.doupdate()
                 return "edit"
         elif self.send_btn.focus:
-            if key in (9, 338, 339, 258, 259, 261):  # 9 tab, 338 page down, 339 page up, 258 down arrow, 259 up arrow, 261 right arrow
+            if key in (9, 261):  # 9 tab, 261 right arrow
                 # go to next or previous member widget
                 self.send_btn.focus = False
                 self.send_btn.draw()
                 return key
-            if key in (353, 260, 258):  # 353 shift tab, 260 left arrow
+            if key in (339, 259):  # 339 page up, 259 up arrow
+                # go previous member widget send button
+                return "sendup"
+            if key in (338, 258):  # 338 page down, 258 down arrow
+                # go to next widget send button
+                return "senddown"
+            if key in (353, 260):  # 353 shift tab, 260 left arrow
                 # go to edit the file path
                 self.set_edit_focus()
                 self.window.noutrefresh()
