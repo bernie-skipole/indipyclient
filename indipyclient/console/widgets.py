@@ -509,11 +509,9 @@ class SwitchMember(BaseMember):
         self.on = Button(window, 'ON', 0, 0)
         self.on.focusreverse = False
         self.on.bold = True if self.value() == "On" else False
-        self.on.show = False
         self.off = Button(window, 'OFF', 0, 0)
         self.off.focusreverse = False
         self.off.bold = not self.on.bold
-        self.off.show = False
         self.linecount = 3
 
     def reset(self):
@@ -524,12 +522,10 @@ class SwitchMember(BaseMember):
         self.on.bold = True if self.value() == "On" else False
         self.on.row = self.startline+1
         self.on.col = self.maxcols-15
-        self.on.show = True
         self.on.draw()
         self.off.bold = not self.on.bold
         self.off.row = self.startline+1
         self.off.col = self.maxcols-10
-        self.off.show = True
         self.off.draw()
 
     def draw(self, startline=None):
@@ -541,12 +537,10 @@ class SwitchMember(BaseMember):
         # Draw the on/off buttons
         self.on.row = self.startline+1
         self.on.col = self.maxcols-15
-        self.on.show = True
         self.on.draw()
         self.off.bold = not self.on.bold
         self.off.row = self.startline+1
         self.off.col = self.maxcols-10
-        self.off.show = True
         self.off.draw()
 
 
@@ -686,11 +680,6 @@ class SwitchMember(BaseMember):
                 self.off.draw()
                 if self.vector.rule != 'AnyOfMany':  ### 'OneOfMany','AtMostOne' both require this to be the only on button
                     return "set_on"
-            #elif key in (338, 339, 258, 259):   # 338 page down, 258 down arrow, 339 page up, 259 up arrow
-                # go to next or previous member widget
-            #    self.on.focus = False
-            #    self.on.draw()
-            #    return key
             elif key in (339, 259):   # 339 page up, 259 up arrow
                 return "onup"
             elif key in (338, 258):   # 338 page down, 258 down arrow
@@ -720,17 +709,16 @@ class SwitchMember(BaseMember):
                 self.off.draw()
                 self.on.draw()
             elif key in (339, 259):   # 339 page up, 259 up arrow
-                # go to previous member widget or scroll pad
-                self.off.focus = False
-                self.off.draw()
-                return key
+                return "offup"
+            elif key in (338, 258):   # 338 page down, 258 down arrow
+                return "offdown"
             elif key in (32, 261):   # 32 space, 261 right arrow
                 # go to name_btn
                 self.off.focus = False
                 self.off.draw()
                 self.name_btn.focus = True
                 self.name_btn.draw()
-            elif key in (9, 338, 339, 258, 259):   # 9 tab, 338 page down, 258 down arrow
+            elif key == 9:   # 9 tab
                 # go to next widget or scroll pad
                 self.off.focus = False
                 self.off.draw()

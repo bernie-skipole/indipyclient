@@ -885,6 +885,10 @@ class MembersWin():
                         return self.onup(index, widget)
                     elif result == "ondown":              # down arrow pressed in switch on button
                         return self.ondown(index, widget)
+                    elif result == "offup":                  # up arrow pressed in switch off button
+                        return self.offup(index, widget)
+                    elif result == "offdown":              # down arrow pressed in switch off button
+                        return self.offdown(index, widget)
                     elif result == "edit":                  # an editable field has been chosen
                         # this sets an input awaitable
                         self._inputfield = widget.inputfield
@@ -1353,18 +1357,12 @@ class MembersWin():
         # Either scroll up, or jump to more ....
         widgetindex = displayedindex + self.topindex
         if widgetindex == len(self.memberwidgets) -1:
-            # This is the last widget, the more button will not be shown, but the submit button may be
-            if self.submit_btn.show:
-                self.submit_btn.focus = True
-                self.submit_btn.draw()
-                self.memwin.noutrefresh()
-                self.submitwin.noutrefresh()
-                curses.doupdate()
-                return
-            # last widget and the submit is not shown
+            self.submit_btn.focus = True
+            self.submit_btn.draw()
             self.memwin.noutrefresh()
+            self.submitwin.noutrefresh()
             curses.doupdate()
-            return "next"
+            return
         else:
             # last displayed widgets, but there are further widgets to be shown
             # so scroll the window up
@@ -1377,6 +1375,69 @@ class MembersWin():
             curses.doupdate()
             return
 
+    def offup(self, displayedindex, widget):
+        "A switch off button has up arrow pressed"
+        widget.focus = False
+        widget.draw()
+        if displayedindex:
+            # not zero, so focus can just move up one
+            prevwidget = self.displayed[displayedindex-1]
+            prevwidget.set_off_focus()
+            self.memwin.noutrefresh()
+            curses.doupdate()
+            return
+        # showing top widget of the displayed widgets
+        # Either scroll down, or jump to more ....
+        # self.topindex is the widget index
+        if not self.topindex:
+            # This is the first widget, the more button will not be shown
+            self.memwin.noutrefresh()
+            curses.doupdate()
+            return "previous"
+        # top displayed widgets, but more can be shown
+        # so scroll the window down
+        self.topindex -= 1
+        self.displayedwidgets()
+        prevwidget = self.displayed[0]
+        prevwidget.set_off_focus()
+        self.draw()
+        self.noutrefresh()
+        curses.doupdate()
+        return
+
+    def offdown(self, displayedindex, widget):
+        "A switch off button has down arrow pressed"
+        widget.focus = False
+        widget.draw()
+        if displayedindex != len(self.displayed) - 1:
+            # the displayed widget is not the last widget on the list of displayed widgets
+            # so simply set the next widget into focus
+            nextwidget = self.displayed[displayedindex+1]
+            nextwidget.set_off_focus()
+            self.memwin.noutrefresh()
+            curses.doupdate()
+            return
+        # The widget in focus is the last of the displayed widgets
+        # Either scroll up, or jump to more ....
+        widgetindex = displayedindex + self.topindex
+        if widgetindex == len(self.memberwidgets) -1:
+            self.submit_btn.focus = True
+            self.submit_btn.draw()
+            self.memwin.noutrefresh()
+            self.submitwin.noutrefresh()
+            curses.doupdate()
+            return
+        else:
+            # last displayed widgets, but there are further widgets to be shown
+            # so scroll the window up
+            self.topindex += 1
+            self.displayedwidgets()
+            nextwidget = self.displayed[-1]
+            nextwidget.set_off_focus()
+            self.draw()
+            self.noutrefresh()
+            curses.doupdate()
+            return
 
 
 def submitvector(vector, memberwidgets):
