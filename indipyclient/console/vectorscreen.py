@@ -739,7 +739,7 @@ class MembersWin():
         if isinstance(result, tuple):
             # a mouse press, go to outer loop with result set
             return result
-        # inputfield has returned a keystroke, typically 9 for next tab
+        # inputfield has returned a keystroke
         # which is now tested again with setkey(key)
         return self.setkey(result)
 
@@ -1177,6 +1177,8 @@ class MembersWin():
         # self.topindex is the widget index
         if not self.topindex:
             # This is the first widget, the more button will not be shown
+            self.memwin.noutrefresh()
+            curses.doupdate()
             return "previous"
         # top displayed widgets, but more can be shown
         # so scroll the window down
@@ -1219,6 +1221,8 @@ class MembersWin():
                 curses.doupdate()
                 return
             # last widget and the submit is not shown
+            self.memwin.noutrefresh()
+            curses.doupdate()
             return "next"
         else:
             # last displayed widgets, but there are further widgets to be shown

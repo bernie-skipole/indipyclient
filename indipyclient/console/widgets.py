@@ -942,10 +942,6 @@ class NumberMember(BaseMember):
             if key in (339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 self.checknumber()
                 self.edit_txt.text = self._newvalue
-                self.edit_txt.focus = False
-                self.edit_txt.draw()
-                self.window.noutrefresh()
-                curses.doupdate()
                 return key
             self._newvalue = self.edit_txt.getnumber(key)
             self.edit_txt.draw()
@@ -1140,10 +1136,6 @@ class TextMember(BaseMember):
                 return 9 # tab key for next item
             if key in (339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 self.edit_txt.text = self._newvalue
-                self.edit_txt.focus = False
-                self.edit_txt.draw()
-                self.window.noutrefresh()
-                curses.doupdate()
                 return key
             self._newvalue = self.edit_txt.gettext(key)
             self.edit_txt.draw()
@@ -1263,11 +1255,7 @@ class BLOBMember(BaseMember):
                 if self.vector.perm == "ro":
                     # do nothing
                     return
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                # input text here
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 return "edit"
             else:
                 self._focus = True
@@ -1286,13 +1274,7 @@ class BLOBMember(BaseMember):
                 # already in focus, do nothing
                 return
             else:
-                self._focus = True
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                self.send_btn.focus = False
-                self.send_btn.draw()
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 return "edit"
         if key in self.send_btn:
             if self.send_btn.focus:
@@ -1341,11 +1323,7 @@ class BLOBMember(BaseMember):
             if key in (9, 32, 261, 10):     # 9 tab, 32 space, 261 right arrow, 10 return
                 # name_btn is in focus, set edit_txt in focus and return "edit"
                 # which informs the window to await inputfield
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                # input a text string here
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
@@ -1357,11 +1335,7 @@ class BLOBMember(BaseMember):
                 return key
             if key in (353, 260, 258):  # 353 shift tab, 260 left arrow
                 # go to edit the file path
-                self.send_btn.focus = False
-                self.send_btn.draw()
-                # input a text string here
-                self.edit_txt.focus = True
-                self.edit_txt.draw()
+                self.set_edit_focus()
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
@@ -1437,10 +1411,6 @@ class BLOBMember(BaseMember):
                 return
             if key in (339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 self.edit_txt.text = self._newvalue
-                self.edit_txt.focus = False
-                self.edit_txt.draw()
-                self.window.noutrefresh()
-                curses.doupdate()
                 return key
             self._newvalue = self.edit_txt.gettext(key)
             self.edit_txt.draw()
