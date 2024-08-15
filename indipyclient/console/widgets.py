@@ -568,6 +568,24 @@ class SwitchMember(BaseMember):
         self.on.focus = False
         self.off.focus = False
 
+    def set_on_focus(self):
+        self._focus = True
+        self.name_btn.focus = False
+        self.name_btn.draw()
+        self.on.focus = True
+        self.on.draw()
+        self.off.focus = False
+        self.off.draw()
+
+    def set_off_focus(self):
+        self._focus = True
+        self.name_btn.focus = False
+        self.name_btn.draw()
+        self.on.focus = False
+        self.on.draw()
+        self.off.focus = True
+        self.off.draw()
+
 
     def handlemouse(self, key):
         """Handles a mouse input
