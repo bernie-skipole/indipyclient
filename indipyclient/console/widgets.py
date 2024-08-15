@@ -913,10 +913,10 @@ class NumberMember(BaseMember):
            Return key for next/prev widget
            Return 'edit' if moving to edit field"""
         if self.name_btn.focus:
-            if key in (9, 353, 260, 339, 338, 259, 258):  # 9 tab, 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
-            if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
+            if key in (9, 32, 261, 10):     # 9 tab, 32 space, 261 right arrow, 10 return
                 self.set_edit_focus()
                 self.window.noutrefresh()
                 curses.doupdate()
@@ -929,6 +929,8 @@ class NumberMember(BaseMember):
             if key in (338, 258):  # 338 page down, 258 down arrow
                 # go to next widget edit field
                 return "editdown"
+            if key in (10, 9):       # 10 enter, 9 tab
+                return 9 # tab key for next item
 
 
 
@@ -945,7 +947,7 @@ class NumberMember(BaseMember):
                 if key in self.edit_txt:
                     continue
                 return key
-            if key in (10, 9, 353):       # 10 enter, 9 tab, 353 shift tab
+            if key == 353:       # 353 shift tab
                 self.checknumber()
                 self.name_btn.focus = True
                 self.name_btn.draw()
@@ -954,10 +956,8 @@ class NumberMember(BaseMember):
                 self.edit_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
-                if key == 353:
-                    return
-                return 9 # tab key for next item
-            if key in (339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                return
+            if key in (10, 9, 339, 338, 259, 258):    # 10 enter, 9 tab, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 self.checknumber()
                 self.edit_txt.text = self._newvalue
                 return key
@@ -1109,10 +1109,10 @@ class TextMember(BaseMember):
     def setkey(self, key):
         "This widget is in focus, and deals with inputs"
         if self.name_btn.focus:
-            if key in (9, 353, 260, 339, 338, 259, 258):  # 9 tab, 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
+            if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
-            if key in (32, 261, 10):     # 32 space, 261 right arrow, 10 return
+            if key in (9, 32, 261, 10):     # 9 tab, 32 space, 261 right arrow, 10 return
                 self.set_edit_focus()
                 self.window.noutrefresh()
                 curses.doupdate()
@@ -1125,7 +1125,8 @@ class TextMember(BaseMember):
             if key in (338, 258):  # 338 page down, 258 down arrow
                 # go to next widget edit field
                 return "editdown"
-
+            if key in (10, 9):       # 10 enter, 9 tab
+                return 9 # tab key for next item
 
 
     async def inputfield(self):
@@ -1141,7 +1142,7 @@ class TextMember(BaseMember):
                 if key in self.edit_txt:
                     continue
                 return key
-            if key in (10, 9, 353):       # 10 enter, 9 tab, 353 shift tab
+            if key == 353:       # 353 shift tab
                 self.name_btn.focus = True
                 self.name_btn.draw()
                 self.edit_txt.text = self._newvalue
@@ -1149,10 +1150,8 @@ class TextMember(BaseMember):
                 self.edit_txt.draw()
                 self.window.noutrefresh()
                 curses.doupdate()
-                if key == 353:
-                    return
-                return 9 # tab key for next item
-            if key in (339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                return
+            if key in (10, 9, 339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 self.edit_txt.text = self._newvalue
                 return key
             self._newvalue = self.edit_txt.gettext(key)
