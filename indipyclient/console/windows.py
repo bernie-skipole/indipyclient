@@ -50,7 +50,10 @@ class ParentScreen:
             if key == curses.KEY_RESIZE:
                 return "Resize"
             if key == curses.KEY_MOUSE:
-                mouse = curses.getmouse()
+                try:
+                    mouse = curses.getmouse()
+                except curses.error:
+                    continue
                 # mouse is (id, x, y, z, bstate)
                 if mouse[4] == curses.BUTTON1_RELEASED:
                     # return a tuple of the mouse coordinates
@@ -636,6 +639,3 @@ class EnableBLOBsScreen(ParentScreen):
             self.pathwin.noutrefresh()
             self.path_txt.movecurs()
             curses.doupdate()
-
-
-

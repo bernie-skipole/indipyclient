@@ -485,7 +485,10 @@ class BaseMember:
             if key == curses.KEY_RESIZE:
                 return "Resize"
             if key == curses.KEY_MOUSE:
-                mouse = curses.getmouse()
+                try:
+                    mouse = curses.getmouse()
+                except curses.error:
+                    continue
                 # mouse is (id, x, y, z, bstate)
                 if mouse[4] == curses.BUTTON1_RELEASED:
                     # return a tuple of the mouse coordinates
@@ -1198,6 +1201,14 @@ class BLOBMember(BaseMember):
         self.edit_txt.focus = False
         self.send_btn.focus = False
 
+    def set_edit_focus(self):
+        self._focus = True
+        self.name_btn.focus = False
+        self.name_btn.draw()
+        self.send_btn.focus = False
+        self.send_btn.draw()
+        self.edit_txt.focus = True
+        self.edit_txt.draw()
 
     def filename(self):
         "Returns filename of last file received and saved"
@@ -1338,7 +1349,7 @@ class BLOBMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return "edit"
-        if self.send_btn.focus:
+        elif self.send_btn.focus:
             if key in (9, 338, 339, 258, 259, 261):  # 9 tab, 338 page down, 339 page up, 258 down arrow, 259 up arrow, 261 right arrow
                 # go to next or previous member widget
                 self.send_btn.focus = False
@@ -1378,6 +1389,14 @@ class BLOBMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 return 9
+        else:
+            # name and send button not in focus, so these are due to arrows in edit_text
+            if key in (339, 259):  # 339 page up, 259 up arrow
+                # go previous member widget edit field
+                return "editup"
+            if key in (338, 258):  # 338 page down, 258 down arrow
+                # go to next widget edit field
+                return "editdown"
 
 
     async def inputfield(self):
@@ -1416,6 +1435,13 @@ class BLOBMember(BaseMember):
                 # which gets a key, and as this widget is still in focus
                 # calls this widgets setkey method
                 return
+            if key in (339, 338, 259, 258):    # 339 page up, 338 page down, 259 up arrow, 258 down arrow
+                self.edit_txt.text = self._newvalue
+                self.edit_txt.focus = False
+                self.edit_txt.draw()
+                self.window.noutrefresh()
+                curses.doupdate()
+                return key
             self._newvalue = self.edit_txt.gettext(key)
             self.edit_txt.draw()
             self.window.noutrefresh()
