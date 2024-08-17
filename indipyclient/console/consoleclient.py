@@ -16,6 +16,7 @@ from . import widgets
 from .devicesscreen import DevicesScreen
 from .choosevectorscreen import ChooseVectorScreen
 from .vectorscreen import VectorScreen
+from .memberscreen import MemberScreen
 
 # set limit to terminal size
 MINROWS = 22
@@ -189,6 +190,9 @@ class ConsoleClient:
                     if isinstance(self.screen, VectorScreen) and (self.screen.vectorname == event.vectorname):
                         self.screen.timeout(event)
                         continue
+                    if isinstance(self.screen, MemberScreen) and (self.screen.vectorname == event.vectorname):
+                        self.screen.timeout(event)
+                        continue
                 if hasattr(event, 'devicename'):
                     # if this is a new device, update it with BLOB status
                     if event.devicename and (event.devicename not in self.devicenames):
@@ -249,6 +253,9 @@ class ConsoleClient:
                     elif isinstance(self.screen, VectorScreen) and (self.screen.vectorname == event.vectorname):
                         # The event refers to this vector
                         self.screen.update(event)
+                    elif isinstance(self.screen, MemberScreen) and (self.screen.vectorname == event.vectorname) and (self.screen.membername in event):
+                        # The event refers to this vector
+                        self.screen.update(event)
         except Exception:
             logger.exception("Exception report from ConsoleControl.updatescreen")
             raise
@@ -278,7 +285,7 @@ class ConsoleClient:
                         continue
 
                 # action can be one of Quit, Resize, Devices, Messages, EnableBLOBs, Vectors
- 
+
                 # if the screen is a TooSmall screen then either accept
                 # a resize or quit, if resized to a reasonable size, then open
                 # a MessagesScreen
@@ -364,6 +371,21 @@ class ConsoleClient:
                         self.screen.show()
                     elif action == "Vectors":
                         self.screen = ChooseVectorScreen(self.stdscr, self, self.screen.devicename, group=self.screen.vector.group)
+                        self.screen.show()
+                    elif action == "Member":
+                        self.screen = MemberScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname, self.screen.membername)
+                        self.screen.show()
+                    continue
+
+                # MemberScreen
+
+                if isinstance(self.screen, MemberScreen):
+                    if action == "Resize":
+                        self.screen = MemberScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname, self.screen.membername)
+                        self.screen.show()
+                    else:
+                        # any other key goes back to VectorScreen
+                        self.screen = VectorScreen(self.stdscr, self, self.screen.devicename, self.screen.vectorname)
                         self.screen.show()
 
         except Exception:

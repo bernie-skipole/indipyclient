@@ -1,11 +1,25 @@
 Introduction
 ============
 
-Terminal client to communicate to an INDI service.
+This indipyclient package provides a terminal client, which connects to a port, allowing an instrument to be viewed and controlled from a terminal session.
 
-This is a pure python package, with no dependencies, providing an INDI terminal client.
+The instrument port is typically served using the indipydriver package which provides classes which can be used by your own Python program controlling some form of instrument, with switches, indicators or measurement data.
 
-It also provides a set of classes which can be used to create an INDI client. Either a script, or a GUI implementation could use this to generate the INDI protocol XML, and to create the connection to a port serving INDI drivers.
+indipydriver and indipyclient communicate with the INDI protocol which is defined so that drivers should operate with any INDI client.
+
+INDI - Instrument Neutral Distributed Interface.
+
+See https://en.wikipedia.org/wiki/Instrument_Neutral_Distributed_Interface
+
+The protocol defines the format of the data sent by the driver, such as light, number, text, switch or BLOB (Binary Large Object). The client can be general purpose, taking the format of switches, numbers etc., from the protocol and can send commands to control the instrument.
+
+INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control providing drivers are available.
+
+The companion package 'indipydriver', which is used to create drivers, is available on Pypi and developed at.
+
+https://github.com/bernie-skipole/indipydriver
+
+The indipyclient terminal can be started from the command line, and can also be imported if required, in which case it provides a set of classes which can be used to create scripts to control the remote instrument.
 
 The client can be run with
 
@@ -45,14 +59,6 @@ A typical sesssion would look like:
 .. image:: ./image.png
 
 
-This is a companion package to 'indipydriver' which can be used to create and serve INDI drivers.
+For further information, see :ref:`references`.
 
-INDI - Instrument Neutral Distributed Interface.
-
-For further information on INDI, see :ref:`references`.
-
-The INDI protocol is defined so that drivers should operate with any INDI client.
-
-The protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object) and the client can send commands to control the instrument.  The client can be general purpose, taking the format of switches, numbers etc., from the protocol.
-
-INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control providing drivers are available.
+The rest of this document describes the classes availale in indipyclient which could be imported to provide your own client scripts, however if you are just using the terminal feature, there is no need to import these functions, and simply running indipyclient from the command line, as show above, will be sufficient.

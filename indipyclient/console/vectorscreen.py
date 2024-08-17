@@ -60,6 +60,11 @@ class VectorScreen(ParentScreen):
         self.quit_btn = widgets.Button(self.buttwin, "Quit", 0, self.maxcols//2 + 11)
 
 
+    @property
+    def membername(self):
+        return self.memberswin.membername
+
+
     def show(self):
         "Displays the window"
 
@@ -436,7 +441,7 @@ class VectorScreen(ParentScreen):
                 result = await self.memberswin.inputfield()
 
 
-            if result in ("Resize", "Messages", "Devices", "Vectors", "Stop"):
+            if result in ("Resize", "Messages", "Devices", "Vectors", "Member", "Stop"):
                 return result
 
             if result == "submitted":
@@ -588,6 +593,9 @@ class MembersWin():
 
         # this will be set to a widgets awitable input field if it gets focus
         self._inputfield = None
+
+        # this will be set to a membername if a member is chosen
+        self.membername = None
 
 
     def displayedwidgets(self):
@@ -853,6 +861,11 @@ class MembersWin():
             # and indicate this window has focus
             self.focus = True
 
+        if result == "Member":
+            widget = self.displayed[windex]
+            self.membername = widget.name
+            return "Member"
+
         if result == "edit":
             widget = self.displayed[windex]
             self._inputfield = widget.inputfield
@@ -866,55 +879,61 @@ class MembersWin():
     def setkey(self, key):
         "Handles a key stroke"
 
-        # check if a widget is in focus
-        if self.vector.perm != "ro":
-            # if ro, nothing to set on widgets
-            for index, widget in enumerate(self.displayed):
-                if widget.focus:
-                    # a widget is in focus
-                    result = widget.setkey(key)
-                    if result == "editup":                  # up arrow pressed in editable field
-                        return self.editup(index, widget)
-                    elif result == "editdown":              # down arrow pressed in editable field
-                        return self.editdown(index, widget)
-                    elif result == "sendup":                  # up arrow pressed in blob send button
-                        return self.sendup(index, widget)
-                    elif result == "senddown":              # down arrow pressed in blob send button
-                        return self.senddown(index, widget)
-                    elif result == "onup":                  # up arrow pressed in switch on button
-                        return self.onup(index, widget)
-                    elif result == "ondown":              # down arrow pressed in switch on button
-                        return self.ondown(index, widget)
-                    elif result == "offup":                  # up arrow pressed in switch off button
-                        return self.offup(index, widget)
-                    elif result == "offdown":              # down arrow pressed in switch off button
-                        return self.offdown(index, widget)
-                    elif result == "edit":                  # an editable field has been chosen
-                        # this sets an input awaitable
-                        self._inputfield = widget.inputfield
-                        return result
-                    else:
-                        self._inputfield = None
-                    if result == "set_on":  ###
-                        # special case of a switch widget being turned on
-                        # set all other widgets Off
-                        for widget in self.memberwidgets:
-                            if not widget.focus:
-                                widget.on.bold = False
-                                widget.off.bold = True
-                                widget.on.draw()
-                                widget.off.draw()
-                        self.memwin.noutrefresh()
-                        curses.doupdate()
-                        return
-                    if result:
-                        # if the widget returns a key. then continue with
-                        # checking it
-                        key = result
-                        break
-                    # the widget has handled the key, and returns None
-                    # to indicate no further checks required.
+        for index, widget in enumerate(self.displayed):
+            if widget.focus:
+                # a widget is in focus
+                if self.vector.perm == "ro":
+                    if (key == 10) and widget.name_btn.focus:
+                        # a ro widget accepts a enter key on the name button
+                        self.membername = widget.name
+                        return "Member"
+                    break
+                result = widget.setkey(key)
+                if result == "editup":                  # up arrow pressed in editable field
+                    return self.editup(index, widget)
+                elif result == "editdown":              # down arrow pressed in editable field
+                    return self.editdown(index, widget)
+                elif result == "sendup":                  # up arrow pressed in blob send button
+                    return self.sendup(index, widget)
+                elif result == "senddown":              # down arrow pressed in blob send button
+                    return self.senddown(index, widget)
+                elif result == "onup":                  # up arrow pressed in switch on button
+                    return self.onup(index, widget)
+                elif result == "ondown":              # down arrow pressed in switch on button
+                    return self.ondown(index, widget)
+                elif result == "offup":                  # up arrow pressed in switch off button
+                    return self.offup(index, widget)
+                elif result == "offdown":              # down arrow pressed in switch off button
+                    return self.offdown(index, widget)
+                elif result == "edit":                  # an editable field has been chosen
+                    # this sets an input awaitable
+                    self._inputfield = widget.inputfield
+                    return result
+                else:
+                    self._inputfield = None
+                if result == "Member":
+                    self.membername = widget.name
+                    return "Member"
+                if result == "set_on":  ###
+                    # special case of a switch widget being turned on
+                    # set all other widgets Off
+                    for widget in self.memberwidgets:
+                        if not widget.focus:
+                            widget.on.bold = False
+                            widget.off.bold = True
+                            widget.on.draw()
+                            widget.off.draw()
+                    self.memwin.noutrefresh()
+                    curses.doupdate()
                     return
+                if result:
+                    # if the widget returns a key. then continue with
+                    # checking it
+                    key = result
+                    break
+                # the widget has handled the key, and returns None
+                # to indicate no further checks required.
+                return
 
         if key == 10:
             # Enter key pressed

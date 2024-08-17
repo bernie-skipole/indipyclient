@@ -875,11 +875,7 @@ class NumberMember(BaseMember):
             """
         if key in self.name_btn:
             if self.name_btn.focus:
-                if self.vector.perm == "ro":
-                    # do nothing
-                    return
-                self.set_edit_focus()
-                return "edit"
+                return "Member"
             else:
                 self._focus = True
                 self.name_btn.focus = True
@@ -908,6 +904,8 @@ class NumberMember(BaseMember):
             if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
+            if key == 10:     # 10 return
+                return "Member"
             if key in (9, 32, 261, 10):     # 9 tab, 32 space, 261 right arrow, 10 return
                 self.set_edit_focus()
                 self.window.noutrefresh()
@@ -918,11 +916,11 @@ class NumberMember(BaseMember):
             if key in (339, 259):  # 339 page up, 259 up arrow
                 # go previous member widget edit field
                 return "editup"
-            if key in (338, 258):  # 338 page down, 258 down arrow
+            if key in (338, 258, 10):  # 338 page down, 258 down arrow, 10 enter
                 # go to next widget edit field
                 return "editdown"
-            if key in (10, 9):       # 10 enter, 9 tab
-                return 9 # tab key for next item
+            if key == 9:       # 9 tab
+                return 9
 
 
 
