@@ -62,6 +62,9 @@ class MemberScreen(ParentScreen):
         # draw the contents value here
         if self.vector.vectortype == "NumberVector":
             self.draw_number()
+        elif self.vector.vectortype == "TextVector":
+            self.draw_text()
+
 
         newtime = time.monotonic()
         if newtime < self.timeset+10:
@@ -116,6 +119,16 @@ class MemberScreen(ParentScreen):
         self.memwin.clear()
         # draw the number value
         text = self.vector.getformattedvalue(self.membername).strip()
+        text = widgets.shorten(text, width=self.memmaxcols-4, placeholder="...")
+        # draw the value
+        self.memwin.addstr(self.memmaxrows//2, (self.memmaxcols-len(text))//2, text, curses.A_BOLD)
+
+
+    def draw_text(self):
+        "Draws the formatted number"
+        self.memwin.clear()
+        # draw the text value
+        text = self.vector[self.membername].strip()
         text = widgets.shorten(text, width=self.memmaxcols-4, placeholder="...")
         # draw the value
         self.memwin.addstr(self.memmaxrows//2, (self.memmaxcols-len(text))//2, text, curses.A_BOLD)
