@@ -56,6 +56,10 @@ class MemberScreen(ParentScreen):
 
         widgets.draw_timestamp_state(self.control, self.tstatewin, self.vector)
 
+        tstamp = widgets.localtimestring(self.vector.timestamp)
+        vectorlabel = widgets.shorten(self.vector.label, width=self.maxcols//2, placeholder="...")
+        self.tstatewin.addstr(0, len(tstamp)+5, vectorlabel)
+
         displaylabel = widgets.shorten(self.vector.memberlabel(self.membername), width=self.maxcols-5, placeholder="...")
         self.labelwin.addstr(0, 2, displaylabel)
 
@@ -64,6 +68,8 @@ class MemberScreen(ParentScreen):
             self.draw_number()
         elif self.vector.vectortype == "TextVector":
             self.draw_text()
+        elif self.vector.vectortype == "LightVector":
+            self.draw_light()
 
 
         newtime = time.monotonic()
@@ -125,10 +131,32 @@ class MemberScreen(ParentScreen):
 
 
     def draw_text(self):
-        "Draws the formatted number"
+        "Draws the text"
         self.memwin.clear()
         # draw the text value
         text = self.vector[self.membername].strip()
         text = widgets.shorten(text, width=self.memmaxcols-4, placeholder="...")
         # draw the value
         self.memwin.addstr(self.memmaxrows//2, (self.memmaxcols-len(text))//2, text, curses.A_BOLD)
+
+
+    def draw_light(self):
+        "Draws the light value surrounded by the colou"
+        self.memwin.clear()
+        # draw the light value
+        lowervalue = self.vector[self.membername].strip().lower()
+        # draw the light value
+        if lowervalue == "idle":
+            text = "  Idle   "
+        elif lowervalue == "ok":
+            text = "   OK    "
+        elif lowervalue == "busy":
+            text = "  Busy   "
+        elif lowervalue == "alert":
+            text = "  Alert  "
+        else:
+            return
+        # draw the value
+        self.memwin.addstr(self.memmaxrows//2-1, (self.memmaxcols-9)//2, "         ", self.control.color(lowervalue))
+        self.memwin.addstr(self.memmaxrows//2, (self.memmaxcols-9)//2, text, self.control.color(lowervalue))
+        self.memwin.addstr(self.memmaxrows//2+1, (self.memmaxcols-9)//2, "         ", self.control.color(lowervalue))

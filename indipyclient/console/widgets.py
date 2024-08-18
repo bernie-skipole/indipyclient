@@ -767,7 +767,9 @@ class LightMember(BaseMember):
     def handlemouse(self, key):
         "Handles a mouse input"
         if key in self.name_btn:
-            if not self.name_btn.focus:
+            if self.name_btn.focus:
+                return "Member"
+            else:
                 self._focus = True
                 self.name_btn.focus = True
                 self.name_btn.draw()
