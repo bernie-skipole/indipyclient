@@ -61,4 +61,4 @@ A typical sesssion would look like:
 
 For further information, see :ref:`references`.
 
-The rest of this document describes the classes availale in indipyclient which could be imported to provide your own client scripts, however if you are just using the terminal feature, there is no need to import these functions, and simply running indipyclient from the command line, as show above, will be sufficient.
+The rest of this document describes the classes available in indipyclient which could be imported to provide your own client scripts, however if you are just using the terminal feature, there is no need to import these functions, and simply running indipyclient from the command line, as show above, will be sufficient.
