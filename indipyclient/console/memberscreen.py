@@ -70,6 +70,8 @@ class MemberScreen(ParentScreen):
             self.draw_text()
         elif self.vector.vectortype == "LightVector":
             self.draw_light()
+        elif self.vector.vectortype == "SwitchVector":
+            self.draw_switch()
 
 
         newtime = time.monotonic()
@@ -160,3 +162,13 @@ class MemberScreen(ParentScreen):
         self.memwin.addstr(self.memmaxrows//2-1, (self.memmaxcols-9)//2, "         ", self.control.color(lowervalue))
         self.memwin.addstr(self.memmaxrows//2, (self.memmaxcols-9)//2, text, self.control.color(lowervalue))
         self.memwin.addstr(self.memmaxrows//2+1, (self.memmaxcols-9)//2, "         ", self.control.color(lowervalue))
+
+
+    def draw_switch(self):
+        "Draws the switch"
+        self.memwin.clear()
+        # draw the On, Off value
+        lowervalue = self.vector[self.membername].strip().lower()
+        text = "ON" if lowervalue == "on" else "OFF"
+        # draw the value
+        self.memwin.addstr(self.memmaxrows//2, (self.memmaxcols-3)//2, text, curses.A_BOLD)

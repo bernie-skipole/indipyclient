@@ -591,15 +591,7 @@ class SwitchMember(BaseMember):
            Returns "set_on" if on chosen and rule requires this to be only button"""
         if key in self.name_btn:
             if self.name_btn.focus:
-                if self.vector.perm == "ro":
-                    # do nothing
-                    return
-                # set on button in focus
-                self.on.focus = True
-                self.on.draw()
-                self.name_btn.focus = False
-                self.name_btn.draw()
-                return "focused"
+                return "Member"
             else:
                 self._focus = True
                 self.name_btn.focus = True
@@ -661,7 +653,9 @@ class SwitchMember(BaseMember):
             if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
-            if key in (32, 9, 261, 10):     # 32 space, 9 tab, 261 right arrow, 10 return
+            if key == 10:     # 10 return
+                return "Member"
+            if key in (32, 9, 261):     # 32 space, 9 tab, 261 right arrow,
                 # go to on button
                 self.name_btn.focus = False
                 self.on.focus = True
