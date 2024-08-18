@@ -228,9 +228,9 @@ class defTextVector(defVector):
         defVector.__init__(self, root, device, client)
         self.perm = root.get("perm")
         if self.perm is None:
-            raise ParseException
+            raise ParseException("No perm given in defTextVector")
         if self.perm not in ('ro', 'wo', 'rw'):
-            raise ParseException
+            raise ParseException("Invalid perm given in defTextVector")
         try:
             timeout = root.get("timeout")
             if not timeout:
@@ -246,7 +246,7 @@ class defTextVector(defVector):
             if member.tag == "defText":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Missing member name in defText")
                 label = member.get("label", membername)
                 self.memberlabels[membername] = label
                 if not member.text:
@@ -255,9 +255,9 @@ class defTextVector(defVector):
                     value = member.text.strip()
                 self.data[membername] = value
             else:
-                raise ParseException
+                raise ParseException("Invalid tag in defTextVector")
         if not self.data:
-            raise ParseException
+            raise ParseException("No member values in defTextVector")
 
         # This method updates a property vector and sets it into the device 'data' dictionary
         # which is a dictionary of property name to propertyvector this device owns
@@ -287,9 +287,9 @@ class defNumberVector(defVector):
         defVector.__init__(self, root, device, client)
         self.perm = root.get("perm")
         if self.perm is None:
-            raise ParseException
+            raise ParseException("No perm given in defNumberVector")
         if self.perm not in ('ro', 'wo', 'rw'):
-            raise ParseException
+            raise ParseException("Invalid perm given in defNumberVector")
         try:
             timeout = root.get("timeout")
             if not timeout:
@@ -306,28 +306,28 @@ class defNumberVector(defVector):
             if member.tag == "defNumber":
                 membername = member.get("name")
                 if not membername:
-                    raise ParseException
+                    raise ParseException("Missing member name in defNumber")
                 label = member.get("label", membername)
                 memberformat = member.get("format")
                 if not memberformat:
-                    raise ParseException
+                    raise ParseException("Missing format in defNumber")
                 membermin = member.get("min")
                 if not membermin:
-                    raise ParseException
+                    raise ParseException("Missing min value in defNumber")
                 membermax = member.get("max")
                 if not membermax:
-                    raise ParseException
+                    raise ParseException("Missing max value in defNumber")
                 memberstep = member.get("step")
                 if not memberstep:
-                    raise ParseException
+                    raise ParseException("Missing step value in defNumber")
                 self.memberlabels[membername] = (label, memberformat, membermin, membermax, memberstep)
                 if not member.text:
-                    raise ParseException
+                    raise ParseException("Missing content in defNumber")
                 self.data[membername] = member.text.strip()
             else:
-                raise ParseException
+                raise ParseException("Invalid tag in defNumberVector")
         if not self.data:
-            raise ParseException
+            raise ParseException("No member values in defNumberVector")
 
 
         # This method updates a property vector and sets it into the device 'data' dictionary
@@ -394,30 +394,20 @@ class defLightVector(defVector):
 
 
 
-class defBLOBVector(Event):
+class defBLOBVector(defVector):
 
     """The remote driver has sent this to define a BLOB vector property.
 
        However this class does not have an object mapping of member name to value, since
        values are not given in defBLOBVectors"""
 
+
     def __init__(self, root, device, client):
-        Event.__init__(self, root, device, client)
+        defVector.__init__(self, root, device, client)
+        # self.data created by UserDict is not populated
         self.eventtype = "DefineBLOB"
         if self.devicename is None:
             raise ParseException("No device name given in defBLOBVector")
-        self.vectorname = root.get("name")
-        if self.vectorname is None:
-            raise ParseException("No vector name given in defBLOBVector")
-        self.label = root.get("label", self.vectorname)
-        self.group = root.get("group", "DEFAULT GROUP")
-        state = root.get("state")
-        if not state:
-            raise ParseException("No state given in defBLOBVector")
-        if not state in ('Idle','Ok','Busy','Alert'):
-            raise ParseException("Invalid state given in defBLOBVector")
-        self.state = state
-        self.message = root.get("message", "")
         self.perm = root.get("perm")
         if self.perm is None:
             raise ParseException("No perm given in defBLOBVector")

@@ -1263,11 +1263,7 @@ class BLOBMember(BaseMember):
         "Handles a mouse input"
         if key in self.name_btn:
             if self.name_btn.focus:
-                if self.vector.perm == "ro":
-                    # do nothing
-                    return
-                self.set_edit_focus()
-                return "edit"
+                return "Member"
             else:
                 self._focus = True
                 self.name_btn.focus = True
@@ -1308,11 +1304,9 @@ class BLOBMember(BaseMember):
                 self.window.noutrefresh()
                 curses.doupdate()
                 time.sleep(0.4)      # blocking, to avoid screen being changed while this time elapses
-                self.name_btn.focus = True
-                self.name_btn.draw()
                 self.window.addstr( self.startline+2, 1, "Filepath to send:" )
                 self.window.noutrefresh()
-                return "focused"
+                return "senddown"
             else:
                 self._focus = True
                 self.name_btn.focus = False
@@ -1331,7 +1325,9 @@ class BLOBMember(BaseMember):
             if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
                 # go to next or previous member widget
                 return key
-            if key in (9, 32, 261, 10):     # 9 tab, 32 space, 261 right arrow, 10 return
+            if key == 10:     # 10 return
+                return "Member"
+            if key in (9, 32, 261):     # 9 tab, 32 space, 261 right arrow
                 # name_btn is in focus, set edit_txt in focus and return "edit"
                 # which informs the window to await inputfield
                 self.set_edit_focus()
@@ -1379,7 +1375,7 @@ class BLOBMember(BaseMember):
                 self.window.addstr( self.startline+2, 1, "Filepath to send:" )
                 self.window.noutrefresh()
                 curses.doupdate()
-                return 9
+                return "senddown"
         else:
             # name and send button not in focus, so these are due to arrows in edit_text
             if key in (339, 259):  # 339 page up, 259 up arrow

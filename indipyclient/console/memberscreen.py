@@ -43,13 +43,15 @@ class MemberScreen(ParentScreen):
         "Displays the window"
 
         if not self.device.enable:
-            self.draw_alert(f"Device {self.devicename} not available")
+            self.memwin.clear()
+            self.memwin.addstr(0, 2, f"Device {self.devicename} not available", curses.A_BOLD)
             self.memwin.noutrefresh()
             curses.doupdate()
             return
 
         if not self.vector.enable:
-            self.draw_alert(f"Vector {self.vectorname} not available")
+            self.memwin.clear()
+            self.memwin.addstr(0, 2, f"Vector {self.vectorname} not available", curses.A_BOLD)
             self.memwin.noutrefresh()
             curses.doupdate()
             return
@@ -72,7 +74,8 @@ class MemberScreen(ParentScreen):
             self.draw_light()
         elif self.vector.vectortype == "SwitchVector":
             self.draw_switch()
-
+        elif self.vector.vectortype == "BLOBVector":
+            self.draw_blob()
 
         newtime = time.monotonic()
         if newtime < self.timeset+10:
@@ -96,10 +99,10 @@ class MemberScreen(ParentScreen):
             self.vector.state = "Alert"
             self.vector.timestamp = event.timestamp
             widgets.draw_timestamp_state(self.control, self.tstatewin, self.vector)
+            tstamp = widgets.localtimestring(self.vector.timestamp)
+            self.tstatewin.addstr(0, len(tstamp)+5, "A timeout has occurred")
             self.tstatewin.noutrefresh()
             curses.doupdate()
-
-
 
     async def inputs(self):
         "Gets inputs from the screen"
@@ -113,13 +116,6 @@ class MemberScreen(ParentScreen):
             if isinstance(key, tuple):
                 continue
             return "Vectors"
-
-
-    def draw_alert(self, alerttext):
-        "Clears memwin and writes alerttext"
-        self.memwin.clear()
-                          # row, col
-        self.memwin.addstr(0, 2, alerttext, curses.A_BOLD)
 
 
     def draw_number(self):
@@ -172,3 +168,17 @@ class MemberScreen(ParentScreen):
         text = "ON" if lowervalue == "on" else "OFF"
         # draw the value
         self.memwin.addstr(self.memmaxrows//2, (self.memmaxcols-3)//2, text, curses.A_BOLD)
+
+
+    def draw_blob(self):
+        "Draws the received BLOB filename"
+        self.memwin.clear()
+        # get the last received filename
+        nametuple = (self.vector.devicename, self.vectorname, self.membername)
+        if nametuple in self.control.BLOBfiles:
+            filename = self.control.BLOBfiles[nametuple].name
+        else:
+            filename = "- file not yet received -"
+        # draw the filename
+        text = widgets.shorten(filename, width=self.memmaxcols-4, placeholder="...")
+        self.memwin.addstr(self.memmaxrows//2, (self.memmaxcols-len(text))//2, text, curses.A_BOLD)
