@@ -262,6 +262,8 @@ class IPyClient(collections.UserDict):
         self.tx_timer = None
         # clear the writerque
         self.writerque.clear()
+        # clear devices etc
+        self.clear()
 
 
     def send(self, xmldata):
