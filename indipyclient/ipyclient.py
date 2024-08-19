@@ -257,13 +257,11 @@ class IPyClient(collections.UserDict):
 
 
     def _clear_connection(self):
-        "On a connection closing down, clears devices"
+        "On a connection closing down, clears writerque"
         self.connected = False
         self.tx_timer = None
         # clear the writerque
         self.writerque.clear()
-        # clear devices etc
-        self.clear()
 
 
     def send(self, xmldata):
