@@ -3,17 +3,19 @@ Installation
 
 indipyclient requires python 3.10 or later.
 
-If you are only using the terminal client, I recommend pipx.
+As the console uses the python standard library curses package, which is not available on Windows, indipyclient works on linux only.
 
-sudo apt install pipx
+The package is available on Pypi, it has no dependencies other than the Python standard library.
 
-To install indipyclient you would then use:
+It can be installed, like any other package, into a virtual environment using pip, however as it is a command line program it can also be installed using tools such as pipx or uv.
 
-pipx install indipyclient
+For example
+
+uv tools install indipyclient
 
 or if you want to run it, without installing:
 
-pipx run indipyclient
+uv tools run indipyclient
 
 Having installed it, run
 
@@ -33,19 +35,7 @@ The Curses library depends on the terminal providing support for terminal contro
 
 **For Import**
 
-If you are intending to import the indipyclient package to use the classes to create your own clients or scripts, then you would normally install it with pip, usually into a virtual environment.
-
-If you are using Debian, you may need the Python3 version of pip to obtain packages from Pypi.
-
-sudo apt install python3-pip
-
-If you need further information on pip and virtual environments, try:
-
-https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
-
-Then, activate your virtual environment, and install indipyclient with:
-
-pip install indipyclient
+If you are intending to import the indipyclient package to use the classes to create your own clients or scripts, you would typically install it into a virtual environment.
 
 You can then import indipyclient, create a class inheriting from IPyClient, and typically write your own rxevent(event) coroutine method, which is called whenever data is received.
 
