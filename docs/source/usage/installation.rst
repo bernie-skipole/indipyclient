@@ -7,23 +7,29 @@ As the console uses the python standard library curses package, which is not ava
 
 The package is available on Pypi, it has no dependencies other than the Python standard library.
 
-It can be installed, like any other package, into a virtual environment using pip, however as it is a command line program it can also be installed using tools such as pipx or uv.
+It can be installed, like any other package, into a virtual environment using pip, in which case, with the environment activated, it can be invoked with:
+
+python -m indipyclient
+
+As it is a command line program it can also be installed using tools such as pipx or uv.
 
 For example
 
 uv tools install indipyclient
 
-or if you want to run it, without installing:
-
-uv tools run indipyclient
-
-Having installed it, run
+Will install it, after which it can be run. Try:
 
 indipyclient --help
 
 To display the options.
 
 Without any options the client will attempt to connect to localhost.
+
+Or if you want to run it, without installing:
+
+uv tools run indipyclient
+
+This will pull indipyclient from Pypi and run it in a temporary virtual environment, pipx has a similar capability.
 
 **Notes**
 
