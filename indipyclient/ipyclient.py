@@ -163,6 +163,23 @@ class IPyClient(collections.UserDict):
         "returns self._stop, being the instruction to stop the client"
         return self._stop
 
+
+    async def queueput(self, queue, value, timeout=0.5):
+        """Given an asyncio.Queue object, this attempts to put value into the queue
+           but if awaiting for longer than timeout, it checks self.connected
+           and self._stop, and if not connected, or stop is set, then returns.
+           If connected and not stopped, then continues with trying to place
+           the value in the queue, and continues timeout testing."""
+        while self.connected and (not self._stop):
+            try:
+                await asyncio.wait_for(queue.put(value), timeout)
+            except asyncio.TimeoutError:
+                # queue is full, continue while loop, checking stop flag
+                # and the self.connected flag
+                continue
+            break
+
+
     def report(self, message):
         """If logging is enabled message will be logged at level INFO.
            If self.enable_reports is True, the message will be injected into
@@ -388,14 +405,7 @@ class IPyClient(collections.UserDict):
                 if rxdata is None:
                     return
                 # and place rxdata into readerque
-                while self.connected and (not self._stop):
-                    try:
-                        await asyncio.wait_for(self.readerque.put(rxdata), timeout=0.02)
-                    except asyncio.TimeoutError:
-                        # queue is full, continue while loop, checking flags
-                        continue
-                    # rxdata is now in readerque, break the inner while loop
-                    break
+                await self.queueput(self.readerque, rxdata, timeout=0.02)
                 # rxdata in readerque, log it, then continue with next block
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logrx(rxdata)
@@ -501,7 +511,6 @@ class IPyClient(collections.UserDict):
         """Populates the events using data from self.readerque"""
         try:
             while not self._stop:
-                await asyncio.sleep(0)
                 # get block of data from the self.readerque
                 try:
                     root = await asyncio.wait_for(self.readerque.get(), timeout=0.5)
