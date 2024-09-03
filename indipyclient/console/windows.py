@@ -101,7 +101,7 @@ class MessagesScreen(ParentScreen):
         self.stdscr.clear()
         curses.flushinp()
 
-        self.disconnectionflag = False
+        self._disconnectionflag = False
 
         # title window  (3 lines, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
@@ -142,6 +142,22 @@ class MessagesScreen(ParentScreen):
     @property
     def connected(self):
         return self.control.connected
+
+
+    @property
+    def disconnectionflag(self):
+        if self.control.connected:
+            return False
+        return self._disconnectionflag
+
+
+    @disconnectionflag.setter
+    def disconnectionflag(self, value):
+        if self.control.connected:
+            self._disconnectionflag = False
+        else:
+            self._disconnectionflag = value
+
 
     def showunconnected(self):
         "Called by control on disconnection"

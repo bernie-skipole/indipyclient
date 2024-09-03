@@ -31,7 +31,9 @@ class _Client(IPyClient):
 
     async def rxevent(self, event):
         """Add event to eventque"""
-        await self.clientdata['eventque'].put(event)
+        eventque = self.clientdata['eventque']
+        await self.queueput(eventque, event)
+
 
 
 class ConsoleClient:
@@ -174,15 +176,18 @@ class ConsoleClient:
                     else:
                         # when not connected, show messages screen
                         self.screen.close("Messages")
-                        continue
-                # act when an event is received
-                try:
-                    event = self.eventque.get_nowait()
-                    self.eventque.task_done()
-                except asyncio.QueueEmpty:
-                    # no event received, so do not update screen
-                    await asyncio.sleep(0.02)
+                    await asyncio.sleep(0.1)
                     continue
+
+                # act when an event is received
+
+                try:
+                    event = await asyncio.wait_for(self.eventque.get(), 0.2)
+                except asyncio.TimeoutError:
+                    # no event received, so do not update screen
+                    continue
+                self.eventque.task_done()
+
                 if isinstance(event, VectorTimeOut) and (event.devicename == self.screen.devicename):
                     if isinstance(self.screen, ChooseVectorScreen):
                         self.screen.timeout(event)
