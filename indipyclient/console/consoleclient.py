@@ -167,20 +167,22 @@ class ConsoleClient:
                 if isinstance(self.screen, windows.TooSmall):
                     await asyncio.sleep(0.1)
                     continue
+                if self.connected and isinstance(self.screen, windows.MessagesScreen):
+                    if self.screen.showing_disconnected:
+                        # removes showing_disconnected flag and focuses on Devices button
+                        self.screen.show()
                 if not self.connected:
                     if isinstance(self.screen, windows.MessagesScreen):
                         # set disconnected status and focus on the quit button
-                        if not self.screen.disconnectionflag:
+                        if not self.screen.showing_disconnected:
                             self.devicenames.clear()
-                            self.screen.showunconnected() # sets disconnectionflag
+                            self.screen.showunconnected() # sets showing_disconnected
                     else:
                         # when not connected, show messages screen
                         self.screen.close("Messages")
-                    await asyncio.sleep(0.1)
-                    continue
+                        continue
 
                 # act when an event is received
-
                 try:
                     event = await asyncio.wait_for(self.eventque.get(), 0.2)
                 except asyncio.TimeoutError:

@@ -101,7 +101,7 @@ class MessagesScreen(ParentScreen):
         self.stdscr.clear()
         curses.flushinp()
 
-        self._disconnectionflag = False
+        self.showing_disconnected = False
 
         # title window  (3 lines, full row, starting at 0,0)
         self.titlewin = self.stdscr.subwin(3, self.maxcols, 0, 0)
@@ -144,33 +144,18 @@ class MessagesScreen(ParentScreen):
         return self.control.connected
 
 
-    @property
-    def disconnectionflag(self):
-        if self.control.connected:
-            return False
-        return self._disconnectionflag
-
-
-    @disconnectionflag.setter
-    def disconnectionflag(self, value):
-        if self.control.connected:
-            self._disconnectionflag = False
-        else:
-            self._disconnectionflag = value
-
-
     def showunconnected(self):
         "Called by control on disconnection"
         if self.control.connected:
-            self.disconnectionflag = False
+            self.showing_disconnected = False
             return
-        if self.disconnectionflag:
+        if self.showing_disconnected:
             # already showing a disconnected status
             return
-        # disconnectionflag is false, but the client is disconnected
+        # showing_disconnected is false, but the client is disconnected
         # so update buttons and titlewin, and set flag True, so the update
         # does not keep repeating
-        self.disconnectionflag = True
+        self.showing_disconnected = True
         self.titlewin.addstr(2, 0, "Not Connected")
         self.titlewin.noutrefresh()
         if not self.quit_btn.focus:
@@ -197,12 +182,12 @@ class MessagesScreen(ParentScreen):
             self.disable_btn.bold = True
 
         if self.connected:
-            self.disconnectionflag = False
+            self.showing_disconnected = False
             self.titlewin.addstr(2, 0, "Connected    ")
             self.devices_btn.focus = True
             self.quit_btn.focus = False
         else:
-            self.disconnectionflag = True
+            self.showing_disconnected = True
             self.titlewin.addstr(2, 0, "Not Connected")
             self.devices_btn.focus = False
             self.quit_btn.focus = True
