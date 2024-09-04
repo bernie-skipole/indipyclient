@@ -165,13 +165,14 @@ class IPyClient(collections.UserDict):
 
 
     async def queueput(self, queue, value, timeout=0.5):
-        """Given an asyncio.Queue object, if the client is connected
-           and stop is not set, this attempts to put value into the queue.
+        """Given an asyncio.Queue object, if self.stop is not set, this
+           attempts to put value into the queue.
            If the queue is full, and the put operation is waiting, then
            after the timeout period the check and put will be repeated
-           until successful, or the check fails.
-           Returns True on success, False on fail."""
-        while self.connected and (not self._stop):
+           until successful, or self.stop becomes True.
+           Returns True if value added to queue.
+           Returns False if stop is True and the value not added."""
+        while not self._stop:
             try:
                 await asyncio.wait_for(queue.put(value), timeout)
             except asyncio.TimeoutError:
@@ -407,13 +408,8 @@ class IPyClient(collections.UserDict):
                 if rxdata is None:
                     return
                 # and place rxdata into readerque
-                while not self._stop:
-                    try:
-                        await asyncio.wait_for(self.readerque.put(rxdata), 0.2)
-                    except asyncio.TimeoutError:
-                        # queue is full, check stop flag
-                         continue
-                    break
+                if not self.queueput(self.readerque, rxdata, 0.2)
+                    return
                 # rxdata in readerque, log it, then continue with next block
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logrx(rxdata)
