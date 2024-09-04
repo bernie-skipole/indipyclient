@@ -165,11 +165,12 @@ class IPyClient(collections.UserDict):
 
 
     async def queueput(self, queue, value, timeout=0.5):
-        """Given an asyncio.Queue object, this attempts to put value into the queue
-           but if awaiting for longer than timeout, it checks self.connected
-           and self._stop, and if not connected, or stop is set, then returns.
-           If connected and not stopped, then continues with trying to place
-           the value in the queue, and continues timeout testing."""
+        """Given an asyncio.Queue object, if the client is connected
+           and stop is not set, this attempts to put value into the queue.
+           If the queue is full, and the put operation is waiting, then
+           after the timeout period the check and put will be repeated
+           until successful, or the check fails.
+           Returns True on success, False on fail."""
         while self.connected and (not self._stop):
             try:
                 await asyncio.wait_for(queue.put(value), timeout)
@@ -177,7 +178,8 @@ class IPyClient(collections.UserDict):
                 # queue is full, continue while loop, checking stop flag
                 # and the self.connected flag
                 continue
-            break
+            return True
+        return False
 
 
     def report(self, message):
@@ -405,7 +407,13 @@ class IPyClient(collections.UserDict):
                 if rxdata is None:
                     return
                 # and place rxdata into readerque
-                await self.queueput(self.readerque, rxdata, timeout=0.02)
+                while not self._stop:
+                    try:
+                        await asyncio.wait_for(self.readerque.put(rxdata), 0.2)
+                    except asyncio.TimeoutError:
+                        # queue is full, check stop flag
+                         continue
+                    break
                 # rxdata in readerque, log it, then continue with next block
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logrx(rxdata)
