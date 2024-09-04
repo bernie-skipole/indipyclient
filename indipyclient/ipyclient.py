@@ -408,7 +408,9 @@ class IPyClient(collections.UserDict):
                 if rxdata is None:
                     return
                 # and place rxdata into readerque
-                if not self.queueput(self.readerque, rxdata, 0.2)
+                result = await self.queueput(self.readerque, rxdata, 0.2)
+                if not result:
+                    # self._stop must be set
                     return
                 # rxdata in readerque, log it, then continue with next block
                 if logger.isEnabledFor(logging.DEBUG):
