@@ -1,7 +1,7 @@
 IPyClient
 =========
 
-As well as running the terminal client, indipyclient can be imported which gives access to a number of classes and methods which can be used by your own program to send and receive data to remote INDI servers. This enables you to write your own scripts to control remote instruments, or helps you create your own client program.
+Importing indipyclient gives access to a number of classes and methods which can be used by your own program to send and receive data to remote instruments. This enables you to write your own controlling scripts, or helps you create your own client program.
 
 Typically you would import the class IPyClient, and overide its rxevent(event) method, which is an awaitable coroutine.
 
@@ -11,7 +11,7 @@ As devices and vectors are learnt from the received data, the IPyClient object b
 
 The IPyClient object has an asyncrun() coroutine method which needs to run in an event loop, typically gathered with your own tasks, to run your script or client.
 
-IPyClient has a 'hardware' coroutine method which is started with asyncrun, but as default does nothing. It is available to be overidden if required, for example, if data is to be sent to the remote instrument every ten seconds::
+IPyClient has a 'hardware' coroutine method which is started with the IPyClient.asyncrun method, but as default does nothing. It is available to be overidden if required, for example, if data is to be sent to the remote instrument every ten seconds::
 
     async def hardware(self):
         while not self._stop:
