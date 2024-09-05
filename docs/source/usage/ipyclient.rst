@@ -44,6 +44,10 @@ The port as given in the class argument.
 
 Dictionary of any named arguments.
 
+**self.enable_reports**
+
+If True, then INFO logs, and any message set into the report method will be injected into the client as a received message, and hence will be shown on the terminal messages window. As default this is True.
+
 **self.connected**
 
 True if a connection has been made.
