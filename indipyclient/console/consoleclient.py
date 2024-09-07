@@ -137,7 +137,6 @@ class ConsoleClient:
         "Shuts down the client"
         if not self.client.stopped.is_set():
             # client is still running, shut it down
-            self.client.report("Shutting down client - please wait")
             self.client.shutdown()
         # Now stop console co-routines
         self._stop = True
@@ -209,9 +208,9 @@ class ConsoleClient:
                                 # new devicename
                                 self.devicenames.append(event.devicename)
                                 if self.blobenabled:
-                                    self.client.send_enableBLOB('Also', event.devicename)
+                                    await self.client.send_enableBLOB('Also', event.devicename)
                                 else:
-                                    self.client.send_enableBLOB('Never', event.devicename)
+                                    await self.client.send_enableBLOB('Never', event.devicename)
                 # If the event is a received BLOB, save it to the BLOB Folder
                 if isinstance(event, setBLOBVector):
                     # make filename from timestamp
@@ -402,22 +401,22 @@ class ConsoleClient:
             self.getinputstopped = True
 
 
-    def send_enableBLOB(self):
+    async def send_enableBLOB(self):
         "Sends Also to enable blobs for all devices"
         if not self.blobenabled:
             return
         for devicename,device in self.client.items():
             if device.enable:
-                self.client.send_enableBLOB('Also', devicename)
+                await self.client.send_enableBLOB('Also', devicename)
 
 
-    def send_disableBLOB(self):
+    async def send_disableBLOB(self):
         "Sends Never to disable blobs for all devices"
         if self.blobenabled:
             return
         for devicename,device in self.client.items():
             if device.enable:
-                self.client.send_enableBLOB('Never', devicename)
+                await self.client.send_enableBLOB('Never', devicename)
 
 
     async def asyncrun(self):

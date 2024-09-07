@@ -86,10 +86,10 @@ class IPyClient(collections.UserDict):
         self.clientdata = clientdata
 
         # create queue where client will put xml data to be transmitted
-        self.writerque = collections.deque()
+        self._writerque = asyncio.Queue(4)
 
         # and create readerque where received xmldata will be put
-        self.readerque = asyncio.Queue(4)
+        self._readerque = asyncio.Queue(4)
 
         # self.messages is a deque of (Timestamp, message) tuples
         self.messages = collections.deque(maxlen=8)
@@ -183,7 +183,7 @@ class IPyClient(collections.UserDict):
         return False
 
 
-    def report(self, message):
+    async def report(self, message):
         """If logging is enabled message will be logged at level INFO.
            If self.enable_reports is True, the message will be injected into
            the received data, which will be picked up by the rxevent method.
@@ -197,12 +197,7 @@ class IPyClient(collections.UserDict):
             timestamp = timestamp.replace(tzinfo=None)
             root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
             # and place root into readerque
-            try:
-                self.readerque.put_nowait(root)
-            except asyncio.QueueFull:
-                # The queue is full, something may be wrong
-                # discard this data and continue
-                pass
+            await self.queueput(self._readerque, root)
         except Exception :
             logger.exception("Exception report from IPyClient.report method")
 
@@ -228,24 +223,24 @@ class IPyClient(collections.UserDict):
                 t3 = None
                 try:
                     # start by openning a connection
-                    self.report(f"Attempting to connect to {self.indihost}:{self.indiport}")
+                    await self.report(f"Attempting to connect to {self.indihost}:{self.indiport}")
                     reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
                     self.connected = True
                     self.messages.clear()
                     # clear devices etc
                     self.clear()
-                    self.report(f"Connected to {self.indihost}:{self.indiport}")
+                    await self.report(f"Connected to {self.indihost}:{self.indiport}")
                     t1 = asyncio.create_task(self._run_tx(writer))
                     t2 = asyncio.create_task(self._run_rx(reader))
                     t3 = asyncio.create_task(self._check_alive(writer))
                     await asyncio.gather(t1, t2, t3)
                 except ConnectionRefusedError:
-                    self.report(f"Connection refused on {self.indihost}:{self.indiport}")
+                    await self.report(f"Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionError:
-                    self.report(f"Connection Lost on {self.indihost}:{self.indiport}")
+                    await self.report(f"Connection Lost on {self.indihost}:{self.indiport}")
                 except Exception:
                     logger.exception(f"Connection Error on {self.indihost}:{self.indiport}")
-                    self.report("Connection failed")
+                    await self.report("Connection failed")
                 self._clear_connection()
                 # connection has failed, ensure all tasks are done
                 if t1:
@@ -260,7 +255,7 @@ class IPyClient(collections.UserDict):
                 if self._stop:
                     break
                 else:
-                    self.report(f"Connection failed, re-trying...")
+                    await self.report(f"Connection failed, re-trying...")
                 # wait five seconds before re-trying, but keep checking
                 # that self._stop has not been set
                 count = 0
@@ -277,18 +272,17 @@ class IPyClient(collections.UserDict):
 
 
     def _clear_connection(self):
-        "On a connection closing down, clears writerque"
+        "On a connection closing down, self.connected is set to False"
         self.connected = False
         self.tx_timer = None
-        # clear the writerque
-        self.writerque.clear()
 
 
-    def send(self, xmldata):
+
+    async def send(self, xmldata):
         """Transmits xmldata, this is an internal method, not normally called by a user.
            xmldata is an xml.etree.ElementTree object"""
-        if self.connected:
-            self.writerque.append(xmldata)
+        if self.connected and (not self._stop):
+            await self.queueput(self._writerque, xmldata)
 
 
     async def _check_alive(self, writer):
@@ -304,7 +298,7 @@ class IPyClient(collections.UserDict):
                        await writer.wait_closed()
                        self._clear_connection()
                        if not self._stop:
-                           self.report("Error: Connection timed out")
+                           await self.report("Error: Connection timed out")
             if self.connected and self._stop:
                 writer.close()
                 await writer.wait_closed()
@@ -342,15 +336,14 @@ class IPyClient(collections.UserDict):
 
 
     async def _run_tx(self, writer):
-        "Monitors self.writerque and if it has data, uses writer to send it"
+        "Monitors self._writerque and if it has data, uses writer to send it"
         try:
             while self.connected and (not self._stop):
-                await asyncio.sleep(0)
                 try:
-                    txdata = self.writerque.popleft()
-                except IndexError:
-                    await asyncio.sleep(0.1)
+                    txdata = await asyncio.wait_for(self._writerque.get(), timeout=0.5)
+                except asyncio.TimeoutError:
                     continue
+                self._writerque.task_done()
                 if not self.connected:
                     break
                 if self._stop:
@@ -368,8 +361,6 @@ class IPyClient(collections.UserDict):
                 self.idle_timer = time.time()
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logtx(txdata)
-            # stop writing data, so clear writerque
-            self.writerque.clear()
         except Exception:
             logger.exception("Exception report from IPyClient._run_tx method")
             raise
@@ -408,7 +399,7 @@ class IPyClient(collections.UserDict):
                 if rxdata is None:
                     return
                 # and place rxdata into readerque
-                result = await self.queueput(self.readerque, rxdata, 0.2)
+                result = await self.queueput(self._readerque, rxdata, 0.2)
                 if not result:
                     # self._stop must be set
                     return
@@ -514,12 +505,12 @@ class IPyClient(collections.UserDict):
 
 
     async def _rxhandler(self):
-        """Populates the events using data from self.readerque"""
+        """Populates the events using data from self._readerque"""
         try:
             while not self._stop:
-                # get block of data from the self.readerque
+                # get block of data from the self._readerque
                 try:
-                    root = await asyncio.wait_for(self.readerque.get(), timeout=0.5)
+                    root = await asyncio.wait_for(self._readerque.get(), timeout=0.5)
                 except asyncio.TimeoutError:
                     # nothing to read, continue while loop which re-checks the _stop flag
                     continue
@@ -555,10 +546,10 @@ class IPyClient(collections.UserDict):
                             continue
                 except ParseException as pe:
                     # if a ParseException is raised, it is because received data is malformed
-                    self.report(str(pe))
+                    await self.report(str(pe))
                     continue
                 finally:
-                    self.readerque.task_done()
+                    self._readerque.task_done()
                 # and to get here, continue has not been called
                 # and an event has been created, call the user event handling function
                 await self.rxevent(event)
@@ -588,7 +579,7 @@ class IPyClient(collections.UserDict):
         return snap
 
 
-    def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
+    async def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
         """Send a Vector with updated member values, members is a membername
            to value dictionary. It could also be a vector, which is itself a
            membername to value mapping"""
@@ -600,13 +591,13 @@ class IPyClient(collections.UserDict):
             return
         try:
             if propertyvector.vectortype == "SwitchVector":
-                propertyvector.send_newSwitchVector(timestamp, members)
+                await propertyvector.send_newSwitchVector(timestamp, members)
             elif propertyvector.vectortype == "TextVector":
-                propertyvector.send_newTextVector(timestamp, members)
+                await propertyvector.send_newTextVector(timestamp, members)
             elif propertyvector.vectortype == "NumberVector":
-                propertyvector.send_newNumberVector(timestamp, members)
+                await propertyvector.send_newNumberVector(timestamp, members)
             elif propertyvector.vectortype == "BLOBVector":
-                propertyvector.send_newBLOBVector(timestamp, members)
+                await propertyvector.send_newBLOBVector(timestamp, members)
         except Exception:
             logger.exception("Exception report from IPyClient.send_newVector method")
             raise
@@ -672,8 +663,8 @@ class IPyClient(collections.UserDict):
                         # no devices
                         # then send a getProperties, every five seconds, when count is zero
                         if not count:
-                            self.send_getProperties()
-                            self.report("getProperties sent")
+                            await self.send_getProperties()
+                            await self.report("getProperties sent")
                         count += 1
                         if count >= 10:
                             count = 0
@@ -684,7 +675,7 @@ class IPyClient(collections.UserDict):
             self.shutdown()
 
 
-    def send_getProperties(self, devicename=None, vectorname=None):
+    async def send_getProperties(self, devicename=None, vectorname=None):
         """Sends a getProperties request. On startup the IPyClient object
            will automatically send getProperties, so typically you will
            not have to use this method."""
@@ -692,14 +683,14 @@ class IPyClient(collections.UserDict):
             xmldata = ET.Element('getProperties')
             xmldata.set("version", "1.7")
             if not devicename:
-                self.send(xmldata)
+                await self.send(xmldata)
                 return
             xmldata.set("device", devicename)
             if vectorname:
                 xmldata.set("name", vectorname)
-            self.send(xmldata)
+            await self.send(xmldata)
 
-    def send_enableBLOB(self, value, devicename, vectorname=None):
+    async def send_enableBLOB(self, value, devicename, vectorname=None):
         """Sends an enableBLOB instruction. The value should be one of "Never", "Also", "Only"."""
         if self.connected:
             if value not in ("Never", "Also", "Only"):
@@ -712,7 +703,7 @@ class IPyClient(collections.UserDict):
             if vectorname:
                 xmldata.set("name", vectorname)
             xmldata.text = value
-            self.send(xmldata)
+            await self.send(xmldata)
 
     def get_vector_state(self, devicename, vectorname):
         """Gets the state string of the given vectorname, if this vector does not exist

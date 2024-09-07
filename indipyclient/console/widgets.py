@@ -463,7 +463,7 @@ class BaseMember:
         return self._newvalue
 
 
-    def setkey(self, key):
+    async def setkey(self, key):
         return key
 
     async def keyinput(self):
@@ -581,7 +581,7 @@ class SwitchMember(BaseMember):
         self.off.draw()
 
 
-    def handlemouse(self, key):
+    async def handlemouse(self, key):
         """Handles a mouse input
            Sets On, Off buttons bold as appropriate.
            Returns None if mouse not on any button
@@ -639,7 +639,7 @@ class SwitchMember(BaseMember):
 
 # 32 space, 9 tab, 353 shift tab, 261 right arrow, 260 left arrow, 10 return, 339 page up, 338 page down, 259 up arrow, 258 down arrow
 
-    def setkey(self, key):
+    async def setkey(self, key):
         """This deals with keystroke inputs - not mouse input
            If no button is in focus, returns None
            if next/prev widget, returns key
@@ -754,11 +754,11 @@ class LightMember(BaseMember):
         # draw the value
         self.window.addstr(self.startline+1, self.maxcols-20, text, self.control.color(lowervalue))
 
-    def setkey(self, key):
+    async def setkey(self, key):
         "This widget is in focus, but is read only"
         return key
 
-    def handlemouse(self, key):
+    async def handlemouse(self, key):
         "Handles a mouse input"
         if key in self.name_btn:
             if self.name_btn.focus:
@@ -859,7 +859,7 @@ class NumberMember(BaseMember):
         self.edit_txt.draw()
 
 
-    def handlemouse(self, key):
+    async def handlemouse(self, key):
         """Handles a mouse input
            Returns None if mouse not in name btn or edit field
                    or if in name, but perm is ro
@@ -891,7 +891,7 @@ class NumberMember(BaseMember):
                 return "edit"
 
 
-    def setkey(self, key):
+    async def setkey(self, key):
         """Handles key input if name button is in focus
            Return None if name not in focus
            Return key for next/prev widget
@@ -1065,7 +1065,7 @@ class TextMember(BaseMember):
         self.edit_txt.draw()
 
 
-    def handlemouse(self, key):
+    async def handlemouse(self, key):
         "Handles a mouse input"
         if key in self.name_btn:
             if self.name_btn.focus:
@@ -1088,7 +1088,7 @@ class TextMember(BaseMember):
                 return "edit"
 
 
-    def setkey(self, key):
+    async def setkey(self, key):
         "This widget is in focus, and deals with inputs"
         if self.name_btn.focus:
             if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -1259,7 +1259,7 @@ class BLOBMember(BaseMember):
         self.send_btn.draw()
 
 
-    def handlemouse(self, key):
+    async def handlemouse(self, key):
         "Handles a mouse input"
         if key in self.name_btn:
             if self.name_btn.focus:
@@ -1292,7 +1292,7 @@ class BLOBMember(BaseMember):
                     filepath = pathlib.Path(self._newvalue.strip()).expanduser().resolve()
                     blobformat = ''.join(filepath.suffixes)
                     members = {self.name : (filepath, 0, blobformat)}
-                    self.vector.send_newBLOBVector(members=members)
+                    await self.vector.send_newBLOBVector(members=members)
                 except Exception:
                     logger.exception("Exception report from BLOB send action")
                     self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )
@@ -1319,7 +1319,7 @@ class BLOBMember(BaseMember):
                 return "focused"
 
 
-    def setkey(self, key):
+    async def setkey(self, key):
         "This widget is in focus, and deals with inputs"
         if self.name_btn.focus:
             if key in (353, 260, 339, 338, 259, 258):  # 353 shift tab, 260 left arrow, 339 page up, 338 page down, 259 up arrow, 258 down arrow
@@ -1360,7 +1360,7 @@ class BLOBMember(BaseMember):
                     filepath = pathlib.Path(self._newvalue.strip()).expanduser().resolve()
                     blobformat = ''.join(filepath.suffixes)
                     members = {self.name : (filepath, 0, blobformat)}
-                    self.vector.send_newBLOBVector(members=members)
+                    await self.vector.send_newBLOBVector(members=members)
                 except Exception:
                     logger.exception("Exception report from BLOB send action")
                     self.window.addstr( self.startline+2, 1, "!! Invalid !!    ", curses.color_pair(3) )

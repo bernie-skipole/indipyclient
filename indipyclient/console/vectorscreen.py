@@ -391,7 +391,7 @@ class VectorScreen(ParentScreen):
 
             if isinstance(key, tuple):
                 # mouse pressed, find if its clicked in any of the MembersWin fields
-                result = self.memberswin.handlemouse(key)
+                result = await self.memberswin.handlemouse(key)
                 # result is None if fully handled,
                 # or is 'edit' if mouse clicked in an editable field in MembersWin
                 # or is 'focused' if mouse clicked on a previously unfocused button
@@ -431,7 +431,7 @@ class VectorScreen(ParentScreen):
 
             if not result:
                 # key is a keystroke, and memberswin has focus, handle it
-                result = self.memberswin.setkey(key)
+                result = await self.memberswin.setkey(key)
                 # this returns "edit" if an editable field has been given focus
                 # could also be "submitted", "next", "previous" or a keystroke such
                 # as 9 for tab
@@ -749,15 +749,16 @@ class MembersWin():
             return result
         # inputfield has returned a keystroke
         # which is now tested again with setkey(key)
-        return self.setkey(result)
+        handlekey = await self.setkey(result)
+        return handlekey
 
 
-    def handlemouse(self, key):
+    async def handlemouse(self, key):
         "Handles a mouse input"
         if key in self.topmore_btn:
             if self.topmore_btn.focus:
                 # same as pressing enter on the focused button
-                self.setkey(10)
+                await self.setkey(10)
                 return
             else:
                 # key is on topmore_btn, but it does not have focus
@@ -771,7 +772,7 @@ class MembersWin():
         if key in self.botmore_btn:
             if self.botmore_btn.focus:
                 # same as pressing enter on the focused button
-                self.setkey(10)
+                await self.setkey(10)
                 return
             else:
                 # key is on botmore_btn, but it does not have focus
@@ -785,7 +786,7 @@ class MembersWin():
         if key in self.submit_btn:
             if self.submit_btn.focus:
                 # same as pressing enter on the focused button
-                result = self.setkey(10)  # this may return "submitted"
+                result = await self.setkey(10)  # this may return "submitted"
                 return result
             else:
                 # key is on submit_btn, but it does not have focus
@@ -799,7 +800,7 @@ class MembersWin():
         if key in self.cancel_btn:
             if self.cancel_btn.focus:
                 # same as pressing enter on the focused button
-                self.setkey(10)
+                await self.setkey(10)
                 return
             else:
                 # key is on cancel_btn, but it does not have focus
@@ -817,7 +818,7 @@ class MembersWin():
         for index, widget in enumerate(self.displayed):
             if hasattr(widget, 'edit_txt') and widget.edit_txt.focus:
                 editfocus = True
-            result = widget.handlemouse(key)
+            result = await widget.handlemouse(key)
             # result is "focused' or 'edit' if mouse landed on a field
             if result:
                 windex = index
@@ -876,7 +877,7 @@ class MembersWin():
 
 
 
-    def setkey(self, key):
+    async def setkey(self, key):
         "Handles a key stroke"
 
         for index, widget in enumerate(self.displayed):
@@ -888,7 +889,7 @@ class MembersWin():
                         self.membername = widget.name
                         return "Member"
                     break
-                result = widget.setkey(key)
+                result = await widget.setkey(key)
                 if result == "editup":                  # up arrow pressed in editable field
                     return self.editup(index, widget)
                 elif result == "editdown":              # down arrow pressed in editable field
@@ -971,7 +972,8 @@ class MembersWin():
                 # but nothing to submit, so Enter key ignored
                 return
             elif self.submit_btn.focus:
-                if submitvector(self.vector, self.memberwidgets):
+                submitit = await submitvector(self.vector, self.memberwidgets)
+                if submitit:
                     # vector has been submitted, remove focus from this window
                     self.focus = False
                     self.submit_btn.focus = False
@@ -1459,7 +1461,7 @@ class MembersWin():
             return
 
 
-def submitvector(vector, memberwidgets):
+async def submitvector(vector, memberwidgets):
     "Checks and submits the vector, if ok returns True, if not returns False"
     if vector.vectortype == "SwitchVector":
         members = {member.name:member.newvalue() for member in memberwidgets}
@@ -1472,17 +1474,17 @@ def submitvector(vector, memberwidgets):
         if (vector.rule == 'AtMostOne') and oncount > 1:
             # one, or none can be set, but not more than 1
             return False
-        vector.send_newSwitchVector(members=members)
+        await vector.send_newSwitchVector(members=members)
         return True
     elif vector.vectortype == "NumberVector":
         members = {member.name:member.newvalue().strip() for member in memberwidgets}
         # members is a dictionary of membername : member value (new number string)
-        vector.send_newNumberVector(members=members)
+        await vector.send_newNumberVector(members=members)
         return True
     elif vector.vectortype == "TextVector":
         members = {member.name:member.newvalue().strip() for member in memberwidgets}
         # members is a dictionary of membername : member value (new text string)
-        vector.send_newTextVector(members=members)
+        await vector.send_newTextVector(members=members)
         return True
     # BLOBVector's are not called with submit button
     # each member has its own send button

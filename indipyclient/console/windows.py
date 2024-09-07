@@ -246,10 +246,10 @@ class MessagesScreen(ParentScreen):
         curses.doupdate()
 
 
-    def disableBLOBs(self):
+    async def disableBLOBs(self):
         self.control.blobenabled = False
-        self.client.report("Warning! BLOBs disabled")
-        self.control.send_disableBLOB()
+        await self.client.report("Warning! BLOBs disabled")
+        await self.control.send_disableBLOB()
         self.enable_btn.bold = False
         self.disable_btn.bold = True
         self.enable_btn.draw()
@@ -295,7 +295,7 @@ class MessagesScreen(ParentScreen):
                             # focus already set - return the button onclick
                             value = fld.onclick
                             if value == "DisableBLOBs":
-                                self.disableBLOBs()
+                                await self.disableBLOBs()
                                 break
                             else:
                                 return value
@@ -379,7 +379,7 @@ class MessagesScreen(ParentScreen):
                     if fld.focus:
                         value = fld.onclick
                         if value == "DisableBLOBs":
-                            self.disableBLOBs()
+                            await self.disableBLOBs()
                             break
                         else:
                             return value
@@ -473,7 +473,7 @@ class EnableBLOBsScreen(ParentScreen):
             curses.doupdate()
 
 
-    def submit(self):
+    async def submit(self):
         self._newpath = self.path_txt.text.strip()
         blobfolder = None
         if self._newpath:
@@ -481,9 +481,9 @@ class EnableBLOBsScreen(ParentScreen):
                 blobfolder = pathlib.Path(self._newpath).expanduser().resolve()
             except Exception:
                 self.control.blobenabled = False
-                self.control.send_disableBLOB()
+                await self.control.send_disableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                self.client.report("Warning! Unable to parse BLOB folder")
+                await self.client.report("Warning! Unable to parse BLOB folder")
                 self.submit_btn.focus = False
                 self.messages_btn.focus = True
                 return
@@ -493,19 +493,19 @@ class EnableBLOBsScreen(ParentScreen):
                 self.path_txt.text = self._newpath
                 self.path_txt.draw()
                 self.control.blobenabled = True
-                self.control.send_enableBLOB()
+                await self.control.send_enableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
-                self.client.report("BLOB folder is set")
+                await self.client.report("BLOB folder is set")
             else:
                 self.control.blobenabled = False
-                self.control.send_disableBLOB()
+                await self.control.send_disableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-                self.client.report("Warning! BLOB folder is not a directory")
+                await self.client.report("Warning! BLOB folder is not a directory")
         else:
             self.control.blobenabled = False
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
-            self.client.report("Warning! BLOB folder is invalid")
-            self.control.send_disableBLOB()
+            await self.client.report("Warning! BLOB folder is invalid")
+            await self.control.send_disableBLOB()
         self.submit_btn.focus = False
         self.messages_btn.focus = True
 
@@ -531,7 +531,7 @@ class EnableBLOBsScreen(ParentScreen):
                             # focus already set - return the button onclick
                             value = fld.onclick
                             if value == "Submit":
-                                self.submit()
+                                await self.submit()
                                 self.submit_btn.draw()
                                 self.messages_btn.draw()
                                 self.buttwin.noutrefresh()
@@ -563,7 +563,7 @@ class EnableBLOBsScreen(ParentScreen):
                 elif self.devices_btn.focus:
                     return "Messages"
                 elif self.submit_btn.focus:
-                    self.submit()
+                    await self.submit()
 
             elif key in (32, 9, 261, 338, 258):
                 # go to the next button

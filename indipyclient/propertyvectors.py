@@ -324,7 +324,7 @@ class SwitchVector(PropertyVector):
         return xmldata
 
 
-    def send_newSwitchVector(self, timestamp=None, members={}):
+    async def send_newSwitchVector(self, timestamp=None, members={}):
         """Transmits the vector (newSwitchVector) and the members given in the members
            dictionary which consists of member names:values to be sent.
            The values should be strings of either On or Off.
@@ -335,7 +335,7 @@ class SwitchVector(PropertyVector):
             return
         self._timer = True
         self._newtimer = time.time()
-        self._client.send(xmldata)
+        await self._client.send(xmldata)
 
 
 class LightVector(PropertyVector):
@@ -480,7 +480,7 @@ class TextVector(PropertyVector):
         return xmldata
 
 
-    def send_newTextVector(self, timestamp=None, members={}):
+    async def send_newTextVector(self, timestamp=None, members={}):
         """Transmits the vector (newTextVector) with members and values.
            members is a dictionary of membernames:text string values.
            The spec requires text vectors to be sent with all members, so if the given
@@ -493,7 +493,7 @@ class TextVector(PropertyVector):
             return
         self._timer = True
         self._newtimer = time.time()
-        self._client.send(xmldata)
+        await self._client.send(xmldata)
 
 
 class NumberVector(PropertyVector):
@@ -604,7 +604,7 @@ class NumberVector(PropertyVector):
                 xmldata.append(numbermember.onenumber(numbermember.membervalue))
         return xmldata
 
-    def send_newNumberVector(self, timestamp=None, members={}):
+    async def send_newNumberVector(self, timestamp=None, members={}):
         """Transmits the vector (newNumberVector) with members and values.
            members is a dictionary of membernames:number values, the values can be
            integers, floats or strings, if not strings they will be converted to strings.
@@ -618,7 +618,7 @@ class NumberVector(PropertyVector):
             return
         self._timer = True
         self._newtimer = time.time()
-        self._client.send(xmldata)
+        await self._client.send(xmldata)
 
 
 
@@ -737,7 +737,7 @@ class BLOBVector(PropertyVector):
                 xmldata.append(blobmember.oneblob(*members[membername]))
         return xmldata
 
-    def send_newBLOBVector(self, timestamp=None, members={}):
+    async def send_newBLOBVector(self, timestamp=None, members={}):
         """Transmits the vector (newBLOBVector) with new BLOB members
            This method will transmit the vector and change the vector state to busy.
            The members dictionary should be {membername:(value, blobsize, blobformat)}
@@ -752,4 +752,4 @@ class BLOBVector(PropertyVector):
             return
         self._timer = True
         self._newtimer = time.time()
-        self._client.send(xmldata)
+        await self._client.send(xmldata)
