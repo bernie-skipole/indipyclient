@@ -57,7 +57,7 @@ The INDI protocol is defined to operate with any INDI client.
 
 The protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object). The client is general purpose, taking the format of switches, numbers etc., from the protocol.
 
-INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control providing drivers are available.
+INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control.
 
 Further documentation is available at:
 
@@ -66,3 +66,7 @@ https://indipyclient.readthedocs.io
 The package can be installed from:
 
 https://pypi.org/project/indipyclient
+
+and indipydriver is available at:
+
+https://pypi.org/project/indipydriver
