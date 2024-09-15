@@ -1,5 +1,5 @@
 
-import collections, sys, time
+import collections, sys, time, threading, json
 
 from datetime import datetime, timezone
 
@@ -114,6 +114,19 @@ class SnapVector(Vector):
         vecdict["members"] = memdict
         return vecdict
 
+    def dumps(self, indent=None, separators=None):
+        "Returns a JSON string of the snapshot."
+        return json.dumps(self.dictdump(), indent=indent, separators=separators)
+
+
+    def dump(self, fp, indent=None, separators=None):
+        """Serialize the snapshot as a JSON formatted stream to fp, a file-like object.
+           This uses the Python json module which always produces str objects, not bytes
+           objects. Therefore, fp.write() must support str input."""
+        return json.dump(self.dictdump(), fp, indent=indent, separators=separators)
+
+
+
 
 class PropertyVector(Vector):
     "Inherits from Vector, and is the parent class of SwitchVector etc.."
@@ -207,6 +220,21 @@ class PropertyVector(Vector):
         for membername, member in self.data.items():
             snapvector.data[membername] = member._snapshot()
         return snapvector
+
+
+    def snapshot(self):
+        """Take a snapshot of the vector and returns an object which is a restricted copy
+           of the current state of the vector.
+           Vector methods for sending data will not be available.
+           This copy will not be updated by events. This is provided so that you can
+           handle the vector data, without fear of the value changing."""
+        with threading.Lock():
+            # other threads cannot change the data dictionary
+            # while the snapshot is being taken
+            snap = self._snapshot()
+        return snap
+
+
 
 
 class SwitchVector(PropertyVector):
