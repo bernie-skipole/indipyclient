@@ -99,6 +99,8 @@ class SnapVector(Vector):
         for membername, member in self.data.items():
             memdict[membername] = member.dictdump()
         vecdict = {"vectortype":self.vectortype,
+                   "name":self.name,
+                   "devicename":self.devicename,
                    "label":self.label,
                    "message":self.message,
                    "enable":self.enable,
