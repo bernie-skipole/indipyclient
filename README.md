@@ -49,7 +49,7 @@ The package help is:
     loglevel:4 As 1 plus xml vectors and all contents
 
 
-A typical sesssion would look like:
+A typical session would look like:
 
 ![Terminal screenshot](https://github.com/bernie-skipole/indipyclient/raw/main/docs/source/usage/image.png)
 

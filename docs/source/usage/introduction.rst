@@ -54,7 +54,7 @@ The package help is::
     loglevel:4 As 1 plus xml vectors and all contents
 
 
-A typical sesssion would look like:
+A typical session would look like:
 
 .. image:: ./image.png
 
