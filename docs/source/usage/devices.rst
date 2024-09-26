@@ -18,6 +18,7 @@ value = ipyclient[devicename][vectorname][membername]
 These mappings obey dictionary methods allowing you to iterate over items, keys and values.
 
 .. autoclass:: indipyclient.ipyclient.Device
+   :members: snapshot
 
 **Attributes**
 
@@ -33,8 +34,27 @@ Where the messages are received from the INDI server and are associated with the
 
 Note, messages are added with 'appendleft' so the newest message is messages[0] and the oldest message is messages[-1] or can be obtained with .pop()
 
-If you use the ipyclient.snapshot method to create a snapshot, the snapshot device will have attribute messages which will be this deque cast as a list.
-
 **self.enable**
 
 This will normally be True, but will become False if the INDI server sends a request to delete the device.
+
+
+Device Snapshot
+===============
+
+The snapshot() method of the device returns a SnapDevice object which is a copy of the state of the device and vectors. This could be used if you wish to pass this state to your own routines, perhaps to record values in another thread without danger of them being updated.
+
+The snapshot is a mapping of vector name to snapshot copies of vectors, but without the methods to send vector updates.
+
+.. autoclass:: indipyclient.ipyclient.SnapDevice
+   :members: dumps, dump
+
+The dumps and dump methods can be used to create JSON records of the device state. The JSON record does not include BLOB values, they are set as null.
+
+The SnapDevice object has attributes, which are copies of the Device attributes.
+
+devicename
+
+messages, the messages attribute is cast as a list rather than a collections.deque
+
+enable, which is True if any vector of this client has enable True, otherwise False

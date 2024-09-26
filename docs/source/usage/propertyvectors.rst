@@ -12,16 +12,6 @@ The classes are defined in indipyclient.propertyvectors
 All these vectors are mappings of membername to membervalue, and have the
 following methods and attributes:
 
-**Common Methods**
-
-**members(self)**
-
-Returns a dictionary of member objects
-
-**memberlabel(self, membername)**
-
-Returns the member label, given a member name
-
 **Common Attributes**
 
 Attributes of the Vector object are derived from the INDI protocol
@@ -62,7 +52,7 @@ Set to Vector type string such as 'SwitchVector', 'NumberVector' etc.
 
 **self.enable**
 
-If self.enable is False, this property is 'deleted'.
+If self.enable is False, this property has been 'deleted'.
 
 **self.device**
 
@@ -73,23 +63,24 @@ The device object owning this vector. This attribute is not available in the 'sn
 As data is received these vectors are created or updated and are available via ipyclient[devicename][vectorname]
 
 .. autoclass:: indipyclient.propertyvectors.SwitchVector
-   :members: send_newSwitchVector
+   :members: send_newSwitchVector, members, memberlabel, snapshot
 
 ----
 
 .. autoclass:: indipyclient.propertyvectors.LightVector
+   :members: members, memberlabel, snapshot
 
 ----
 
 .. autoclass:: indipyclient.propertyvectors.TextVector
-   :members: send_newTextVector
+   :members: send_newTextVector, members, memberlabel, snapshot
 
 ----
 
 .. autoclass:: indipyclient.propertyvectors.NumberVector
-   :members: getfloatvalue, getformattedvalue, send_newNumberVector
+   :members: getfloatvalue, getformattedvalue, send_newNumberVector, members, memberlabel, snapshot
 
 ----
 
 .. autoclass:: indipyclient.propertyvectors.BLOBVector
-   :members: send_newBLOBVector
+   :members: send_newBLOBVector, members, memberlabel, snapshot

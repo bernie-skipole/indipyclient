@@ -756,7 +756,7 @@ class Snap(collections.UserDict):
 
     @property
     def enable(self):
-        "Returns True if any device of thisclient has enable True, otherwise False"
+        "Returns True if any device of this client has enable True, otherwise False"
         for device in self.data.values():
             if device.enable:
                 return True
