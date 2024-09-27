@@ -7,22 +7,111 @@ A class 'QueClient' in module indipyclient.queclient is available if you wish to
 
 
 .. autoclass:: indipyclient.queclient.QueClient
+   :members: debug_verbosity, asyncrun
 
+As QueClient inherits from PyClient it also has methods send_newVector etc., but these would not normally be called, since the point of this class is to send and receive all data via the two queues. The format of the items in these queues is described below.
+
+A function runqueclient is provided which can be used to create and run a QueClient.
 
 .. autofunction:: indipyclient.queclient.runqueclient
+
+This is normally used by first creating two queues::
+
+    txque = queue.Queue(maxsize=4)
+    rxque = queue.Queue(maxsize=4)
+
+Then run runqueclient in its own thread::
+
+    clientthread = threading.Thread(target=runqueclient, args=(txque, rxque))
+    clientthread.start()
+
+Then run your own code, reading rxque, and transmitting on txque.
+
+To exit, use txque.put(None) to shut down the queclient, and finally wait for the clientthread to stop::
+
+    clientthread.join()
 
 
 The events transmitted as items in these queues are described as:
 
 
-To do ...
+txque
+=====
+
+txque can be either a queue.Queue, an asyncio.Queue, or a collections.deque object.
+
+Your code should place items onto this queue, the item should be one of:
 
 
-An example GUI client, created with tkinter, to operate an LED gives a window:
+**"snapshot"**
 
-.. image:: ./ledclient.png
+Sending this string is a request for the current snapshot of the client, which will be returned via the rxque.
+
+Typically your code will send this on startup, to obtain a working snapshot of client data.
 
 
-The LED driver, and the gui client code examples are available at:
+**None**
+
+This indicates the QueClient should shut down.
+
+
+**(devicename, vectorname, value)**
+
+A three item tuple or list requests this to be transmitted, where value is normally a membername to membervalue dictionary.
+
+value could also be a string, one of  "Never", "Also", "Only" which indicates an enableBLOB with this value should be sent.
+
+Typically your code would send updated values in response to a user action. However you would normally not indicate that a value has changed until the changed data has been received back from the server, which will be indicated by receiving an appropriate item in rxque.
+
+
+rxque
+=====
+
+rxque can be either a queue.Queue, an asyncio.Queue, or a collections.deque object.
+
+As data is received from the server, the QueClient will place items on this queue which your code should receive.  If you have set rxque to be a collections.deque object, the items will be appended on the right of the queue, so your code should use popleft.
+
+The items placed will be a named tuple with five attributes:
+
+**eventtype**
+
+A string, normally one of "Message", "getProperties", "Delete", "Define", "DefineBLOB", "Set" or "SetBLOB".
+
+These indicate data is received from the client, and the type of event.
+
+It could also be the string "snapshot", which does not indicate a received event, but is a response to a snapshot request received from txque.
+
+It could also be the string "TimeOut", which indicates an expected update has not occurred.
+
+**devicename**
+
+Either the device name causing the event, or None for a system message, or for the snapshot request, where a device name is not relevant.
+
+**vectorname**
+
+Either the vector name causing the event, or None for a system message, or device message, or for the snapshot request.
+
+**timestamp**
+
+The event timestamp, or None for the snapshot request.
+
+**snapshot**
+
+A Snap object, being a snapshot of the client, which has been updated by the event.
+
+Your code would typically inspect the snapshot, and operate any function you require on the updated values.
+
+
+
+Example GUI client
+==================
+
+An example GUI client, created with tkinter and using QueClient, has been written at:
 
 https://github.com/bernie-skipole/inditest/tree/main/gui
+
+It is a simple client meant to operate with the LED driver, also listed in the above directory.
+
+It generates a window:
+
+.. image:: ./ledclient.png

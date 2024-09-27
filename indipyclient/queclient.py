@@ -30,11 +30,14 @@ class QueClient(IPyClient):
 
 
     async def rxevent(self, event):
-        """Generates and adds an EventItem to rxque, where an EventItem is a named tuple with attributes:
+        """On being called when an event is received, this generates and adds an EventItem to rxque,
+           where an EventItem is a named tuple with attributes:
+
            eventtype - a string, one of Message, getProperties, Delete, Define, DefineBLOB, Set, SetBLOB,
                        these indicate data is received from the client, and the type of event. It could
-                       also be the string snapshot, which does not indicate a received event, but is a
-                       response to a snapshot request received from txque.
+                       also be the string "snapshot", which does not indicate a received event, but is a
+                       response to a snapshot request received from txque, or "TimeOut" which indicates an
+                       expected update has not occurred.
            devicename - usually the device name causing the event, or None for a system message, or
                         for the snapshot request.
            vectorname - usually the vector name causing the event, or None for a system message, or
@@ -130,26 +133,26 @@ class QueClient(IPyClient):
 
 
 def runqueclient(txque, rxque, indihost="localhost", indiport=7624):
-    """Blocking call which runs a QueClient asyncio loop, typically run in a thread.
-
-       This is normally used by first creating two queues
-
-       |  rxque = queue.Queue(maxsize=4)
-       |  txque = queue.Queue(maxsize=4)
-
-       Then run the client in its own thread
-
-       |  clientthread = threading.Thread(target=runqueclient, args=(txque, rxque))
-       |  clientthread.start()
-
-       Then run your own code, reading rxque, and transmitting on txque.
-
-       Use txque.put(None) to shut down the queclient.
-
-       Finally wait for the clientthread to stop
-
-       clientthread.join()
-       """
+    """Blocking call which creates a QueClient object and runs its
+       asyncrun method is an asyncio loop."""
     # create a QueClient object
     client = QueClient(txque, rxque, indihost, indiport)
     asyncio.run(client.asyncrun())
+
+
+# This is normally used by first creating two queues
+
+#  rxque = queue.Queue(maxsize=4)
+#  txque = queue.Queue(maxsize=4)
+
+# Then run runqueclient in its own thread,
+
+#  clientthread = threading.Thread(target=runqueclient, args=(txque, rxque))
+#  clientthread.start()
+
+# Then run your own code, reading rxque, and transmitting on txque.
+
+# To exit, use txque.put(None) to shut down the queclient,
+# and finally wait for the clientthread to stop
+
+#  clientthread.join()
