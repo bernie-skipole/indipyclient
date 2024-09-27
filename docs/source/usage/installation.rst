@@ -29,9 +29,11 @@ The Curses library depends on the terminal providing support for terminal contro
 
 **For Import**
 
-If you are intending to import the indipyclient package to use the classes to create your own clients or scripts, you would typically install it into a virtual environment.
+You can import the indipyclient package to use the classes to create your own clients or scripts, perhaps interfacing with a GUI framework.
 
-You can then import indipyclient, create a class inheriting from IPyClient, and write your own rxevent(event) coroutine method, which is called whenever data is received.
+A full client which learns the received devices and properties and dynamically creates controls (as the terminal client does) is a complex task, however to create a client tailored to a specific instrument, with known controls, is much simpler.
+
+You would typically install indipyclient into a virtual environment. You can then import indipyclient, create a class inheriting from IPyClient, and write your own rxevent(event) coroutine method, which is called whenever data is received.
 
 The IPyClient object gives you access to devices and property Vectors, which are collections of values. For example a SwitchVector may hold a number of switches, such as a radio button set. The values of these vectors can be read, and updated values transmitted back to the device using methods described further in this documentation.
 

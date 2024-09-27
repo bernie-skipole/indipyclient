@@ -18,9 +18,11 @@ EventItem = collections.namedtuple('EventItem', ['eventtype', 'devicename', 'vec
 
 class QueClient(IPyClient):
 
-    """This inherits from IPyClient
-       On receiving an event, appends an EventItem, which contains a client snapshot, into "rxque"
-       Gets contents of "txque" and transmits updates"""
+    """This inherits from IPyClient.
+
+       On receiving an event, it sets derived data (including a client snapshot), into "rxque" which your code can accept and act on.
+
+       It checks the contents of "txque", which your own code populates, and transmits this data to the server."""
 
     def __init__(self, txque, rxque, indihost="localhost", indiport=7624):
         """txque and rxque should be instances of one of queue.Queue, asyncio.Queue, or collections.deque"""
@@ -128,22 +130,24 @@ class QueClient(IPyClient):
 
 
 def runqueclient(txque, rxque, indihost="localhost", indiport=7624):
-    """Blocking call which runs a QueClient asyncio loop,
-       This is typically run in a thread.
+    """Blocking call which runs a QueClient asyncio loop, typically run in a thread.
 
-       This is typically used by first creating two queues
-       rxque = queue.Queue(maxsize=4)
-       txque = queue.Queue(maxsize=4)
+       This is normally used by first creating two queues
+
+       |  rxque = queue.Queue(maxsize=4)
+       |  txque = queue.Queue(maxsize=4)
 
        Then run the client in its own thread
-       clientthread = threading.Thread(target=runqueclient, args=(txque, rxque))
-       clientthread.start()
+
+       |  clientthread = threading.Thread(target=runqueclient, args=(txque, rxque))
+       |  clientthread.start()
 
        Then run your own code, reading rxque, and transmitting on txque.
 
        Use txque.put(None) to shut down the queclient.
 
        Finally wait for the clientthread to stop
+
        clientthread.join()
        """
     # create a QueClient object
