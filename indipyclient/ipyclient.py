@@ -177,7 +177,6 @@ class IPyClient(collections.UserDict):
                 await asyncio.wait_for(queue.put(value), timeout)
             except asyncio.TimeoutError:
                 # queue is full, continue while loop, checking stop flag
-                # and the self.connected flag
                 continue
             return True
         return False
@@ -754,8 +753,13 @@ class Snap(collections.UserDict):
         self.connected = connected
         self.messages = list(messages)
 
+
+    def enabledlen(self):
+        "Returns the number of enabled devices"
+        return sum(map(lambda x:1 if x.enable else 0, self.data.values()))
+
     @property
-    def enable(self):
+    def enable(self):        ######### to be removed
         "Returns True if any device of this client has enable True, otherwise False"
         for device in self.data.values():
             if device.enable:

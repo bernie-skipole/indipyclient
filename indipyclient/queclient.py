@@ -22,6 +22,10 @@ class QueClient(IPyClient):
        On receiving an event, appends an EventItem, which contains a client snapshot, into "rxque"
        Gets contents of "txque" and transmits updates"""
 
+    def __init__(self, txque, rxque, indihost="localhost", indiport=7624):
+        """txque and rxque should be instances of one of queue.Queue, asyncio.Queue, or collections.deque"""
+        super.__init__(indihost, indiport, txque=txque, rxque=rxque)
+
 
     async def rxevent(self, event):
         """Generates and adds an EventItem to rxque, where an EventItem is a named tuple with attributes:
@@ -37,13 +41,23 @@ class QueClient(IPyClient):
            snapshot - A Snap object, being a snapshot of the client, which has been updated by the event.
            """
         item = EventItem(event.eventtype, event.devicename, event.vectorname, event.timestamp, self.snapshot())
-        while not self._stop:
-            try:
-                self.clientdata['rxque'].put_nowait(item)
-            except queue.Full:
-                await asyncio.sleep(0.02)
-            else:
-                break
+        rxque = self.clientdata['rxque']
+
+        if isinstance(rxque, queue.Queue):
+            while not self._stop:
+                try:
+                    rxque.put_nowait(item)
+                except queue.Full:
+                    await asyncio.sleep(0.02)
+                else:
+                    break
+        elif isinstance(rxque, asyncio.Queue):
+            self.queueput(rxque, item, timeout=0.1)
+        elif isinstance(rxque, collections.deque):
+            # append item to right side of rxque
+            rxque.append(item)
+        else:
+            raise TypeError("rxque should be either a queue.Queue, asyncio.Queue, or collections.deque")
 
 
     async def hardware(self):
@@ -57,26 +71,52 @@ class QueClient(IPyClient):
            If value is a string, one of  "Never", "Also", "Only" then an enableBLOB with this
            value will be sent.
            """
+        txque = self.clientdata['txque']
         while not self._stop:
-            try:
-                item = self.clientdata['txque'].get_nowait()
-            except queue.Empty:
-                await asyncio.sleep(0.02)
-                continue
+
+            if isinstance(txque, queue.Queue):
+                try:
+                    item = txque.get_nowait()
+                except queue.Empty:
+                    await asyncio.sleep(0.02)
+                    continue
+            elif isinstance(txque, asyncio.Queue):
+                try:
+                    item = await asyncio.wait_for(txque, timeout=0.1)
+                except asyncio.TimeoutError:
+                    continue
+                txque.task_done()
+            elif isinstance(txque, collections.deque):
+                try:
+                    item = txque.popleft()
+                except IndexError:
+                    await asyncio.sleep(0.02)
+                    continue
+            else:
+                raise TypeError("txque should be either a queue.Queue, asyncio.Queue, or collections.deque")
             if item is None:
                 # A None in the queue is a shutdown indicator
                 self.shutdown()
                 return
             if item == "snapshot":
                 # The queue is requesting a snapshot
-                item = EventItem("snapshot", None, None, None, self.snapshot())
-                while not self._stop:
-                    try:
-                        self.clientdata['rxque'].put_nowait(item)
-                    except queue.Full:
-                        await asyncio.sleep(0.02)
-                    else:
-                        break
+                responditem = EventItem("snapshot", None, None, None, self.snapshot())
+                rxque = self.clientdata['rxque']
+                if isinstance(rxque, queue.Queue):
+                    while not self._stop:
+                        try:
+                            rxque.put_nowait(responditem)
+                        except queue.Full:
+                            await asyncio.sleep(0.02)
+                        else:
+                            break
+                elif isinstance(rxque, asyncio.Queue):
+                    self.queueput(rxque, responditem, timeout=0.1)
+                elif isinstance(rxque, collections.deque):
+                    # append responditem to right side of rxque
+                    rxque.append(responditem)
+                else:
+                    raise TypeError("rxque should be either a queue.Queue, asyncio.Queue, or collections.deque")
                 continue
             if len(item) != 3:
                 # invalid item
@@ -91,7 +131,7 @@ def runqueclient(txque, rxque, indihost="localhost", indiport=7624):
     """Blocking call which runs a QueClient asyncio loop,
        This is typically run in a thread.
 
-       This is used by first creating two queues
+       This is typically used by first creating two queues
        rxque = queue.Queue(maxsize=4)
        txque = queue.Queue(maxsize=4)
 
@@ -107,5 +147,5 @@ def runqueclient(txque, rxque, indihost="localhost", indiport=7624):
        clientthread.join()
        """
     # create a QueClient object
-    client = QueClient(indihost, indiport, txque=txque, rxque=rxque)
+    client = QueClient(txque, rxque, indihost, indiport)
     asyncio.run(client.asyncrun())
