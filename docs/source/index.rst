@@ -14,6 +14,7 @@ A pure Python INDI terminal client
    usage/propertymembers
    usage/events
    usage/consoleclient
+   usage/queclient
    usage/references
 
 Indices and tables

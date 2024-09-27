@@ -116,7 +116,7 @@ The snapshot() method of IPyClient returns a Snap object which is a copy of the 
 The snapshot is a mapping of devicename to snapshot copies of devices and vectors, but without the methods to send vector updates.
 
 .. autoclass:: indipyclient.ipyclient.Snap
-   :members: dumps, dump
+   :members: dumps, dump, enabledlen
 
 The dumps and dump methods can be used to create JSON records of the client state. The JSON record does not include BLOB values, they are set as null.
 
@@ -129,7 +129,3 @@ indiport
 connected
 
 messages, the messages attribute is cast as a list rather than a collections.deque
-
-It has a further attribute:
-
-enable, which is True if any device of this client has enable True, otherwise False
