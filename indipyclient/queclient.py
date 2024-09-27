@@ -24,7 +24,7 @@ class QueClient(IPyClient):
 
     def __init__(self, txque, rxque, indihost="localhost", indiport=7624):
         """txque and rxque should be instances of one of queue.Queue, asyncio.Queue, or collections.deque"""
-        super.__init__(indihost, indiport, txque=txque, rxque=rxque)
+        super().__init__(indihost, indiport, txque=txque, rxque=rxque)
 
 
     async def rxevent(self, event):
