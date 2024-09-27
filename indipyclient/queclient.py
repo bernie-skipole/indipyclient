@@ -52,7 +52,7 @@ class QueClient(IPyClient):
                 else:
                     break
         elif isinstance(rxque, asyncio.Queue):
-            self.queueput(rxque, item, timeout=0.1)
+            await self.queueput(rxque, item, timeout=0.1)
         elif isinstance(rxque, collections.deque):
             # append item to right side of rxque
             rxque.append(item)
@@ -111,7 +111,7 @@ class QueClient(IPyClient):
                         else:
                             break
                 elif isinstance(rxque, asyncio.Queue):
-                    self.queueput(rxque, responditem, timeout=0.1)
+                    await self.queueput(rxque, responditem, timeout=0.1)
                 elif isinstance(rxque, collections.deque):
                     # append responditem to right side of rxque
                     rxque.append(responditem)

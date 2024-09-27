@@ -758,13 +758,6 @@ class Snap(collections.UserDict):
         "Returns the number of enabled devices"
         return sum(map(lambda x:1 if x.enable else 0, self.data.values()))
 
-    @property
-    def enable(self):        ######### to be removed
-        "Returns True if any device of this client has enable True, otherwise False"
-        for device in self.data.values():
-            if device.enable:
-                return True
-        return False
 
     def dictdump(self):
         """Returns a dictionary of this client information
