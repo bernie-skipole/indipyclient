@@ -29,6 +29,7 @@ Then run your own code, reading rxque, and transmitting on txque.
 
 To exit, use txque.put(None) to shut down the queclient, and finally wait for the clientthread to stop::
 
+    txque.put(None)
     clientthread.join()
 
 
@@ -57,11 +58,11 @@ This indicates the QueClient should shut down.
 
 **(devicename, vectorname, value)**
 
-A three item tuple or list requests this to be transmitted, where value is normally a membername to membervalue dictionary.
+A three item tuple or list, where value is normally a membername to membervalue dictionary.
 
 value could also be a string, one of  "Never", "Also", "Only" which indicates an enableBLOB with this value should be sent.
 
-Typically your code would send updated values in response to a user action. However you would normally not indicate that a value has changed until the changed data has been received back from the server, which will be indicated by receiving an appropriate item in rxque.
+Typically your code would send updated values in response to a user action.
 
 
 rxque
@@ -73,7 +74,7 @@ As data is received from the server, the QueClient will place items on this queu
 
 The items placed will be a named tuple with five attributes:
 
-**eventtype**
+**item.eventtype**
 
 A string, normally one of "Message", "getProperties", "Delete", "Define", "DefineBLOB", "Set" or "SetBLOB".
 
@@ -83,21 +84,21 @@ It could also be the string "snapshot", which does not indicate a received event
 
 It could also be the string "TimeOut", which indicates an expected update has not occurred.
 
-**devicename**
+**item.devicename**
 
 Either the device name causing the event, or None for a system message, or for the snapshot request, where a device name is not relevant.
 
-**vectorname**
+**item.vectorname**
 
 Either the vector name causing the event, or None for a system message, or device message, or for the snapshot request.
 
-**timestamp**
+**item.timestamp**
 
 The event timestamp, or None for the snapshot request.
 
-**snapshot**
+**item.snapshot**
 
-A Snap object, being a snapshot of the client, which has been updated by the event.
+A Snap object, being a snapshot of the client, which has been updated by the event. This holds all device, vector and member values.
 
 Your code would typically inspect the snapshot, and operate any function you require on the updated values.
 

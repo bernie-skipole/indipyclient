@@ -134,7 +134,7 @@ class QueClient(IPyClient):
 
 def runqueclient(txque, rxque, indihost="localhost", indiport=7624):
     """Blocking call which creates a QueClient object and runs its
-       asyncrun method is an asyncio loop."""
+       asyncrun method."""
     # create a QueClient object
     client = QueClient(txque, rxque, indihost, indiport)
     asyncio.run(client.asyncrun())
@@ -155,4 +155,5 @@ def runqueclient(txque, rxque, indihost="localhost", indiport=7624):
 # To exit, use txque.put(None) to shut down the queclient,
 # and finally wait for the clientthread to stop
 
+# txque.put(None)
 #  clientthread.join()
