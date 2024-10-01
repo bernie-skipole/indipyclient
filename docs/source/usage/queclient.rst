@@ -1,7 +1,7 @@
 QueClient
 =========
 
-If you prefer to run the async code in one thread, and perhaps a GUI display in another, a common method would be to introduce queues to pass data between threads.
+If you prefer to run the async code in one thread, and perhaps a GUI display or other blocking code, in another, a common method would be to introduce queues to pass data between threads.
 
 A class 'QueClient' in module indipyclient.queclient is available if you wish to use it, together with a function that when called with transmit and receive queues will instantiate and run the class.
 
@@ -20,7 +20,7 @@ This is normally used by first creating two queues::
     txque = queue.Queue(maxsize=4)
     rxque = queue.Queue(maxsize=4)
 
-Then run runqueclient in its own thread::
+Then run the function runqueclient in its own thread::
 
     clientthread = threading.Thread(target=runqueclient, args=(txque, rxque))
     clientthread.start()
@@ -41,14 +41,16 @@ txque
 
 txque can be either a queue.Queue, an asyncio.Queue, or a collections.deque object.
 
-Your code should place items onto this queue, the item should be one of:
+Your code should place items onto this queue, typically in response to a user action.
+
+The possible items are:
 
 
 **"snapshot"**
 
 Sending this string is a request for the current snapshot of the client, which will be returned via the rxque.
 
-Typically your code will send this on startup, to obtain a working snapshot of client data.
+Your code could send this on startup, to obtain an initial working snapshot of client data.
 
 
 **None**
@@ -61,8 +63,6 @@ This indicates the QueClient should shut down.
 A three item tuple or list, where value is normally a membername to membervalue dictionary.
 
 value could also be a string, one of  "Never", "Also", "Only" which indicates an enableBLOB with this value should be sent.
-
-Typically your code would send updated values in response to a user action.
 
 
 rxque
@@ -107,12 +107,14 @@ Your code would typically inspect the snapshot, and operate any function you req
 Example GUI client
 ==================
 
-An example GUI client, created with tkinter and using QueClient, has been written at:
+An example GUI client, (ledguiclient.py) created with tkinter and using QueClient, has been written at:
 
 https://github.com/bernie-skipole/inditest/tree/main/gui
 
-It is a simple client meant to operate with the LED driver, also listed in the above directory.
+It is a simple client meant to operate with an LED driver, also listed in the above directory.
 
 It generates a window:
 
 .. image:: ./ledclient.png
+
+A further, very similar example, ledguiclient2.py which uses Python GTK+ 3 has also been written, and is in the same directory, it produces an almost identical window.
