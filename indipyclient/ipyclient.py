@@ -754,6 +754,18 @@ class Snap(collections.UserDict):
         return sum(map(lambda x:1 if x.enable else 0, self.data.values()))
 
 
+    def get_vector_state(self, devicename, vectorname):
+        """Gets the state string of the given vectorname, if this vector does not exist
+           returns None"""
+        device = self.data.get(devicename)
+        if device is None:
+            return
+        propertyvector = device.get(vectorname)
+        if propertyvector is None:
+            return
+        return propertyvector.state
+
+
     def dictdump(self):
         """Returns a dictionary of this client information
            and is used to generate the JSON output"""

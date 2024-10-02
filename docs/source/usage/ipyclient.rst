@@ -113,19 +113,23 @@ Client Snapshot
 
 The snapshot() method of IPyClient returns a Snap object which is a copy of the state of the client, devices etc.. This could be used if you wish to pass this state to your own routines, perhaps to record values in another thread without danger of them being updated.
 
-The snapshot is a mapping of devicename to snapshot copies of devices and vectors, but without the methods to send vector updates.
+The snapshot is a mapping of devicename to snapshot copies of devices and vectors, without any coroutine methods, so cannot be used to send vector updates. You would never instantiate this class yourself, but would ceate it by calling the snapshot method of IPyClient.
 
 .. autoclass:: indipyclient.ipyclient.Snap
-   :members: dumps, dump, enabledlen, dictdump
+   :members:
 
 The dumps and dump methods can be used to create JSON records of the client state. The JSON record does not include BLOB values, they are set as null.
 
 The Snap object has attributes, which are copies of the IPyClient attributes.
 
-indihost
+**self.indihost**
 
-indiport
+**self.indiport**
 
-connected
+**self.connected**
 
-messages, the messages attribute is cast as a list rather than a collections.deque
+This is the connected value at the point the snapshot is taken, it does not update.
+
+**self.messages**
+
+The messages attribute is cast as a list rather than a collections.deque. It is the messages at the point the snapshot is taken, it does not update.

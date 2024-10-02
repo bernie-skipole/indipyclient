@@ -8,6 +8,7 @@ A pure Python INDI terminal client
 
    usage/introduction
    usage/installation
+   usage/concept
    usage/ipyclient
    usage/devices
    usage/propertyvectors
