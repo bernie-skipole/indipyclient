@@ -47,14 +47,18 @@ The snapshot() method of the device returns a SnapDevice object which is a copy 
 The snapshot is a mapping of vector name to snapshot copies of vectors, but without the methods to send vector updates.
 
 .. autoclass:: indipyclient.ipyclient.SnapDevice
-   :members: dumps, dump, dictdump
+   :members:
 
 The dumps and dump methods can be used to create JSON records of the device state. The JSON record does not include BLOB values, they are set as null.
 
 The SnapDevice object has attributes, which are copies of the Device attributes.
 
-devicename
+**self.devicename
 
-messages, the messages attribute is cast as a list rather than a collections.deque
+**self.messages**
 
-enable, which is True if any vector of this client has enable True, otherwise False
+The messages attribute is cast as a list rather than a collections.deque
+
+**self.enable**
+
+True if any vector of this device has enable True, otherwise False

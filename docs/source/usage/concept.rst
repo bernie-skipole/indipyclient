@@ -3,22 +3,24 @@ Concept
 
 You may have Python programs reading or controlling external instruments, or GPIO pins or any form of data collection or control.
 
-The package indipydriver consists of classes ipydriver and ipyserver which can be used to take your data, organise it into the xml data structure as defined by the INDI protocol, and serve it on a port.
+The associated package 'indipydriver' consists of classes IPyDriver and IPyServer which can be used to take your data, organise it into the xml data structure as defined by the INDI protocol, and serve it on a port.
 
 The INDI protocol (Instrument Neutral Distributed Interface) specifies a limited number of ways the data can be presented, as switches, lights, text, numbers and BLOBs (Binary Large Objects), together with grouping and label values which may be useful to display the data.
 
-An INDI client can then connect to this serving port, decode the protocol, and present the switches, lights etc., to the user or to any controlling or logging script required.
+An INDI client can then connect to this serving port, decode the protocol, and present the switches, lights etc., to the user or to any controlling script required.
 
-As the protocol contains the format of the data, a client could learn and present the controls when it connects. It could also be much simpler if it is written for a particular instrument, in which case the controls can be immediately set up, and present the data as it is received. 
+As the protocol contains the format of the data, a client could learn and present the controls when it connects. It could also be much simpler if it is written for a particular instrument, in which case the controls can be immediately set up, and present the data as it is received.
 
-This indipyclient package is an INDI client.
+This 'indipyclient' package is an INDI client.
 
 It provides a general purpose terminal client, which learns the devices and their controls as it connects. If using it for that purpose only, then simply run the program from the command line.
 
 It also contains classes which make the connection, decode the protocol, and present the data as class attributes, and have methods which can transmit data.
 
+Note other INDI servers and clients are available. See :ref:`references`.
+
 The INDI Protocol
-=================
+-----------------
 
 The protocol is defined at:
 
@@ -34,14 +36,75 @@ For example:
 
 ipyclient[devicename][vectorname][membername] will be the value of a particular parameter.
 
-Multiple devices can be served, a 'vector' is a collection of members, so a switch vector may have one or more switches in it, to define a radio button set perhaps.
+Multiple devices can be served, a 'vector' is a collection of members, so a switch vector may have one or more switches in it.
 
 As the instrument produces changing values, the server sends 'set' packets, such as setSwitchVector, setLightVector ..., these contain new values, and are read and update the ipclient values. They also cause the ipclient.rxevent(event) method to be called, which you could overwrite to take any actions you prefer. The possible event objects are described within this documentation.
 
 To transmit a new value you could call the ipyclient.send_newVector coroutine method, or if you have a vector object, you could call its specified send method, for example vector.send_newSwitchVector, these are called with the appropriate new member values.
 
+Each vector has a state attribute, set to a string, one of "Idle", "Ok", "Busy" or "Alert".
 
+When a vector send method is called, it's appropriate state is automatically set to "Busy", and when a 'set' packet is received, it will update the ipyclient values and also provide confirmation of the changed state by setting it to "Ok".
 
+Timeouts
+--------
 
+Whenever you send updated values, a timer is started and if a timeout occurs before the server responds, a VectorTimeOut event will be created, which you could choose to ignore, or take action such as setting an Alert flag.
 
+The INDI protocol allows the server to suggest a timeout for each vector. The IPyClient.set_vector_timeouts method allows you to set minimum and maximum timeouts which restricts the suggested values between a minimum and maximum value.
 
+The method also has a timeout_enable argument which enables or disables the VectorTimeOut event and also enables two other timers:
+
+self.idle_timeout is set to twice timeout_max, and will cause a getProperties to be sent if nothing is either transmitted or received in that time.
+
+self.respond_timeout is set to four times timeout_max, and will assume a call failure and attempt a reconnect, if after any transmission, nothing is received for that time.
+
+If the timeout_enable argument is set to False, then these timeouts are disabled, and you have the freedom to implement any of your own timing controls.
+
+Note that VectorTimeOut events are not part of the INDI standard which states:
+
+*The Device will eventually send a state of Ok if and when the new values for the Property have been successfully accomplished according to the Devices criteria, or send back Alert if they can not be accomplished with a message explaining why.*
+
+Note 'Property' and 'Vector' are interchangeable terms. The spec also states:
+
+*Timeout values give Clients a simple ability to detect dysfunctional Devices or broken communication...*
+
+You have the option of handling timeouts however you prefer.
+
+BLOBs
+-----
+
+When a client first connects, the server assumes that transmitting BLOBs to the client is disabled. To enable BLOB's the client must transmit an enableBLOB command.
+
+The IPyClient object has the following method:
+
+async def send_enableBLOB(self, value, devicename, vectorname=None)
+
+If devicename is specified, but vectorname not, the command applies to all BLOBs from that device.
+
+If devicename and vectorname are both specified, the command applies to that particular vector.
+
+The value must be one of:
+
+**Never**
+
+This disables BLOBs.
+
+**Also**
+
+This enables BLOBs, together with any other vectors.
+
+**Only**
+
+This enables BLOBs, but disallows any other vectors, so the connection is dedicated to BLOBs only.
+
+So if you wish to receive BLOBs amongst other vectors for every device, then for every device you need to await ipyclient.send_enableBLOB("Also", devicename)
+
+Asynchronous operation
+----------------------
+
+The indipyclient classes send and receive data asynchronously, and the IPyClient.asyncrun() coroutine method, when awaited, causes the client to make its call and run.
+
+The asyncrun method could be gathered together with any of your own coroutines, or could be called with the asyncio.run call.
+
+If your own code is blocking, then you will probably need to run IPyClient.asyncrun() in another thread, see :ref:`queclient`.

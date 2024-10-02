@@ -66,17 +66,6 @@ Where the messages are 'global' messages received from the INDI server, or by th
 
 Note, messages are added with 'appendleft' so the newest message is messages[0] and the oldest message is messages[-1] or can be obtained with .pop()
 
-The IPyClient object is also mapping of device name to device object. These Device objects are automatically created as data comes from the INDI server.
-
-Note that the set_vector_timeouts method enables the creation of VectorTimeOut events which are not part of the INDI standard which states:
-
-*The Device will eventually send a state of Ok if and when the new values for the Property have been successfully accomplished according to the Devices criteria, or send back Alert if they can not be accomplished with a message explaining why.*
-
-It also states:
-
-*Timeout values give Clients a simple ability to detect dysfunctional Devices or broken communication...*
-
-You have the option of handling timeouts however you prefer.
 
 Logging
 =======
