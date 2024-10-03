@@ -107,7 +107,7 @@ The indipyclient classes send and receive data asynchronously, and the IPyClient
 
 The asyncrun method could be gathered together with any of your own coroutines, or could be called with the asyncio.run call.
 
-If your own code is blocking, then you will probably need to run IPyClient.asyncrun() in another thread, see :ref:`queclient`.
+If your own code is blocking, then you will probably need to run IPyClient.asyncrun() in another thread, a common method would be to introduce queues to pass data between threads. To help with this, IPyClient has a snapshot() method which returns a copy of the state of the client, with devices, vectors and members, but without the coroutine methods. This snapshot could be passed to other threads providing them with the current client information. See :ref:`queclient`.
 
 
 Example
@@ -140,6 +140,6 @@ The script checks for a setNumberVector event, and if the event matches the devi
     asyncio.run(myclient.asyncrun())
 
 
-As well as IPyClient, the function indipyclient.getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
+As well as IPyClient, the function getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
 
 .. autofunction:: indipyclient.getfloat

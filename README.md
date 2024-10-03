@@ -1,8 +1,10 @@
 # indipyclient
 
-This indipyclient package provides a terminal client, which connects to a port, allowing an instrument to be viewed and controlled from a terminal session.
+You may have Python programs reading or controlling any form of data collection or control.
 
-The instrument port is typically served using the indipydriver package which provides classes which can be used by your own Python program controlling some form of instrument, with switches, indicators or measurement data.
+An associated package 'indipydriver' consists of classes IPyDriver and IPyServer which can be used to take your data, organise it into an xml data structure as defined by the INDI protocol, and serve it on a port.
+
+This indipyclient package provides a terminal client, which connects to the port, allowing you to view and control your instrument from a terminal session.
 
 indipydriver and indipyclient communicate with the INDI protocol.
 
