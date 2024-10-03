@@ -53,7 +53,7 @@ The dumps and dump methods can be used to create JSON records of the device stat
 
 The SnapDevice object has attributes, which are copies of the Device attributes.
 
-**self.devicename
+**self.devicename**
 
 **self.messages**
 

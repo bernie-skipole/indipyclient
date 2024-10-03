@@ -108,3 +108,38 @@ The indipyclient classes send and receive data asynchronously, and the IPyClient
 The asyncrun method could be gathered together with any of your own coroutines, or could be called with the asyncio.run call.
 
 If your own code is blocking, then you will probably need to run IPyClient.asyncrun() in another thread, see :ref:`queclient`.
+
+
+Example
+-------
+
+This script monitors a remote "Thermostat" and prints the temperature as events are received. The thermostat driver is described as an example at https://indipydriver.readthedocs.io
+
+The script checks for a setNumberVector event, and if the event matches the device, vector and member names, prints the received value. This continues indefinetly, printing the temperature as values are received::
+
+    import asyncio
+    import indipyclient as ipc
+
+    class MyClient(ipc.IPyClient):
+
+        async def rxevent(self, event):
+            "Prints the temperature as it is received"
+            if isinstance(event, ipc.setNumberVector):
+                if event.devicename != "Thermostat":
+                    return
+                if event.vectorname != "temperaturevector":
+                    return
+                # use dictionary get method which returns None
+                # if this member name is not present in the event
+                value = event.get("temperature")
+                if value:
+                    print(value)
+
+    myclient = MyClient()
+
+    asyncio.run(myclient.asyncrun())
+
+
+As well as IPyClient, the function indipyclient.getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
+
+.. autofunction:: indipyclient.getfloat

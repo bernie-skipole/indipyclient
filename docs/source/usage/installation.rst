@@ -38,36 +38,3 @@ You would typically install indipyclient into a virtual environment. You can the
 The IPyClient object gives you access to devices and property Vectors, which are collections of values. For example a SwitchVector may hold a number of switches, such as a radio button set. The values of these vectors can be read, and updated values transmitted back to the device using methods described further in this documentation.
 
 Finally the asyncrun() coroutine method of IPyClient should be awaited which will cause the connection to the INDI server to be made.
-
-**Example**
-
-This script monitors a remote "Thermostat" and prints the temperature as events are received. The thermostat driver is described as an example at https://indipydriver.readthedocs.io
-
-The script checks for a setNumberVector event, and if the event matches the device, vector and member names, prints the received value. This continues indefinetly, printing the temperature as values are received::
-
-    import asyncio
-    import indipyclient as ipc
-
-    class MyClient(ipc.IPyClient):
-
-        async def rxevent(self, event):
-            "Prints the temperature as it is received"
-            if isinstance(event, ipc.setNumberVector):
-                if event.devicename != "Thermostat":
-                    return
-                if event.vectorname != "temperaturevector":
-                    return
-                # use dictionary get method which returns None
-                # if this member name is not present in the event
-                value = event.get("temperature")
-                if value:
-                    print(value)
-
-    myclient = MyClient()
-
-    asyncio.run(myclient.asyncrun())
-
-
-As well as IPyClient, the function indipyclient.getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
-
-.. autofunction:: indipyclient.getfloat
