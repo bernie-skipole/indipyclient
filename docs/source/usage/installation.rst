@@ -37,5 +37,3 @@ If you are using a GUI framework, you may prefer to use a framework native to yo
 
 
 Where 'my_env_directory' is conventionally named .venv or venv in the project directory, or under a container directory for lots of virtual environments, such as ~/.virtualenvs
-
-The rest of this documentation describes the classes available.
