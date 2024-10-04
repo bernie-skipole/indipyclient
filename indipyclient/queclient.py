@@ -73,8 +73,8 @@ class QueClient(IPyClient):
            Otherwise the item should be a tuple or list of (devicename, vectorname, value)
            where value is normally a membername to membervalue dictionary, and these updates
            will be transmitted.
-           If value is a string, one of  "Never", "Also", "Only" then an enableBLOB with this
-           value will be sent.
+           If this vector is a BLOB Vector, the value dictionary should be {membername:(blobvalue, blobsize, blobformat)...}
+           If value is a string, one of  "Never", "Also", "Only" then an enableBLOB with this value will be sent.
            """
         txque = self.clientdata['txque']
         while not self._stop:
