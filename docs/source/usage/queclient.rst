@@ -65,7 +65,11 @@ This indicates the QueClient should shut down.
 
 A three item tuple or list, where value is normally a membername to membervalue dictionary.
 
-value could also be a string, one of  "Never", "Also", "Only" which indicates an enableBLOB with this value should be sent.
+If this vector is a BLOB Vector, the value dictionary should be {membername:(blobvalue, blobsize, blobformat)...}
+
+The blobvalue could be a bytes object, a pathlib.Path or a file-like object. If blobsize of zero is used, the size value sent will be set to the number of bytes in the BLOB.
+
+Instead of a value dictionary, if value is set to a string, one of  "Never", "Also", "Only" an enableBLOB with this value will be sent.
 
 
 rxque
@@ -104,7 +108,6 @@ The event timestamp, or None for the snapshot request.
 A Snap object, being a snapshot of the client, which has been updated by the event. This holds all device, vector and member values.
 
 Your code would typically inspect the snapshot, and operate any function you require on the updated values.
-
 
 
 Example GUI client
