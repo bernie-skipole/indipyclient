@@ -38,10 +38,6 @@ A UTC datetime object
 
 A float, suggested timeout for updating a value.
 
-**self.rule**
-
-Applicable to Switch Vectors only, in which case it will be one of "OneOfMany", "AtMostOne" or "AnyOfMany"
-
 **self.perm**
 
 One of "ro", "wo" or "rw". Not applicable to Light Vector, which is read only.
@@ -64,6 +60,14 @@ As data is received these vectors are created or updated and are available via i
 
 .. autoclass:: indipyclient.propertyvectors.SwitchVector
    :members: send_newSwitchVector, members, memberlabel, snapshot
+
+As well as the attributes listed above, the switch vector has a rule attribute.
+
+**self.rule**
+
+Applicable to Switch Vectors only, in which case it will be one of "OneOfMany", "AtMostOne" or "AnyOfMany".
+
+For example, if the attribute is "OneOfMany", of the members of this vector, one, and only one can be "On".
 
 ----
 

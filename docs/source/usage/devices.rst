@@ -57,8 +57,8 @@ The SnapDevice object has attributes, which are copies of the Device attributes.
 
 **self.messages**
 
-The messages attribute is cast as a list rather than a collections.deque
+The messages attribute is cast as a list rather than a collections.deque. It is the messages at the point the snapshot is taken, it does not update.
 
 **self.enable**
 
-True if any vector of this device has enable True, otherwise False
+True if any vector of this device has enable True, otherwise False if the device has been deleted. This does not update.

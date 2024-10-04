@@ -1,8 +1,6 @@
 IPyClient
 =========
 
-Importing indipyclient gives access to a number of classes and methods which can be used by your own program to send and receive data to remote instruments. This enables you to write your own controlling scripts, or helps you create your own client program.
-
 Typically you would import the class IPyClient, and overide its rxevent(event) method, which is an awaitable coroutine.
 
 rxevent(event) is automatically called whenever data is received, and the event will be of a type which can be tested, and attributes read to handle the data received.
@@ -20,8 +18,6 @@ IPyClient has a 'hardware' coroutine method which is started with the IPyClient.
             await self.send_newVector("devicename", "vectorname", members={"membername":datavalue})
 
 Note that attribute self._stop becomes True when the method shutdown() is called, requesting any coroutines to stop.
-
-The rest of this documentation details the classes, methods and attributes available.
 
 
 .. autoclass:: indipyclient.IPyClient

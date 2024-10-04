@@ -8,9 +8,6 @@ Each vector contains one or more members, which can be obtained from the vector 
 
 You should never need to instantiate these classes yourself.
 
-The classes are defined in indipyclient.propertymembers
-
-
 ----
 
 .. autoclass:: indipyclient.propertymembers.SwitchMember
@@ -167,7 +164,3 @@ For the thermostat server example this outputs::
         Member : temperature Value : 19.60
       Vector : targetvector
         Member : target Value : 15.00
-
-
-
-
