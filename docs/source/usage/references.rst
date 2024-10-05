@@ -13,6 +13,8 @@ https://pypi.org/project/indipyclient
 
 The associated indipydriver development site:
 
+https://pypi.org/project/indipydriver
+
 https://github.com/bernie-skipole/indipydriver
 
 https://indipydriver.readthedocs.io

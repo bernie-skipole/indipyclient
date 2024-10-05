@@ -17,10 +17,6 @@ The protocol defines the format of the data sent by the driver, such as light, n
 
 INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control providing drivers are available.
 
-The companion package 'indipydriver', which is used to create drivers, is available on Pypi and developed at.
-
-https://github.com/bernie-skipole/indipydriver
-
 The indipyclient terminal can be started from the command line, and can also be imported if required, in which case it provides a set of classes which can be used to create scripts to control the remote instrument.
 
 The client can be run with

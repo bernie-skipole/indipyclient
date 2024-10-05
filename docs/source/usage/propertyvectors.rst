@@ -7,8 +7,6 @@ values on a client.
 
 You should never need to instantiate these classes yourself.
 
-The classes are defined in indipyclient.propertyvectors
-
 All these vectors are mappings of membername to membervalue, and have the
 following methods and attributes:
 
