@@ -1,6 +1,6 @@
 # indipyclient
 
-You may have Python programs reading or controlling any form of data collection or control.
+You may have Python programs implementing some form of data collection or control and wish to remotely operate such an instrument.
 
 An associated package 'indipydriver' consists of classes IPyDriver and IPyServer which can be used to take your data, organise it into an xml data structure as defined by the INDI protocol, and serve it on a port.
 
