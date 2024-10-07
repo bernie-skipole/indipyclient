@@ -28,50 +28,45 @@ awaiting self.stopped.wait() will wait until the client has shutdown. This could
 DriverClient
 ============
 
-A possible reason to import ConsoleClient is to run the console, driver and instrument in a single script. The example below imports 'make_driver' and 'ThermalControl' from example1 of the indipydriver documentation, and also the ConsoleClient, and runs them together. Note that the client.stopped attribute is used to shut down the driver and instrument when quit is chosen on the client::
-
+A possible reason to import ConsoleClient is to run the console, driver and instrument in a single script. The example below imports 'make_driver' from example1 of the indipydriver documentation, and also the ConsoleClient, and runs them together::
 
     import asyncio
 
     from indipyclient.console import ConsoleClient
-    from example1 import make_driver, ThermalControl
+    from example1 import make_driver
 
+    async def main(client, driver):
+        """Run the client and driver"""
 
-    async def monitor(client, driver, thermalcontrol):
-        """This monitors the client, if it shuts down,
-           then shut down the driver and the instrument"""
-        await client.stopped.wait()
-        # the client has stopped
-        driver.shutdown()
-        thermalcontrol.shutdown()
-
-
-    async def main(client, driver, thermalcontrol):
-        """Run the client, driver and instrument together,
-           also with monitor to check if client quit is chosen"""
         try:
-            await asyncio.gather(client.asyncrun(),
-                                 driver.asyncrun(),
-                                 thermalcontrol.run_thermostat(),
-                                 monitor(client, driver, thermalcontrol))
+
+            # start the driver
+            drivertask = asyncio.create_task( driver.asyncrun() )
+
+            # start the client, and wait for it to close
+            await client.asyncrun()
+
+            # ask the driver to stop
+            driver.shutdown()
+
+            # wait for the driver to shutdown
+            await drivertask
+
         except asyncio.CancelledError:
             # avoid outputting stuff on the command line
             pass
         finally:
-            # clear curses setup
+            # clear the curses terminal setup
             client.console_reset()
 
 
     if __name__ == "__main__":
 
-        # Make an instance of the object controlling the instrument
-        thermalcontrol = ThermalControl()
-        # make a driver for the instrument
-        thermodriver = make_driver(thermalcontrol)
-
+        # make a driver for the thermostat
+        thermodriver = make_driver("Thermostat", 15)
         # set driver listening on localhost
         thermodriver.listen()
         # create a ConsoleClient calling localhost
         client = ConsoleClient()
         # run all coroutines
-        asyncio.run( main(client, thermodriver, thermalcontrol) )
+        asyncio.run( main(client, thermodriver) )
