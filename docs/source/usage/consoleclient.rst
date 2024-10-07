@@ -30,6 +30,7 @@ DriverClient
 
 A possible reason to import ConsoleClient is to run the console, driver and instrument in a single script. The example below imports 'make_driver' from example1 of the indipydriver documentation, and also the ConsoleClient, and runs them together::
 
+
     import asyncio
 
     from indipyclient.console import ConsoleClient
@@ -38,26 +39,22 @@ A possible reason to import ConsoleClient is to run the console, driver and inst
     async def main(client, driver):
         """Run the client and driver"""
 
+        # start the driver
+        drivertask = asyncio.create_task( driver.asyncrun() )
+
+        # start the client, and wait for it to close
         try:
-
-            # start the driver
-            drivertask = asyncio.create_task( driver.asyncrun() )
-
-            # start the client, and wait for it to close
             await client.asyncrun()
-
-            # ask the driver to stop
-            driver.shutdown()
-
-            # wait for the driver to shutdown
-            await drivertask
-
-        except asyncio.CancelledError:
-            # avoid outputting stuff on the command line
-            pass
         finally:
-            # clear the curses terminal setup
+            # Ensure the terminal is cleared
             client.console_reset()
+        print("Shutting down, please wait")
+
+        # ask the driver to stop
+        driver.shutdown()
+
+        # wait for the driver to shutdown
+        await drivertask
 
 
     if __name__ == "__main__":
