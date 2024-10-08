@@ -143,3 +143,33 @@ The script checks for a setNumberVector event, and if the event matches the devi
 As well as IPyClient, the function getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
 
 .. autofunction:: indipyclient.getfloat
+
+
+Logging
+-------
+
+This indipyclient package uses the Python standard library logging module, it uses logger with name "indipyclient" and emits logs at levels:
+
+**ERROR**
+
+Logs errors including tracebacks from exceptions
+
+**INFO**
+
+Logs informational messages and error messages as above.
+
+**DEBUG**
+
+Logs xml data transmitted and received, and the info and error messages as above. The verbosity of this xml data can be set with the IPyClient.debug_verbosity(verbose) method, where 0 is no xml traffic is recorded, 1 is xml recorded but the least verbose, and 3 is the most.
+
+To create logs you will need to add a handler, and a logging level, for example::
+
+    import logging
+    logger = logging.getLogger('indipyclient')
+
+    fh = logging.FileHandler("logfile.log")
+    logger.addHandler(fh)
+
+    logger.setLevel(logging.DEBUG)
+
+This leaves you with the flexibility to add any available loghandler, and to set your own formats if required.
