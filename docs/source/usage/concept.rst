@@ -162,7 +162,7 @@ Logs informational messages and error messages as above.
 
 Logs xml data transmitted and received, and the info and error messages as above. The verbosity of this xml data can be set with the IPyClient.debug_verbosity(verbose) method, where 0 is no xml traffic is recorded, 1 is xml recorded but the least verbose, and 3 is the most.
 
-To create logs you will need to add a handler, and a logging level, for example::
+To record logs you will need to add a handler, and a logging level, for example::
 
     import logging
     logger = logging.getLogger('indipyclient')
@@ -173,3 +173,9 @@ To create logs you will need to add a handler, and a logging level, for example:
     logger.setLevel(logging.DEBUG)
 
 This leaves you with the flexibility to add any available loghandler, and to set your own formats if required.
+
+As default, exceptions and logs will appear on your console, which if communications are frequently lost and regained may be distracting. You could add a NullHandler to the start of your script if you do not want any output to be displayed::
+
+    import logging
+    logger = logging.getLogger()
+    logger.addHandler(logging.NullHandler())
