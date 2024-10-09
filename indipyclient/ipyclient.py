@@ -181,8 +181,8 @@ class IPyClient(collections.UserDict):
 
 
     async def report(self, message):
-        """If logging is enabled message will be logged at level INFO.
-           If self.enable_reports is True, the message will be injected into
+        """If self.enable_reports is True, the given string message will
+           be logged at level INFO and injected into
            the received data, which will be picked up by the rxevent method.
            It is a way to set a message on to your client display, in the
            same way messages come from the INDI service."""
