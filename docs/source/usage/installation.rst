@@ -27,7 +27,7 @@ You can import the indipyclient package to create your own clients or scripts.
 
 You would typically install indipyclient into a virtual environment. You can then create a script which imports indipyclient, create a class inheriting from the IPyClient class, and write your own code to interface with the class which will transmit and receive INDI data.
 
-If you are using a GUI framework, you may prefer to use a framework native to your system, since importing a GUI framework into a virtual environment may be complex. In which case use the --system-site-packages option to allow your script to use system packages::
+If you are using a GUI framework, you may prefer to use a framework native to your system, since importing a GUI framework may be complex. In which case use the --system-site-packages option to allow your script to use system packages::
 
     python3 -m venv --system-site-packages my_env_directory
 

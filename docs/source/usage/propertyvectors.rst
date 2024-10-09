@@ -59,7 +59,7 @@ As data is received these vectors are created or updated and are available via i
 .. autoclass:: indipyclient.propertyvectors.SwitchVector
    :members: send_newSwitchVector, members, memberlabel, snapshot
 
-As well as the attributes listed above, the switch vector has a rule attribute.
+As well as the common attributes, the switch vector has a rule attribute.
 
 **self.rule**
 

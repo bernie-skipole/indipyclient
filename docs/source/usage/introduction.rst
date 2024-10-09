@@ -3,7 +3,7 @@ Introduction
 
 You may have Python programs implementing some form of data collection or control and wish to remotely operate such an instrument.
 
-An associated package 'indipydriver' consists of classes IPyDriver and IPyServer which can be used to take your data, organise it into an xml data structure as defined by the INDI protocol, and serve it on a port.
+An associated package 'indipydriver' can be used to take your data, organise it into a structure defined by the INDI protocol, and serve it on a port.
 
 This indipyclient package provides a terminal client, which connects to the port, allowing you to view and control your instrument from a terminal session.
 
@@ -38,14 +38,13 @@ The package help is::
     Terminal client to communicate to an INDI service.
 
     options:
-      -h, --help            show this help message and exit
-      -p PORT, --port PORT  Port of the INDI server (default 7624).
-      --host HOST           Hostname/IP of the INDI server (default localhost).
-      -b BLOBS, --blobs BLOBS
-                            Optional folder where BLOB's will be saved.
-      --loglevel LOGLEVEL   Enables logging, value 1, 2, 3 or 4.
-      --logfile LOGFILE     File where logs will be saved
-      --version             show program's version number and exit
+      -h, --help               show this help message and exit
+      -p PORT, --port PORT     Port of the INDI server (default 7624).
+      --host HOST              Hostname/IP of the INDI server (default localhost).
+      -b BLOBS, --blobs BLOBS  Optional folder where BLOB's will be saved.
+      --loglevel LOGLEVEL      Enables logging, value 1, 2, 3 or 4.
+      --logfile LOGFILE        File where logs will be saved
+      --version                show program's version number and exit
 
     The BLOB's folder can also be set from within the session.
     Setting loglevel and logfile should only be used for brief

@@ -3,17 +3,15 @@ Concept
 
 You may have Python programs reading or controlling external instruments, or GPIO pins or any form of data collection or control.
 
-The associated package 'indipydriver' consists of classes IPyDriver and IPyServer which can be used to take your data, organise it into the xml data structure as defined by the INDI protocol, and serve it on a port.
+The associated package 'indipydriver' can be used to take your data, organise it into a structure defined by the INDI protocol, and serve it on a port.
 
 The INDI protocol (Instrument Neutral Distributed Interface) specifies a limited number of ways the data can be presented, as switches, lights, text, numbers and BLOBs (Binary Large Objects), together with grouping and label values which may be useful to display the data.
-
-An INDI client can then connect to this serving port, decode the protocol, and present the switches, lights etc., to the user or to any controlling script required.
 
 As the protocol contains the format of the data, a client could learn and present the controls when it connects. It could also be much simpler if it is written for a particular instrument, in which case the controls can be immediately set up, and present the data as it is received.
 
 This 'indipyclient' package is an INDI client.
 
-It provides a general purpose terminal client, which learns the devices and their controls as it connects. If using it for that purpose only, then simply run the program from the command line.
+It provides a general purpose terminal client, which learns the devices and their controls. If using it for that purpose only, then simply run the program from the command line.
 
 It also contains classes which make the connection, decode the protocol, and present the data as class attributes, and have methods which can transmit data.
 
@@ -44,7 +42,7 @@ To transmit a new value you could call the ipyclient.send_newVector coroutine me
 
 Each vector has a state attribute, set to a string, one of "Idle", "Ok", "Busy" or "Alert".
 
-When a vector send method is called, it's appropriate state is automatically set to "Busy", and when a 'set' packet is received, it will update the ipyclient values and also provide confirmation of the changed state by setting it to "Ok".
+When a send method is called, the vector's state is automatically set to "Busy", and when a 'set' packet is received, it will update the ipyclient values and also provide confirmation of the changed state by setting it to "Ok".
 
 Timeouts
 --------
@@ -115,7 +113,7 @@ Example
 
 This script monitors a remote "Thermostat" and prints the temperature as events are received. The thermostat driver is described as an example at https://indipydriver.readthedocs.io
 
-The script checks for a setNumberVector event, and if the event matches the device, vector and member names, prints the received value. This continues indefinetly, printing the temperature as values are received::
+The script checks for a setNumberVector event, and if the event matches the device, vector and member names, prints the received value. This continues indefinitely, printing the temperature as values are received::
 
     import asyncio
     import indipyclient as ipc
@@ -174,7 +172,7 @@ To record logs you will need to add a handler, and a logging level, for example:
 
 This leaves you with the flexibility to add any available loghandler, and to set your own formats if required.
 
-As default, exceptions and logs will appear on your console, which if communications are frequently lost and regained may be distracting. You could add a NullHandler to the start of your script if you do not want any output to be displayed::
+As default, exceptions and logs will appear on your console, which may be distracting. You could add a NullHandler to the start of your script if you do not want any output to be displayed::
 
     import logging
     logger = logging.getLogger()

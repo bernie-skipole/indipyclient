@@ -762,7 +762,7 @@ class BLOBVector(PropertyVector):
         """Transmits the vector (newBLOBVector) with new BLOB members
            This method will transmit the vector and change the vector state to busy.
            The members dictionary should be {membername:(value, blobsize, blobformat)}
-           The value could be a bytes object, a pathlib.Path or a file-like object.
+           The value could be a bytes object, a pathlib.Path, a string path to a file or a file-like object.
            If blobsize of zero is used, the size value sent will be set to the number of bytes
            in the BLOB. The INDI standard specifies the size should be that of the BLOB
            before any compression, therefore if you are sending a compressed file, you

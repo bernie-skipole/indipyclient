@@ -33,6 +33,11 @@ A possible reason to import ConsoleClient is to run the console, driver and inst
 
     import asyncio
 
+    # stop anything going to the screen
+    import logging
+    logger = logging.getLogger()
+    logger.addHandler(logging.NullHandler())
+
     from indipyclient.console import ConsoleClient
     from example1 import make_driver
 

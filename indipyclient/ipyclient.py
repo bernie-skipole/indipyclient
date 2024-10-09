@@ -165,13 +165,11 @@ class IPyClient(collections.UserDict):
 
 
     async def queueput(self, queue, value, timeout=0.5):
-        """Given an asyncio.Queue object, if self.stop is not set, this
-           attempts to put value into the queue.
-           If the queue is full, and the put operation is waiting, then
-           after the timeout period the check and put will be repeated
-           until successful, or self.stop becomes True.
-           Returns True if value added to queue.
-           Returns False if stop is True and the value not added."""
+        """Method used internally, but available if usefull.
+           Given an asyncio.Queue object attempts to put value into the queue.
+           If the queue is full, checks self._stop every timeout seconds.
+           Returns True when the value is added to queue,
+           or False if self._stop is True and the value not added."""
         while not self._stop:
             try:
                 await asyncio.wait_for(queue.put(value), timeout)

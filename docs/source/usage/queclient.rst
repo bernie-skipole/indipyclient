@@ -44,7 +44,9 @@ txque
 
 txque can be either a queue.Queue, an asyncio.Queue, or a collections.deque object.
 
-Your code should place items onto this queue, typically in response to a user action.
+Your code should place items for transmission onto this queue, typically in response to a user action.
+
+If you have set txque to be a collections.deque object, you should use txque.append(item) to set items on the right of the queue, as the QueClient will read it with popleft.
 
 The possible items are:
 
@@ -67,7 +69,7 @@ A three item tuple or list, where value is normally a membername to membervalue 
 
 If this vector is a BLOB Vector, the value dictionary should be {membername:(blobvalue, blobsize, blobformat)...}
 
-The blobvalue could be a bytes object, a pathlib.Path or a file-like object. If blobsize of zero is used, the size value sent will be set to the number of bytes in the BLOB.
+The blobvalue could be a bytes object, a pathlib.Path, a string path to a file or a file-like object. If blobsize of zero is used, the size value sent will be set to the number of bytes in the BLOB.
 
 Instead of a value dictionary, if value is set to a string, one of  "Never", "Also", "Only" an enableBLOB with this value will be sent.
 
