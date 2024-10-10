@@ -115,6 +115,17 @@ Your code would typically inspect the snapshot, and operate any function you req
 Example GUI client
 ==================
 
+If you are using a GUI framework, you may prefer to use a framework native to your system. In which case, when creating a virtual environment, use the --system-site-packages option to allow your script to use system packages::
+
+    python3 -m venv --system-site-packages my_env_directory
+
+    source my_env_directory/bin/activate
+
+    pip install indipyclient
+
+
+Where 'my_env_directory' is conventionally named .venv or venv in the project directory, or under a container directory for lots of virtual environments, such as ~/.virtualenvs
+
 An example GUI client, (ledguiclient.py) created with tkinter and using QueClient, has been written at:
 
 https://github.com/bernie-skipole/inditest/tree/main/gui
