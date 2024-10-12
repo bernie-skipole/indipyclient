@@ -92,6 +92,26 @@ class SnapVector(Vector):
        This allows the snapshot to be read without risk of creating any
        side effects."""
 
+
+    def __init__(self, name, label, group, state, timestamp, message,
+                       vectortype, devicename, data)
+        super().__init__(name, label, group, state, timestamp, message)
+        self.vectortype = vectortype
+        self.devicename = devicename
+        for membername, member in data.items():
+            self.data[membername] = member._snapshot()
+
+        ##
+        #snapvector.enable = self.enable
+        #if hasattr(self, 'rule') and self.rule:
+        #    snapvector.rule = self.rule
+        #if hasattr(self, 'perm') and self.perm:
+        #    snapvector.perm = self.perm
+        #if hasattr(self, 'timeout') and self.timeout:
+        #    snapvector.timeout = self.timeout
+
+
+
     def dictdump(self):
         "Returns a dictionary of this vector"
         vecdict = {}
@@ -640,6 +660,7 @@ class NumberVector(PropertyVector):
         self._timer = True
         self._newtimer = time.time()
         await self._client.send(xmldata)
+
 
 
 
