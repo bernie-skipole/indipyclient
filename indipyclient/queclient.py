@@ -10,6 +10,8 @@ and communicate via the queues to this client running in another thread.
 
 import asyncio, queue, collections
 
+from datetime import datetime, timezone
+
 from .ipyclient import IPyClient
 
 
@@ -29,25 +31,9 @@ class QueClient(IPyClient):
         super().__init__(indihost, indiport, txque=txque, rxque=rxque)
 
 
-    async def rxevent(self, event):
-        """On being called when an event is received, this generates and adds an EventItem to rxque,
-           where an EventItem is a named tuple with attributes:
-
-           eventtype - a string, one of Message, getProperties, Delete, Define, DefineBLOB, Set, SetBLOB,
-                       these indicate data is received from the client, and the type of event. It could
-                       also be the string "snapshot", which does not indicate a received event, but is a
-                       response to a snapshot request received from txque, or "TimeOut" which indicates an
-                       expected update has not occurred.
-           devicename - usually the device name causing the event, or None for a system message, or
-                        for the snapshot request.
-           vectorname - usually the vector name causing the event, or None for a system message, or
-                        device message, or for the snapshot request.
-           timestamp - the event timestamp, None for the snapshot request.
-           snapshot - A Snap object, being a snapshot of the client, which has been updated by the event.
-           """
-        item = EventItem(event.eventtype, event.devicename, event.vectorname, event.timestamp, self.snapshot())
+    async def _set_rxque_item(self, eventtype, devicename, vectorname, timestamp, snapshot):
         rxque = self.clientdata['rxque']
-
+        item = EventItem(eventtype, devicename, vectorname, timestamp, snapshot)
         if isinstance(rxque, queue.Queue):
             while not self._stop:
                 try:
@@ -63,6 +49,27 @@ class QueClient(IPyClient):
             rxque.append(item)
         else:
             raise TypeError("rxque should be either a queue.Queue, asyncio.Queue, or collections.deque")
+
+
+    async def rxevent(self, event):
+        """On being called when an event is received, this generates and adds an EventItem to rxque,
+           where an EventItem is a named tuple with attributes:
+
+           eventtype - a string, one of Message, getProperties, Delete, Define, DefineBLOB, Set, SetBLOB,
+                       these indicate data is received from the client, and the type of event. It could
+                       also be the string "snapshot", which does not indicate a received event, but is a
+                       response to a snapshot request received from txque, or "TimeOut" which indicates an
+                       expected update has not occurred, or "State" which indicates you have just transmitted
+                       a new vector, and therefore the snapshot will have your vector state set to Busy.
+           devicename - usually the device name causing the event, or None for a system message, or
+                        for the snapshot request.
+           vectorname - usually the vector name causing the event, or None for a system message, or
+                        device message, or for the snapshot request.
+           timestamp - the event timestamp, None for the snapshot request.
+           snapshot - A Snap object, being a snapshot of the client, which has been updated by the event.
+           """
+
+        await self._set_rxque_item(event.eventtype, event.devicename, event.vectorname, event.timestamp, self.snapshot())
 
 
     async def hardware(self):
@@ -105,23 +112,7 @@ class QueClient(IPyClient):
                 return
             if item == "snapshot":
                 # The queue is requesting a snapshot
-                responditem = EventItem("snapshot", None, None, None, self.snapshot())
-                rxque = self.clientdata['rxque']
-                if isinstance(rxque, queue.Queue):
-                    while not self._stop:
-                        try:
-                            rxque.put_nowait(responditem)
-                        except queue.Full:
-                            await asyncio.sleep(0.02)
-                        else:
-                            break
-                elif isinstance(rxque, asyncio.Queue):
-                    await self.queueput(rxque, responditem, timeout=0.1)
-                elif isinstance(rxque, collections.deque):
-                    # append responditem to right side of rxque
-                    rxque.append(responditem)
-                else:
-                    raise TypeError("rxque should be either a queue.Queue, asyncio.Queue, or collections.deque")
+                await self._set_rxque_item("snapshot", None, None, None, self.snapshot())
                 continue
             if len(item) != 3:
                 # invalid item
@@ -129,7 +120,11 @@ class QueClient(IPyClient):
             if item[2] in ("Never", "Also", "Only"):
                 await self.send_enableBLOB(item[2], item[0], item[1])
             else:
-                await self.send_newVector(item[0], item[1], members=item[2])
+                timestamp = datetime.now(tz=timezone.utc)
+                await self.send_newVector(item[0], item[1], timestamp, members=item[2])
+                # a send_newVector will cause a State response
+                await self._set_rxque_item("State", item[0], item[1], timestamp, self.snapshot())
+
 
 
 def runqueclient(txque, rxque, indihost="localhost", indiport=7624):

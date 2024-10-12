@@ -773,7 +773,6 @@ class Snap(collections.UserDict):
                 "indiport":self.indiport,
                 "connected":self.connected,
                 "messages":messlist,
-                "enable":self.enable,
                 "devices":devdict}
 
     def dumps(self, indent=None, separators=None):

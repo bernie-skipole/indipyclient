@@ -94,23 +94,13 @@ class SnapVector(Vector):
 
 
     def __init__(self, name, label, group, state, timestamp, message,
-                       vectortype, devicename, data)
+                       vectortype, devicename, enable, data):
         super().__init__(name, label, group, state, timestamp, message)
         self.vectortype = vectortype
         self.devicename = devicename
+        self.enable = enable
         for membername, member in data.items():
             self.data[membername] = member._snapshot()
-
-        ##
-        #snapvector.enable = self.enable
-        #if hasattr(self, 'rule') and self.rule:
-        #    snapvector.rule = self.rule
-        #if hasattr(self, 'perm') and self.perm:
-        #    snapvector.perm = self.perm
-        #if hasattr(self, 'timeout') and self.timeout:
-        #    snapvector.timeout = self.timeout
-
-
 
     def dictdump(self):
         "Returns a dictionary of this vector"
@@ -234,18 +224,12 @@ class PropertyVector(Vector):
            Vector methods for sending data will not be available.
            This copy will not be updated by events. This is provided so that you can
            handle the vector data, without fear of the value changing."""
-        snapvector = SnapVector(self.name, self.label, self.group, self.state, self.timestamp, self.message)
-        snapvector.vectortype = self.vectortype
-        snapvector.devicename = self.devicename
-        snapvector.enable = self.enable
-        if hasattr(self, 'rule') and self.rule:
-            snapvector.rule = self.rule
-        if hasattr(self, 'perm') and self.perm:
-            snapvector.perm = self.perm
-        if hasattr(self, 'timeout') and self.timeout:
-            snapvector.timeout = self.timeout
-        for membername, member in self.data.items():
-            snapvector.data[membername] = member._snapshot()
+
+        snapvector = SnapVector(self.name, self.label, self.group, self.state, self.timestamp, self.message,
+                                self.vectortype, self.devicename, self.enable, self.data)
+        snapvector.timeout = self.timeout
+        snapvector._rule = self._rule
+        snapvector._perm = self._perm
         return snapvector
 
 
@@ -433,8 +417,15 @@ class LightVector(PropertyVector):
         self.enable = True
 
     def snapshot(self):
-        snapvector = PropertyVector.snapshot(self)
-        snapvector.perm = "ro"
+        """Take a snapshot of the vector and returns an object which is a restricted copy
+           of the current state of the vector.
+           Vector methods for sending data will not be available.
+           This copy will not be updated by events. This is provided so that you can
+           handle the vector data, without fear of the value changing."""
+
+        snapvector = SnapVector(self.name, self.label, self.group, self.state, self.timestamp, self.message,
+                                self.vectortype, self.devicename, self.enable, self.data)
+        snapvector._perm = "ro"
         return snapvector
 
 
@@ -535,6 +526,26 @@ class TextVector(PropertyVector):
         self._timer = True
         self._newtimer = time.time()
         await self._client.send(xmldata)
+
+
+
+class SnapNumberVector(SnapVector):
+
+    def getfloatvalue(self, membername):
+        "Given a membername of this vector, returns the number as a float"
+        if membername not in self:
+            raise KeyError(f"Unrecognised member: {membername}")
+        member = self.data[membername]
+        return member.getfloatvalue()
+
+    def getformattedvalue(self, membername):
+        "Given a membername of this vector, returns the number as a formatted string"
+        if membername not in self:
+            raise KeyError(f"Unrecognised member: {membername}")
+        member = self.data[membername]
+        return member.getformattedvalue()
+
+
 
 
 class NumberVector(PropertyVector):
@@ -660,6 +671,20 @@ class NumberVector(PropertyVector):
         self._timer = True
         self._newtimer = time.time()
         await self._client.send(xmldata)
+
+    def snapshot(self):
+        """Take a snapshot of the vector and returns an object which is a restricted copy
+           of the current state of the vector.
+           Vector methods for sending data will not be available.
+           This copy will not be updated by events. This is provided so that you can
+           handle the vector data, without fear of the value changing."""
+
+        snapvector = SnapNumberVector(self.name, self.label, self.group, self.state, self.timestamp, self.message,
+                                self.vectortype, self.devicename, self.enable, self.data)
+        snapvector.timeout = self.timeout
+        snapvector._perm = self._perm
+        return snapvector
+
 
 
 
