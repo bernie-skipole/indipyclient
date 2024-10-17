@@ -30,7 +30,7 @@ Then run the function runqueclient in its own thread::
 
 Then run your own code, reading rxque, and transmitting on txque.
 
-To exit, use txque.append(None) to shut down the queclient, (or use put() for other forms of queue) and finally wait for the clientthread to stop::
+To exit, use txque.append(None) to shut down the queclient, (or use put(None) for other forms of queue) and finally wait for the clientthread to stop::
 
     txque.append(None)
     clientthread.join()

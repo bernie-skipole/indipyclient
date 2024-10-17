@@ -42,7 +42,7 @@ Dictionary of any named arguments.
 
 **self.enable_reports**
 
-If True, then INFO logs, and any message set into the report method will be injected into the client as a received message, and hence will be shown on the terminal messages window. As default this is True.
+If True, then messages set into the report and warning methods will be injected into the client as a received message, and hence will be shown on the terminal messages window. As default this is True.
 
 **self.connected**
 
