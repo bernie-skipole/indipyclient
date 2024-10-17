@@ -181,8 +181,8 @@ class IPyClient(collections.UserDict):
 
 
     async def report(self, message):
-        """If self.enable_reports is True, the given string message will
-           be logged at level INFO and injected into
+        """The given string message will be logged at level INFO,
+           and if self.enable_reports is True will be injected into
            the received data, which will be picked up by the rxevent method.
            It is a way to set a message on to your client display, in the
            same way messages come from the INDI service."""
@@ -200,8 +200,8 @@ class IPyClient(collections.UserDict):
 
 
     async def warning(self, message):
-        """If self.enable_reports is True, the given string message will
-           be logged at level WARNING and injected into
+        """The given string message will be logged at level WARNING,
+           and if self.enable_reports is True will be injected into
            the received data, which will be picked up by the rxevent method.
            It is a way to set a message on to your client display, in the
            same way messages come from the INDI service."""
