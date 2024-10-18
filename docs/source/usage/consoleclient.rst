@@ -5,7 +5,30 @@ The class indipyclient.console.ConsoleClient is primarily intended to be run fro
 
 Inspect indipyclient.\_\_main\_\_.py to see how that is done.
 
-This class calls on the standard library curses package to create the terminal client.
+The class could be used to create a script dedicated to connecting to a particular server without needing to repeatedly insert the hostname or port::
+
+
+    import asyncio
+
+    # stop anything going to the screen
+    import logging
+    logger = logging.getLogger()
+    logger.addHandler(logging.NullHandler())
+
+    from indipyclient.console import ConsoleClient
+
+    # create a ConsoleClient calling host and port
+    client = ConsoleClient(indihost="raspberrypi", indiport=7624)
+
+    try:
+        # Starts the client, creates the console screens
+        asyncio.run(client.asyncrun())
+    finally:
+        # clear curses setup
+        client.console_reset()
+
+The class calls on the standard library curses package to create the terminal client.
+
 
 .. autoclass:: indipyclient.console.ConsoleClient
    :members: debug_verbosity, shutdown, console_reset, asyncrun
