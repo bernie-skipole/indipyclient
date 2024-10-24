@@ -193,3 +193,7 @@ It generates a window:
 .. image:: ./ledclient.png
 
 A further, very similar example, ledguiclient2.py which uses Python GTK+ 3 has also been written, and is in the same directory, it produces an almost identical window.
+
+A third, using DearPyGui is given as example ledguiclient3.py, and (without much attempt to layout the widgets) gives:
+
+.. image:: ./ledclient3.png
