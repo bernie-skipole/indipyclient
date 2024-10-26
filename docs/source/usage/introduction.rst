@@ -31,7 +31,9 @@ or with
 
 python3 -m indipyclient [options]
 
-The package help is::
+The package help is:
+
+.. code-block:: text
 
     usage: indipyclient [options]
 
@@ -53,6 +55,7 @@ The package help is::
     loglevel:2 As 1 plus xml vector tags without members or contents,
     loglevel:3 As 1 plus xml vectors and members - but not BLOB contents,
     loglevel:4 As 1 plus xml vectors and all contents
+
 
 
 A typical session would look like:
