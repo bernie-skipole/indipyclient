@@ -8,7 +8,7 @@ and communicate via the queues to this client running in another thread.
 
 
 
-import asyncio, queue, collections
+import asyncio, queue, collections, pathlib
 
 from datetime import datetime, timezone
 
@@ -26,14 +26,25 @@ class QueClient(IPyClient):
 
        It checks the contents of "txque", which your own code populates, and transmits this data to the server."""
 
-    def __init__(self, txque, rxque, indihost="localhost", indiport=7624):
+    def __init__(self, txque, rxque, indihost="localhost", indiport=7624, blobfolder=None):
         """txque and rxque should be instances of one of queue.Queue, asyncio.Queue, or collections.deque"""
-        super().__init__(indihost, indiport, txque=txque, rxque=rxque)
+        if blobfolder:
+            if isinstance(blobfolder, pathlib.Path):
+                blobfolderpath = blobfolder
+            else:
+                blobfolderpath = pathlib.Path(blobfolder).expanduser().resolve()
+            if not blobfolderpath.is_dir():
+                raise KeyError("If given, the BLOB's folder should be an existing directory")
+        else:
+            blobfolderpath = None
+        super().__init__(indihost, indiport, txque=txque, rxque=rxque, blobfolder=blobfolderpath)
+
+        # self.clientdata will contain keys txque, rxque, blobfolder
 
 
-    async def _set_rxque_item(self, eventtype, devicename, vectorname, timestamp, snapshot):
+    async def _set_rxque_item(self, eventtype, devicename, vectorname, timestamp):
         rxque = self.clientdata['rxque']
-        item = EventItem(eventtype, devicename, vectorname, timestamp, snapshot)
+        item = EventItem(eventtype, devicename, vectorname, timestamp, self.snapshot())
         if isinstance(rxque, queue.Queue):
             while not self._stop:
                 try:
@@ -69,7 +80,35 @@ class QueClient(IPyClient):
            snapshot - A Snap object, being a snapshot of the client, which has been updated by the event.
            """
 
-        await self._set_rxque_item(event.eventtype, event.devicename, event.vectorname, event.timestamp, self.snapshot())
+        # If this event is a setblob, and if blobfolder has been defined, the save the blob to
+        # a file in blobfolder, and set the member.user_string to the filename saved
+
+        blobfolder = self.clientdata['blobfolder']
+        if blobfolder and (event.eventtype == "SetBLOB"):
+            # save the BLOB to a file, make filename from timestamp
+            timestampstring = event.timestamp.strftime('%Y%m%d_%H_%M_%S')
+            for membername, membervalue in event.items():
+                if not membervalue:
+                    continue
+                sizeformat = event.sizeformat[membername]
+                filename =  membername + "_" + timestampstring + sizeformat[1]
+                counter = 0
+                while True:
+                    filepath = blobfolder / filename
+                    if filepath.exists():
+                        # append a digit to the filename
+                        counter += 1
+                        filename = membername + "_" + timestampstring + "_" + str(counter) + sizeformat[1]
+                    else:
+                        # filepath does not exist, so a new file with this filepath can be created
+                        break
+                filepath.write_bytes(membervalue)
+                # add filename to members user_string
+                memberobj = event.vector.member(membername)
+                memberobj.user_string = filename
+
+        # set this event into rxque
+        await self._set_rxque_item(event.eventtype, event.devicename, event.vectorname, event.timestamp)
 
 
     async def hardware(self):
@@ -82,6 +121,7 @@ class QueClient(IPyClient):
            will be transmitted.
            If this vector is a BLOB Vector, the value dictionary should be {membername:(blobvalue, blobsize, blobformat)...}
            If value is a string, one of  "Never", "Also", "Only" then an enableBLOB with this value will be sent.
+           If value is the string "Get", then a getProperties will be sent
            """
         txque = self.clientdata['txque']
         while not self._stop:
@@ -112,26 +152,42 @@ class QueClient(IPyClient):
                 return
             if item == "snapshot":
                 # The queue is requesting a snapshot
-                await self._set_rxque_item("snapshot", None, None, None, self.snapshot())
+                await self._set_rxque_item("snapshot", None, None, None)
                 continue
             if len(item) != 3:
                 # invalid item
                 continue
             if item[2] in ("Never", "Also", "Only"):
                 await self.send_enableBLOB(item[2], item[0], item[1])
+            elif item[2] == "Get":
+                await self.send_getProperties(item[0], item[1])
+            elif not isinstance(item[2], dict):
+                # item not recognised
+                continue
             else:
                 timestamp = datetime.now(tz=timezone.utc)
                 await self.send_newVector(item[0], item[1], timestamp, members=item[2])
                 # a send_newVector will cause a State response
-                await self._set_rxque_item("State", item[0], item[1], timestamp, self.snapshot())
+                await self._set_rxque_item("State", item[0], item[1], timestamp)
 
 
 
-def runqueclient(txque, rxque, indihost="localhost", indiport=7624):
+def runqueclient(txque, rxque, indihost="localhost", indiport=7624, blobfolder=None):
     """Blocking call which creates a QueClient object and runs its
        asyncrun method."""
+
+    if blobfolder:
+        if isinstance(blobfolder, pathlib.Path):
+            blobfolderpath = blobfolder
+        else:
+            blobfolderpath = pathlib.Path(blobfolder).expanduser().resolve()
+        if not blobfolderpath.is_dir():
+            raise KeyError("If given, the BLOB's folder should be an existing directory")
+    else:
+        blobfolderpath = None
+
     # create a QueClient object
-    client = QueClient(txque, rxque, indihost, indiport)
+    client = QueClient(txque, rxque, indihost, indiport, blobfolderpath)
     asyncio.run(client.asyncrun())
 
 
@@ -151,4 +207,4 @@ def runqueclient(txque, rxque, indihost="localhost", indiport=7624):
 # and finally wait for the clientthread to stop
 
 # txque.put(None)
-#  clientthread.join()
+# clientthread.join()

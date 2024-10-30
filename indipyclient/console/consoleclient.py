@@ -39,17 +39,24 @@ class _Client(IPyClient):
 class ConsoleClient:
 
     def __init__(self, indihost="localhost", indiport=7624, blobfolder=None):
-        """If given, blobfolder will be the folder where BLOBs will be saved"""
+        """If given, blobfolder should be an existing folder where BLOBs will be saved"""
+
+        if blobfolder:
+            if isinstance(blobfolder, pathlib.Path):
+                self.blobfolder = blobfolder
+            else:
+                self.blobfolder = pathlib.Path(blobfolder).expanduser().resolve()
+            if not self.blobfolder.is_dir():
+                raise KeyError("If given, the BLOB's folder should be an existing directory")
+            self.blobenabled = True
+        else:
+            self.blobfolder = None
+            self.blobenabled = False
 
         # this is populated with events as they are received
         self.eventque = asyncio.Queue(maxsize=4)
 
         self.client = _Client(indihost, indiport, eventque = self.eventque)
-        self.blobfolder = blobfolder
-        if self.blobfolder:
-            self.blobenabled = True
-        else:
-            self.blobenabled = False
 
         # set up screen
         self.stdscr = curses.initscr()
