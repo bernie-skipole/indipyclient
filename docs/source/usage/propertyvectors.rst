@@ -10,9 +10,8 @@ You should never need to instantiate these classes yourself.
 All these vectors are mappings of membername to membervalue, and have the
 following methods and attributes:
 
-**Common Attributes**
-
-Attributes of the Vector object are derived from the INDI protocol
+Common Attributes
+^^^^^^^^^^^^^^^^^
 
 **self.name**
 
@@ -27,6 +26,10 @@ One of "Idle", "Ok", "Busy" or "Alert"
 **self.message**
 
 **self.devicename**
+
+**self.user_string**
+
+This is initially an empty string, but can be set by your code to any string you like.
 
 **self.timestamp**
 

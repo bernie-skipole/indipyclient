@@ -48,6 +48,10 @@ If True, then messages set into the report and warning methods will be injected 
 
 True if a connection has been made.
 
+**self.user_string**
+
+This is initially an empty string, but can be set by your code to any string you like.
+
 **self.stopped**
 
 This is an asyncio.Event object, which is set when asyncrun is finished.
@@ -61,6 +65,14 @@ This is a collections.deque of item tuples (Timestamp, message).
 Where the messages are 'system' messages received from the INDI server, or by the report() coroutine method. They are not associated with a device which has its own messages attribute. The deque has a maxlen=8 value set, and so only the last eight messages will be available.
 
 Note, messages are added with 'appendleft' so the newest message is messages[0] and the oldest message is messages[-1] or can be obtained with .pop()
+
+
+user_string
+^^^^^^^^^^^
+
+The client, and each device, vector and member all have 'user_string' attributes. These are not received from the server, or sent to the server, but are available for any string data you may want to associate with the object. These may be useful to provide additional data to your client display code, for example the queclient uses the member string to hold the last BLOB filename saved.
+
+Strings are specified rather than general Python Objects, so that the snapshot, together with its JSON methods can safely include these strings.
 
 
 Client Snapshot

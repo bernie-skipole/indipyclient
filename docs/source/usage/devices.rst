@@ -26,6 +26,10 @@ The attributes of the device object are:
 
 **self.devicename**
 
+**self.user_string**
+
+This is initially an empty string, but can be set by your code to any string you like.
+
 **self.messages**
 
 This is a collections.deque of item tuples (Timestamp, message).
@@ -54,6 +58,8 @@ The dumps and dump methods can be used to create JSON records of the device stat
 The SnapDevice object has attributes, which are copies of the Device attributes.
 
 **self.devicename**
+
+**self.user_string**
 
 **self.messages**
 

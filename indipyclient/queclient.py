@@ -27,7 +27,11 @@ class QueClient(IPyClient):
        It checks the contents of "txque", which your own code populates, and transmits this data to the server."""
 
     def __init__(self, txque, rxque, indihost="localhost", indiport=7624, blobfolder=None):
-        """txque and rxque should be instances of one of queue.Queue, asyncio.Queue, or collections.deque"""
+        """txque and rxque should be instances of one of queue.Queue, asyncio.Queue, or collections.deque
+           If blobfolder is given, and an enableBLOB is sent, received blobs will be
+           saved to that folder and the appropriate member.user_string will be set to
+           the last filename saved
+        """
         if blobfolder:
             if isinstance(blobfolder, pathlib.Path):
                 blobfolderpath = blobfolder
@@ -173,8 +177,10 @@ class QueClient(IPyClient):
 
 
 def runqueclient(txque, rxque, indihost="localhost", indiport=7624, blobfolder=None):
-    """Blocking call which creates a QueClient object and runs its
-       asyncrun method."""
+    """Blocking call which creates a QueClient object and runs its asyncrun method.
+       If blobfolder is given, and an enableBLOB is sent, received blobs will be
+       saved to that folder and the appropriate member.user_string will be set to
+       the last filename saved"""
 
     if blobfolder:
         if isinstance(blobfolder, pathlib.Path):

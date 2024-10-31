@@ -4,7 +4,13 @@ Members
 Instances of these classes are created automatically as data is received
 from the INDI server.
 
-Each vector contains one or more members, which can be obtained from the vector members() method.
+Each vector contains one or more members, the member value can be obtained from:
+
+vector[membername]
+
+The vector object can be obtained from the method:
+
+vector.member(membername)
 
 You should never need to instantiate these classes yourself.
 
@@ -18,6 +24,8 @@ You should never need to instantiate these classes yourself.
 
 **self.label**
 
+**self.user_string**
+
 **self.membervalue**
 
 ----
@@ -29,6 +37,8 @@ You should never need to instantiate these classes yourself.
 **self.name**
 
 **self.label**
+
+**self.user_string**
 
 **self.membervalue**
 
@@ -42,6 +52,8 @@ You should never need to instantiate these classes yourself.
 
 **self.label**
 
+**self.user_string**
+
 **self.membervalue**
 
 ----
@@ -54,6 +66,8 @@ You should never need to instantiate these classes yourself.
 **self.name**
 
 **self.label**
+
+**self.user_string**
 
 **self.membervalue**
 
@@ -87,6 +101,8 @@ These values, and self.membervalue are strings taken from the XML protocol. The 
 
 **self.label**
 
+**self.user_string**
+
 **self.membervalue**
 
 A Bytes value of the received BLOB.
@@ -115,11 +131,13 @@ Vectors are mappings of member values:
 
 value = ipyclient[devicename][vectorname][membername]
 
-The objects defined by classes SwitchMember, LightMember, TextMember, NumberMember and BLOBMember are available via the vector members() method:
+The objects defined by classes SwitchMember, LightMember, TextMember, NumberMember and BLOBMember are available via the vector member() and members() methods:
 
-members = vector.members()
+vector[membername] returns the value
 
-memberobject = members[membername]
+vector.members() returns a dictionary of membername:memberobject
+
+vector.member(membername) returns a member object
 
 To illustrate this, the following example connects to a server, and prints devices, vectors and member values::
 

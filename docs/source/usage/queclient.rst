@@ -71,8 +71,14 @@ If this vector is a BLOB Vector, the value dictionary should be {membername:(blo
 
 The blobvalue could be a bytes object, a pathlib.Path, a string path to a file or a file-like object. If blobsize of zero is used, the size value sent will be set to the number of bytes in the BLOB.
 
-Instead of a value dictionary, if value is set to a string, one of  "Never", "Also", "Only" an enableBLOB with this value will be sent.
+Instead of a value dictionary, if value is set to the string "Get" then a getProperties request will be sent. This is normally not necessary as the queClient automatically sends getProperties on connection to learn the instrument parameters.
 
+If value is set to a string, one of  "Never", "Also", "Only" an enableBLOB with this value will be sent.
+
+For example, to enable receipt of all BLOBs from this server::
+
+    # send an enable all blobs request
+    txque.append((None, None,  "Also"))
 
 rxque
 =====
