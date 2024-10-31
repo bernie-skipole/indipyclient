@@ -93,6 +93,8 @@ The Snap object has attributes, which are copies of the IPyClient attributes.
 
 **self.indiport**
 
+**self.user_string**
+
 **self.connected**
 
 This is the connected value at the point the snapshot is taken, it does not update.
