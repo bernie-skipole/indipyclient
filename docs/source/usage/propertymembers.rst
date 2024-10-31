@@ -8,9 +8,13 @@ Each vector contains one or more members, the member value can be obtained from:
 
 vector[membername]
 
-The vector object can be obtained from the method:
+For a SwitchMember, the value would be "On" of "Off".
+
+The member object can be obtained from the method:
 
 vector.member(membername)
+
+For a SwitchMember, the member object would be an instance of the SwitchMember class as defined below.
 
 You should never need to instantiate these classes yourself.
 
