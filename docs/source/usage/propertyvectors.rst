@@ -60,7 +60,7 @@ The device object owning this vector. This attribute is not available in the 'sn
 As data is received these vectors are created or updated and are available via ipyclient[devicename][vectorname]
 
 .. autoclass:: indipyclient.propertyvectors.SwitchVector
-   :members: send_newSwitchVector, members, memberlabel, snapshot
+   :members: send_newSwitchVector, members, member, memberlabel, snapshot
 
 As well as the common attributes, the switch vector has a rule attribute.
 
@@ -73,19 +73,19 @@ For example, if the attribute is "OneOfMany", of the members of this vector, one
 ----
 
 .. autoclass:: indipyclient.propertyvectors.LightVector
-   :members: members, memberlabel, snapshot
+   :members: members, member, memberlabel, snapshot
 
 ----
 
 .. autoclass:: indipyclient.propertyvectors.TextVector
-   :members: send_newTextVector, members, memberlabel, snapshot
+   :members: send_newTextVector, members, member, memberlabel, snapshot
 
 ----
 
 .. autoclass:: indipyclient.propertyvectors.NumberVector
-   :members: getfloatvalue, getformattedvalue, send_newNumberVector, members, memberlabel, snapshot
+   :members: getfloatvalue, getformattedvalue, send_newNumberVector, members, member, memberlabel, snapshot
 
 ----
 
 .. autoclass:: indipyclient.propertyvectors.BLOBVector
-   :members: send_newBLOBVector, members, memberlabel, snapshot
+   :members: send_newBLOBVector, members, member, memberlabel, snapshot
