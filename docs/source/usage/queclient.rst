@@ -75,10 +75,10 @@ Instead of a value dictionary, if value is set to the string "Get" then a getPro
 
 If value is set to a string, one of  "Never", "Also", "Only" an enableBLOB with this value will be sent.
 
-For example, to enable receipt of all BLOBs from this server::
+For example, to enable receipt of BLOBs from a device on this server, without specifying a vector::
 
-    # send an enable all blobs request
-    txque.append((None, None,  "Also"))
+    # send an enable blobs request
+    txque.append((devicename, None,  "Also"))
 
 rxque
 =====
