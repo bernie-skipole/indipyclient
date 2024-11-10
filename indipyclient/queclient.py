@@ -84,11 +84,12 @@ class QueClient(IPyClient):
            snapshot - A Snap object, being a snapshot of the client, which has been updated by the event.
            """
 
-        # If this event is a setblob, and if blobfolder has been defined, the save the blob to
+        # If this event is a setblob, and if blobfolder has been defined, then save the blob to
         # a file in blobfolder, and set the member.user_string to the filename saved
 
         blobfolder = self.clientdata['blobfolder']
         if blobfolder and (event.eventtype == "SetBLOB"):
+            loop = asyncio.get_running_loop()
             # save the BLOB to a file, make filename from timestamp
             timestampstring = event.timestamp.strftime('%Y%m%d_%H_%M_%S')
             for membername, membervalue in event.items():
@@ -106,7 +107,7 @@ class QueClient(IPyClient):
                     else:
                         # filepath does not exist, so a new file with this filepath can be created
                         break
-                filepath.write_bytes(membervalue)
+                await loop.run_in_executor(None, filepath.write_bytes, membervalue)
                 # add filename to members user_string
                 memberobj = event.vector.member(membername)
                 memberobj.user_string = filename
@@ -124,6 +125,7 @@ class QueClient(IPyClient):
            where value is normally a membername to membervalue dictionary, and these updates
            will be transmitted.
            If this vector is a BLOB Vector, the value dictionary should be {membername:(blobvalue, blobsize, blobformat)...}
+           where blobvalue could be either a bytes object or a filepath.
            If value is a string, one of  "Never", "Also", "Only" then an enableBLOB with this value will be sent.
            If value is the string "Get", then a getProperties will be sent
            """

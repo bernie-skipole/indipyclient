@@ -788,8 +788,6 @@ class BLOBVector(PropertyVector):
 
     def _newBLOBVector(self, timestamp=None, members={}):
         "Creates the xmldata for sending a newBLOBVector"
-        if not self.enable:
-            return
         if timestamp is None:
             timestamp = datetime.now(tz=timezone.utc)
         if not isinstance(timestamp, datetime):
@@ -823,8 +821,28 @@ class BLOBVector(PropertyVector):
            in the BLOB. The INDI standard specifies the size should be that of the BLOB
            before any compression, therefore if you are sending a compressed file, you
            should set the blobsize prior to compression.
-           blobformat should be a file extension, such as '.png'"""
-        xmldata = self._newBLOBVector(timestamp, members)
+           blobformat should be a file extension, such as '.png'. If it is an empty string
+           and value is a filename, the extension will be taken from the filename."""
+        if not self.enable:
+            return
+        # set members as bytes
+        newmembers = {}
+        loop = asyncio.get_running_loop()
+        for membername, blobmember in self.data.items():
+            if membername in members:
+                value, blobsize, blobformat = members[membername]
+                bytescontent = await loop.run_in_executor(None, blobmember.getbytes, value)
+                if not blobsize:
+                    blobsize = len(bytescontent)
+                if not blobformat:
+                    if isinstance(value, pathlib.Path):
+                        blobformat = "".join(value.suffixes)
+                    elif isinstance(value, str):
+                        blobformat = "".join(pathlib.Path(value).suffixes)
+                    else:
+                        blobformat = ""
+                newmembers[membername] = (bytescontent, blobsize, blobformat)
+        xmldata = self._newBLOBVector(timestamp, newmembers)
         if xmldata is None:
             return
         self._timer = True

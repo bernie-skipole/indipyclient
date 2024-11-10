@@ -487,39 +487,48 @@ class BLOBMember(ParentBLOBMember):
         """Returns xml of a oneBLOB"""
         xmldata = ET.Element('oneBLOB')
         xmldata.set("name", self.name)
-        xmldata.set("format", newformat)
-        # the value set in the xmldata object should be a bytes object
-        if isinstance(newvalue, bytes):
-            bytescontent = newvalue
-        elif isinstance(newvalue, pathlib.Path):
-            try:
-                bytescontent = newvalue.read_bytes()
-            except Exception:
-                raise ParseException("Unable to read the given file")
-        elif hasattr(newvalue, "seek") and hasattr(newvalue, "read") and callable(newvalue.read):
-            # a file-like object
-            # set seek(0) so is read from start of file
-            newvalue.seek(0)
-            bytescontent = newvalue.read()
-            newvalue.close()
-            if not isinstance(bytescontent, bytes):
-                raise ParseException("The read BLOB is not a bytes object")
-            if bytescontent == b"":
-                raise ParseException("The read BLOB value is empty")
+        if newformat:
+            xmldata.set("format", newformat)
         else:
-            # could be a path to a file
-            try:
-                with open(newvalue, "rb") as fp:
-                    bytescontent = fp.read()
-            except Exception:
-                raise ParseException("Unable to read the given file")
-            if bytescontent == b"":
-                raise ParseException("The read BLOB value is empty")
+            xmldata.set("format", self.blobformat)
+        # the value set in the xmldata object should be a bytes object
+        bytescontent = self.getbytes(newvalue)
         if not newsize:
             newsize = len(bytescontent)
         xmldata.set("size", str(newsize))
         xmldata.text = standard_b64encode(bytescontent).decode("utf-8")
         return xmldata
+
+
+    @staticmethod
+    def getbytes(value):
+        "Given a blob value, as bytes or file path, return the bytes"
+        if not value:
+            raise ValueError("The BLOB value is empty")
+        try:
+            if isinstance(value, bytes):
+                bytescontent = value
+            elif isinstance(value, pathlib.Path):
+                bytescontent = value.read_bytes()
+            elif hasattr(value, "seek") and hasattr(value, "read") and callable(value.read):
+                # a file-like object
+                # set seek(0) so is read from start of file
+                value.seek(0)
+                bytescontent = value.read()
+                value.close()
+            else:
+                # could be a path to a file
+                with open(value, "rb") as fp:
+                    bytescontent = fp.read()
+        except Exception:
+            raise ValueError("Unable to read the given BLOB value")
+
+        if not isinstance(bytescontent, bytes):
+            raise ValueError("On being read, the BLOB value does not give bytes")
+        if not bytescontent:
+            raise ValueError("The BLOB value is empty")
+
+        return bytescontent
 
 
     def _snapshot(self):

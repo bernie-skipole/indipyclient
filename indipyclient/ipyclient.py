@@ -603,7 +603,8 @@ class IPyClient(collections.UserDict):
     async def send_newVector(self, devicename, vectorname, timestamp=None, members={}):
         """Send a Vector with updated member values, members is a membername
            to value dictionary. Note, if this vector is a BLOB Vector, the members
-           dictionary should be {membername:(value, blobsize, blobformat)}"""
+           dictionary should be {membername:(value, blobsize, blobformat)}
+           where value could be a bytes object or a filepath"""
         device = self.data.get(devicename)
         if device is None:
             return

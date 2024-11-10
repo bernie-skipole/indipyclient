@@ -220,6 +220,7 @@ class ConsoleClient:
                                     await self.client.send_enableBLOB('Never', event.devicename)
                 # If the event is a received BLOB, save it to the BLOB Folder
                 if isinstance(event, setBLOBVector):
+                    loop = asyncio.get_running_loop()
                     # make filename from timestamp
                     timestampstring = event.timestamp.strftime('%Y%m%d_%H_%M_%S')
                     for membername, membervalue in event.items():
@@ -235,7 +236,7 @@ class ConsoleClient:
                             else:
                                 # filepath does not exist, so a new file with this filepath can be created
                                 break
-                        filepath.write_bytes(membervalue)
+                        await loop.run_in_executor(None, filepath.write_bytes, membervalue)
                         # record the filepath
                         self.BLOBfiles[(event.devicename, event.vectorname, membername)] = filepath
                 if isinstance(self.screen, windows.MessagesScreen):
