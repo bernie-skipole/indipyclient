@@ -515,6 +515,7 @@ class IPyClient(collections.UserDict):
                 data = await reader.read(n=32000)
             except asyncio.IncompleteReadError:
                 binarydata = b""
+                await asyncio.sleep(0.1)
                 continue
             if not data:
                 await asyncio.sleep(0.01)
