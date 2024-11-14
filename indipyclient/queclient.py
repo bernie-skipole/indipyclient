@@ -48,7 +48,16 @@ class QueClient(IPyClient):
 
     async def _set_rxque_item(self, eventtype, devicename, vectorname, timestamp):
         rxque = self.clientdata['rxque']
-        item = EventItem(eventtype, devicename, vectorname, timestamp, self.snapshot())
+        if eventtype == "snapshot":
+            if devicename:
+                if vectorname:
+                    item = EventItem("snapshot", devicename, vectorname, None, self[devicename][vectorname].snapshot())
+                else:
+                    item = EventItem("snapshot", devicename, None, None, self[devicename].snapshot())
+            else:
+                item = EventItem("snapshot", None, None, None, self.snapshot())
+        else:
+            item = EventItem(eventtype, devicename, vectorname, timestamp, self.snapshot())
         if isinstance(rxque, queue.Queue):
             while not self._stop:
                 try:
@@ -70,19 +79,19 @@ class QueClient(IPyClient):
         """On being called when an event is received, this generates and adds an EventItem to rxque,
            where an EventItem is a named tuple with attributes:
 
-           eventtype - a string, one of Message, getProperties, Delete, Define, DefineBLOB, Set, SetBLOB,
-                       these indicate data is received from the client, and the type of event. It could
-                       also be the string "snapshot", which does not indicate a received event, but is a
-                       response to a snapshot request received from txque, or "TimeOut" which indicates an
-                       expected update has not occurred, or "State" which indicates you have just transmitted
-                       a new vector, and therefore the snapshot will have your vector state set to Busy.
-           devicename - usually the device name causing the event, or None for a system message, or
-                        for the snapshot request.
-           vectorname - usually the vector name causing the event, or None for a system message, or
-                        device message, or for the snapshot request.
-           timestamp - the event timestamp, None for the snapshot request.
-           snapshot - A Snap object, being a snapshot of the client, which has been updated by the event.
-           """
+           eventtype -  a string, one of Message, getProperties, Delete, Define, DefineBLOB, Set, SetBLOB,
+                        these indicate data is received from the client, and the type of event. It could
+                        also be the string "snapshot", which does not indicate a received event, but is a
+                        response to a snapshot request received from txque, or "TimeOut" which indicates an
+                        expected update has not occurred, or "State" which indicates you have just transmitted
+                        a new vector, and therefore the snapshot will have your vector state set to Busy.
+           devicename - usually the device name causing the event, or None if not applicable.
+           vectorname - usually the vector name causing the event, or None if not applicable.
+           timestamp -  the event timestamp, None for the snapshot request.
+           snapshot -   For anything other than eventtype 'snapshot' it will be a full snapshot of the client.
+                        If the eventtype is 'snapshot' and devicename and vectorname are None, it will be a
+                        client snapshot, if devicename only is given it will be a device snapshot, or if both
+                        devicename and vectorname are given it will be a vector snapshot."""
 
         # If this event is a setblob, and if blobfolder has been defined, then save the blob to
         # a file in blobfolder, and set the member.user_string to the filename saved
@@ -118,16 +127,25 @@ class QueClient(IPyClient):
 
     async def hardware(self):
         """Read txque and send data to server
-           Item passed in the queue could be the string "snapshot" this is
-           a request for the current snapshot, which will be sent via the rxque.
-           If the item is None, this indicates the client should shut down.
-           Otherwise the item should be a tuple or list of (devicename, vectorname, value)
-           where value is normally a membername to membervalue dictionary, and these updates
-           will be transmitted.
-           If this vector is a BLOB Vector, the value dictionary should be {membername:(blobvalue, blobsize, blobformat)...}
+
+           The item passed in the queue could be None, which indicates the client should shut down.
+           Otherwise it should be a list or tuple of three members: (devicename, vectorname, value)
+
+           The value could be a string, one of  "snapshot", "Get", "Never", "Also", or "Only".
+
+           If the value is the string "snapshot" this is a request for the current snapshot, which will
+           be returned via the rxque. In this case if devicename and vectorname are specified the snapshot
+           will be for the approprate devie or vector, if both are None it will be a full client snapshot.
+
+           If the value is the string "Get", then a getProperties will be sent to the server.
+
+           If the value is one of "Never", "Also", or "Only" then an enableBLOB with this value will be sent.
+
+           Otherwise the value should be a membername to membervalue dictionary, which will be transmitted to the server.
+
+           If the specified vector is a BLOB Vector, the value dictionary should be {membername:(blobvalue, blobsize, blobformat)...}
            where blobvalue could be either a bytes object or a filepath.
-           If value is a string, one of  "Never", "Also", "Only" then an enableBLOB with this value will be sent.
-           If value is the string "Get", then a getProperties will be sent
+
            """
         txque = self.clientdata['txque']
         while not self._stop:
@@ -152,17 +170,30 @@ class QueClient(IPyClient):
                     continue
             else:
                 raise TypeError("txque should be either a queue.Queue, asyncio.Queue, or collections.deque")
+
             if item is None:
                 # A None in the queue is a shutdown indicator
                 self.shutdown()
                 return
-            if item == "snapshot":
-                # The queue is requesting a snapshot
-                await self._set_rxque_item("snapshot", None, None, None)
-                continue
             if len(item) != 3:
                 # invalid item
                 continue
+
+            # item 0 is devicename or None
+            # item 1 is vectorname or None
+            # item 2 is a value
+
+            if item[2] == "snapshot":
+                # The queue is requesting a snapshot
+                if item[0]:  # devicename
+                    if item[1]: # vectorname
+                        await self._set_rxque_item("snapshot", item[0], item[1], None)
+                    else:
+                        await self._set_rxque_item("snapshot", item[0], None, None)
+                else:
+                    await self._set_rxque_item("snapshot", None, None, None)
+                continue
+
             if item[2] in ("Never", "Also", "Only"):
                 await self.send_enableBLOB(item[2], item[0], item[1])
             elif item[2] == "Get":
