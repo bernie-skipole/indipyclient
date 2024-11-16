@@ -4,7 +4,11 @@
 QueClient
 =========
 
-If you prefer to run the async code in one thread, and perhaps a GUI display or other blocking code, in another, a common method would be to introduce queues to pass data between threads.
+Using IPyClient is convenient for creating a script to control a remote instrument, however if you want to make your own client you may prefer to run the async code in one thread, and perhaps a GUI display or other blocking code, in another.
+
+Creating a full general purpose client which 'learns' devices and their properties is a large task, but creating a client to match a known instrument, in which the devices, vectors and members are already known, is simpler, and gives you the opportunity to create an elegant display.
+
+A common method would be to introduce queues to pass data between threads.
 
 A class 'QueClient' in module indipyclient.queclient is available if you wish to use it, together with a function that when called with transmit and receive queues will instantiate and run the class.
 
@@ -18,7 +22,9 @@ A function runqueclient is provided which can be used to create and run a QueCli
 
 .. autofunction:: indipyclient.queclient.runqueclient
 
-This is normally used by first creating two queues::
+This does no more than create an instance of QueClient and then uses asyncio.run(client.asyncrun()) to run it.
+
+For example, to run a QueClient in a thread, first create two queues::
 
     txque = collections.deque(maxlen=4)
     rxque = collections.deque(maxlen=4)
@@ -28,7 +34,7 @@ Then run the function runqueclient in its own thread::
     clientthread = threading.Thread(target=runqueclient, args=(txque, rxque))
     clientthread.start()
 
-Then run your own code, reading rxque, and transmitting on txque.
+Then, with your own code, read rxque, and transmit on txque.
 
 To exit, use txque.append(None) to shut down the queclient, (or use put(None) for other forms of queue) and finally wait for the clientthread to stop::
 
@@ -36,13 +42,15 @@ To exit, use txque.append(None) to shut down the queclient, (or use put(None) fo
     clientthread.join()
 
 
-The events transmitted as items in these queues are described as:
+The items passed in these queues are described below:
 
 
 txque
 =====
 
-txque can be either a queue.Queue, an asyncio.Queue, or a collections.deque object.
+For thread safety txque can be either a queue.Queue, or a collections.deque object.
+
+It could also be an asyncio.Queue if you are not running a separate thread, but want to use a QueClient with your own asynchronous code.
 
 Your code should place items for transmission onto this queue, typically in response to a user action.
 
@@ -66,9 +74,9 @@ Sending the string "snapshot" is a request for the current snapshot of the clien
 
 If devicename and vectorname are None, the snapshot returned will be the full client snapshot, if devicename is specified, but vectorname is None it will be the device snapshot, and if vectorname is specified as well it will be the vector snapshot.
 
-If the value is set to the string "Get" then a getProperties request will be sent. This is normally not necessary as the queClient automatically sends getProperties on connection to learn the instrument parameters.
+If the value is set to the string "Get" then a getProperties request will be sent. This is normally not necessary as the QueClient automatically sends getProperties on connection to learn the instrument parameters.
 
-If value is set to one of  "Never", "Also", "Only" an enableBLOB with this value will be sent.
+If value is set to one of "Never", "Also", "Only" an enableBLOB with this value will be sent.
 
 For example, to enable receipt of BLOBs from a device on this server, without specifying a vector::
 
@@ -86,7 +94,7 @@ The blobvalue could be a bytes object, a pathlib.Path, a string path to a file o
 rxque
 =====
 
-rxque can be either a queue.Queue, an asyncio.Queue, or a collections.deque object.
+rxque can be either a queue.Queue, a collections.deque object, or (if you are not using threading) an asyncio.Queue.
 
 As data is received from the server, the QueClient will place items on this queue which your code should receive.  If you have set rxque to be a collections.deque object, the items will be appended on the right of the queue, so your code should use popleft or read rxque[0].
 
@@ -148,6 +156,8 @@ The following example prints temperature on request. example1.py should be set r
     # if the Thermostat server is running elsewhere
     clientthread.start()
 
+    # The following code is synchronous and blocking
+
     # request an initial client snapshot
     txque.append((None, None,"snapshot"))
     print("Input a T for temperature, or Q for Quit")
@@ -192,7 +202,7 @@ If you are using a GUI framework, you may prefer to use a framework native to yo
 
 Where 'my_env_directory' is conventionally named .venv or venv in the project directory, or under a container directory for lots of virtual environments, such as ~/.virtualenvs
 
-An example GUI client, (ledguiclient.py) created with tkinter and using QueClient, has been written at:
+An example GUI client, (ledclient1.py) created with tkinter and using QueClient, has been written at:
 
 https://github.com/bernie-skipole/inditest/tree/main/gui
 
@@ -202,8 +212,17 @@ It generates a window:
 
 .. image:: ./ledclient.png
 
-A further, very similar example, ledguiclient2.py which uses Python GTK+ 3 has also been written, and is in the same directory, it produces an almost identical window.
+A further, very similar example, ledclient2.py which uses Python GTK+ 3 has also been written, and is in the same directory, it produces an almost identical window.
 
-A third, using DearPyGui is given as example ledguiclient3.py, and (without much attempt to layout the widgets) gives:
+A third, using DearPyGui is given as example ledclient3.py, and (without much attempt to layout the widgets) gives:
 
 .. image:: ./ledclient3.png
+
+
+And a fourth, ledclient4.py which is somewhat different as this uses textualize - a framework that creates terminal applications. This has the advantage that with a headless setup, a remote user can simply SSH to the server and run your client.  Though the consoleclient which is part of this package also allows this, using textualize makes it easier to create a good looking dedicated terminal client for a particular instrument, and also works on Windows. The screenshot below is the example of controlling the LED with ledclient4.py:
+
+.. image:: ./ledclient4.png
+
+textualize is simply available with:
+
+pip install textual
