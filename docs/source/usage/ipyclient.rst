@@ -80,6 +80,8 @@ Client Snapshot
 
 The snapshot() method of IPyClient returns a Snap object which is a copy of the state of the client, devices etc.. This could be used if you wish to pass this state to your own routines, perhaps to record values in another thread without danger of them being updated.
 
+A subclass of IPyClient is available, see :ref:`queclient`, which uses queues to pass snapshots to your threaded code.
+
 The snapshot is a mapping of devicename to snapshot copies of devices and vectors, without any coroutine methods, so cannot be used to send vector updates. You would never instantiate this class yourself, but would ceate it by calling the snapshot method of IPyClient.
 
 .. autoclass:: indipyclient.ipyclient.Snap
