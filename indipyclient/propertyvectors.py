@@ -712,6 +712,7 @@ class BLOBVector(PropertyVector):
         super().__init__(event.vectorname, event.label, event.group, event.state,
                          event.timestamp, event.message, event.device, event._client)
         self._perm = event.perm
+        self._enableBLOB = event.device._enableBLOB  # can be set to one of Never, Also or Only
         self.timeout = event.timeout
         # self.data is a dictionary of blob name : blobmember
         # create  members
