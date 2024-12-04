@@ -38,6 +38,10 @@ class Vector(collections.UserDict):
         # if self.enable is False, this property is 'deleted'
         self.enable = True
 
+        # the user_string is available to be any string a user of
+        # this vector may wish to set
+        self.user_string = ""
+
 
     @property
     def state(self):
@@ -159,9 +163,6 @@ class PropertyVector(Vector):
                               # set False when a setvector is received
         self._newtimer = 0    # Set to time.time() when a new vector is sent
 
-        # the user_string is available to be any string a user of
-        # this vector may wish to set
-        self.user_string = ""
 
 
     def checktimedout(self, nowtime):

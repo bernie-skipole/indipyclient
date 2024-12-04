@@ -143,12 +143,15 @@ class IPyClient(collections.UserDict):
 
         # set and unset BLOBfolder
         self._BLOBfolder = None
+        self._blobfolderchanged = False
+
 
     def _get_BLOBfolder(self):
         return self._BLOBfolder
 
     def _set_BLOBfolder(self, value):
-        "Setting the BLOBfolder auto sets all devices to Also"
+        """Setting the BLOBfolder to a folder will automatically set all devices to Also
+           Setting it to None, will set all devices to Never"""
         if value:
             if isinstance(value, pathlib.Path):
                 blobpath = value
@@ -160,15 +163,21 @@ class IPyClient(collections.UserDict):
                 device._enableBLOB = "Also"
         else:
             blobpath = None
+            if self._BLOBfolder is None:
+                # no change
+                return
             for device in self.values():
                 device._enableBLOB = "Never"
         self._BLOBfolder = blobpath
-    
+        self._blobfolderchanged = True
+
 
     BLOBfolder = property(
         fget=_get_BLOBfolder,
         fset=_set_BLOBfolder,
-        doc="Setting BLOBfolder auto saves incoming BLOBs."
+        doc= """Setting the BLOBfolder to a folder will automatically transmit an enableBLOB
+for all devices set to Also, and will save incoming BLOBs to that folder.
+Setting it to None will transmit an enableBLOB for all devices set to Never"""
         )
 
 
@@ -698,6 +707,19 @@ class IPyClient(collections.UserDict):
                     # so the connection is up, check enabled devices exist
                     if self.enabledlen():
                         # connection is up and devices exist
+                        if self._blobfolderchanged:
+                            # devices all have an _enableBLOB attribute set
+                            # when the BLOBfolder changed, this ensures an
+                            # enableBLOB is sent with that value
+                            self._blobfolderchanged = False
+                            dnames = list(self.data.keys())
+                            for devicename in dnames:
+                                await self.resend_enableBLOB(devicename)
+                                if self._stop:
+                                    break
+                            # as enableBLOBs have been sent, leave
+                            # checking timeouts for the next .5 second
+                            continue
                         if self.timeout_enable:
                             # If nothing has been sent or received
                             # for self.idle_timeout seconds, send a getProperties
@@ -706,7 +728,8 @@ class IPyClient(collections.UserDict):
                             if telapsed > self.idle_timeout:
                                 await self.send_getProperties()
                             # check if any vectors have timed out
-                            for device in self.data.values():
+                            dvalues = list(self.data.values())
+                            for device in dvalues:
                                 for vector in device.values():
                                     if not vector.enable:
                                         continue
@@ -919,6 +942,10 @@ class _ParentDevice(collections.UserDict):
         # This device name
         self.devicename = devicename
 
+        # the user_string is available to be any string a user of
+        # this device may wish to set
+        self.user_string = ""
+
 
     @property
     def enable(self):
@@ -991,10 +1018,6 @@ class Device(_ParentDevice):
             self._enableBLOB = "Never"  # can be set to one of Never, Also or Only
         else:
             self._enableBLOB = "Also"
-
-        # the user_string is available to be any string a user of
-        # this device may wish to set
-        self.user_string = ""
 
 
     def __setitem__(self, propertyname, propertyvector):
