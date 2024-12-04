@@ -617,9 +617,35 @@ Setting it to None will transmit an enableBLOB for all devices set to Never"""
                     self._readerque.task_done()
                 # and to get here, continue has not been called
                 # and an event has been created,
+
                 if event.eventtype == "DefineBLOB":
                     # every time a defBLOBVector is received, send an enable BLOB instruction
                     await self.resend_enableBLOB(event.devicename, event.vectorname)
+                elif self._BLOBfolder and (event.eventtype == "SetBLOB"):
+                    # If this event is a setblob, and if blobfolder has been defined, then save the blob to
+                    # a file in blobfolder, and set the member.filename to the filename saved
+                    loop = asyncio.get_running_loop()
+                    # save the BLOB to a file, make filename from timestamp
+                    timestampstring = event.timestamp.strftime('%Y%m%d_%H_%M_%S')
+                    for membername, membervalue in event.items():
+                        if not membervalue:
+                            continue
+                        sizeformat = event.sizeformat[membername]
+                        filename =  membername + "_" + timestampstring + sizeformat[1]
+                        counter = 0
+                        while True:
+                            filepath = self._BLOBfolder / filename
+                            if filepath.exists():
+                                # append a digit to the filename
+                                counter += 1
+                                filename = membername + "_" + timestampstring + "_" + str(counter) + sizeformat[1]
+                            else:
+                                # filepath does not exist, so a new file with this filepath can be created
+                                break
+                        await loop.run_in_executor(None, filepath.write_bytes, membervalue)
+                        # add filename to member
+                        memberobj = event.vector.member(membername)
+                        memberobj.filename = filename
 
                 # call the user event handling function
                 await self.rxevent(event)
