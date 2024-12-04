@@ -41,22 +41,12 @@ class ConsoleClient:
     def __init__(self, indihost="localhost", indiport=7624, blobfolder=None):
         """If given, blobfolder should be an existing folder where BLOBs will be saved"""
 
-        if blobfolder:
-            if isinstance(blobfolder, pathlib.Path):
-                self.blobfolder = blobfolder
-            else:
-                self.blobfolder = pathlib.Path(blobfolder).expanduser().resolve()
-            if not self.blobfolder.is_dir():
-                raise KeyError("If given, the BLOB's folder should be an existing directory")
-            self.blobenabled = True
-        else:
-            self.blobfolder = None
-            self.blobenabled = False
-
         # this is populated with events as they are received
         self.eventque = asyncio.Queue(maxsize=4)
 
         self.client = _Client(indihost, indiport, eventque = self.eventque)
+
+        self.client.BLOBfolder = blobfolder
 
         # set up screen
         self.stdscr = curses.initscr()
@@ -100,12 +90,6 @@ class ConsoleClient:
         self.updatescreenstopped = False
         self.getinputstopped = False
 
-        # list of known device names, this is needed to send
-        # BLOB's enabled
-        self.devicenames = []
-
-        # BLOBfiles, is a dictionary of {(devicename,vectorname,membername):filepath}
-        self.BLOBfiles = {}
 
     @property
     def stop(self):
@@ -181,7 +165,6 @@ class ConsoleClient:
                     if isinstance(self.screen, windows.MessagesScreen):
                         # set disconnected status and focus on the quit button
                         if not self.screen.showing_disconnected:
-                            self.devicenames.clear()
                             self.screen.showunconnected() # sets showing_disconnected
                     else:
                         # when not connected, show messages screen
@@ -206,39 +189,6 @@ class ConsoleClient:
                     if isinstance(self.screen, MemberScreen) and (self.screen.vectorname == event.vectorname):
                         self.screen.timeout(event)
                         continue
-                if hasattr(event, 'devicename'):
-                    # if this is a new device, update it with BLOB status
-                    if event.devicename and (event.devicename not in self.devicenames):
-                        if event.devicename in self.client:
-                            device = self.client[event.devicename]
-                            if device.enable:
-                                # new devicename
-                                self.devicenames.append(event.devicename)
-                                if self.blobenabled:
-                                    await self.client.send_enableBLOB('Also', event.devicename)
-                                else:
-                                    await self.client.send_enableBLOB('Never', event.devicename)
-                # If the event is a received BLOB, save it to the BLOB Folder
-                if isinstance(event, setBLOBVector):
-                    loop = asyncio.get_running_loop()
-                    # make filename from timestamp
-                    timestampstring = event.timestamp.strftime('%Y%m%d_%H_%M_%S')
-                    for membername, membervalue in event.items():
-                        sizeformat = event.sizeformat[membername]
-                        filename =  membername + "_" + timestampstring + sizeformat[1]
-                        counter = 0
-                        while True:
-                            filepath = self.blobfolder / filename
-                            if filepath.exists():
-                                # append a digit to the filename
-                                counter += 1
-                                filename = membername + "_" + timestampstring + "_" + str(counter) + sizeformat[1]
-                            else:
-                                # filepath does not exist, so a new file with this filepath can be created
-                                break
-                        await loop.run_in_executor(None, filepath.write_bytes, membervalue)
-                        # record the filepath
-                        self.BLOBfiles[(event.devicename, event.vectorname, membername)] = filepath
                 if isinstance(self.screen, windows.MessagesScreen):
                     self.screen.update(event)
                 elif isinstance(self.screen, DevicesScreen):
@@ -251,9 +201,6 @@ class ConsoleClient:
                     if isinstance(event, delProperty):
                         if event.vectorname is None:
                             # the whole device is disabled,
-                            if event.devicename and (event.devicename in self.devicenames):
-                                self.devicenames.remove(event.devicename)
-                            # show devicesscreen
                             self.screen.close("Devices")
                         elif isinstance(self.screen, ChooseVectorScreen):
                             # one vector has been disabled, update the ChooseVectorScreen
@@ -407,24 +354,6 @@ class ConsoleClient:
             raise
         finally:
             self.getinputstopped = True
-
-
-    async def send_enableBLOB(self):
-        "Sends Also to enable blobs for all devices"
-        if not self.blobenabled:
-            return
-        for devicename,device in self.client.items():
-            if device.enable:
-                await self.client.send_enableBLOB('Also', devicename)
-
-
-    async def send_disableBLOB(self):
-        "Sends Never to disable blobs for all devices"
-        if self.blobenabled:
-            return
-        for devicename,device in self.client.items():
-            if device.enable:
-                await self.client.send_enableBLOB('Never', devicename)
 
 
     async def asyncrun(self):

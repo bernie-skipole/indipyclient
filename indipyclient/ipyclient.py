@@ -161,6 +161,9 @@ class IPyClient(collections.UserDict):
                 raise KeyError("If given, the BLOB's folder should be an existing directory")
             for device in self.values():
                 device._enableBLOB = "Also"
+                for vector in device.values():
+                    if vector.vectortype == "BLOBVector":
+                        vector._enableBLOB = "Also"
         else:
             blobpath = None
             if self._BLOBfolder is None:
@@ -168,6 +171,9 @@ class IPyClient(collections.UserDict):
                 return
             for device in self.values():
                 device._enableBLOB = "Never"
+                for vector in device.values():
+                    if vector.vectortype == "BLOBVector":
+                        vector._enableBLOB = "Never"
         self._BLOBfolder = blobpath
         self._blobfolderchanged = True
 
@@ -731,18 +737,25 @@ Setting it to None will transmit an enableBLOB for all devices set to Never"""
                     count = 0
                 else:
                     # so the connection is up, check enabled devices exist
-                    if self.enabledlen():
+                    devices = list(device for device in self.data.values() if device.enable)
+                    if devices:
                         # connection is up and devices exist
                         if self._blobfolderchanged:
                             # devices all have an _enableBLOB attribute set
                             # when the BLOBfolder changed, this ensures an
                             # enableBLOB is sent with that value
                             self._blobfolderchanged = False
-                            dnames = list(self.data.keys())
-                            for devicename in dnames:
-                                await self.resend_enableBLOB(devicename)
+                            for device in devices:
                                 if self._stop:
                                     break
+                                await self.resend_enableBLOB(device.devicename)
+                                if self._stop:
+                                    break
+                                for vector in device.values():
+                                    if vector.enable and (vector.vectortype == "BLOBVector"):
+                                        await self.resend_enableBLOB(device.devicename, vector.name)
+                                        if self._stop:
+                                            break
                             # as enableBLOBs have been sent, leave
                             # checking timeouts for the next .5 second
                             continue
@@ -754,8 +767,7 @@ Setting it to None will transmit an enableBLOB for all devices set to Never"""
                             if telapsed > self.idle_timeout:
                                 await self.send_getProperties()
                             # check if any vectors have timed out
-                            dvalues = list(self.data.values())
-                            for device in dvalues:
+                            for device in devices:
                                 for vector in device.values():
                                     if not vector.enable:
                                         continue

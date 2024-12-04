@@ -1215,9 +1215,9 @@ class BLOBMember(BaseMember):
 
     def filename(self):
         "Returns filename of last file received and saved"
-        nametuple = (self.vector.devicename, self.vector.name, self.name)
-        if nametuple in self.control.BLOBfiles:
-            return self.control.BLOBfiles[nametuple].name
+        blobfilename = self.vector.member(self.name).filename
+        if blobfilename:
+            return blobfilename
         else:
             return ""
 

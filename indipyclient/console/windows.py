@@ -119,7 +119,7 @@ class MessagesScreen(ParentScreen):
 
         self.enable_btn = widgets.Button(self.infowin, "Enabled", 5, 38, onclick="EnableBLOBs")
         self.disable_btn = widgets.Button(self.infowin, "Disabled", 5, 48, onclick="DisableBLOBs")
-        if self.control.blobenabled:
+        if self.client.BLOBfolder:
             self.enable_btn.bold = True
             self.disable_btn.bold = False
         else:
@@ -174,7 +174,7 @@ class MessagesScreen(ParentScreen):
         self.enable_btn.focus = False
         self.disable_btn.focus = False
 
-        if self.control.blobenabled:
+        if self.client.BLOBfolder:
             self.enable_btn.bold = True
             self.disable_btn.bold = False
         else:
@@ -247,9 +247,8 @@ class MessagesScreen(ParentScreen):
 
 
     async def disableBLOBs(self):
-        self.control.blobenabled = False
+        self.client.BLOBfolder = None
         await self.client.report("Warning! BLOBs disabled")
-        await self.control.send_disableBLOB()
         self.enable_btn.bold = False
         self.disable_btn.bold = True
         self.enable_btn.draw()
@@ -411,10 +410,10 @@ class EnableBLOBsScreen(ParentScreen):
         self.pathwin.addstr(5, thiscol, "To enable BLOB's ensure the path below is set to a valid")
         self.pathwin.addstr(6, thiscol, "folder where BLOBs will be put, and press submit.")
 
-        if self.control.blobfolder is None:
+        if self.client.BLOBfolder is None:
             self._newpath = ''
         else:
-            self._newpath = str(self.control.blobfolder)
+            self._newpath = str(self.client.BLOBfolder)
 
                                              # window         text        row col, length of field
         self.path_txt = widgets.Text(stdscr, self.pathwin, self._newpath, 8, 0, txtlen=self.maxcols-8)
@@ -448,7 +447,7 @@ class EnableBLOBsScreen(ParentScreen):
             self.messwin.clear()
             widgets.drawmessage(self.messwin, self.client.messages[0], maxcols=self.maxcols)
 
-        if self.control.blobenabled:
+        if self.client.BLOBfolder:
             self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
         else:
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
@@ -480,32 +479,27 @@ class EnableBLOBsScreen(ParentScreen):
             try:
                 blobfolder = pathlib.Path(self._newpath).expanduser().resolve()
             except Exception:
-                self.control.blobenabled = False
-                await self.control.send_disableBLOB()
+                self.client.BLOBfolder = None
                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
                 await self.client.report("Warning! Unable to parse BLOB folder")
                 self.submit_btn.focus = False
                 self.messages_btn.focus = True
                 return
             if blobfolder.is_dir():
-                self.control.blobfolder = blobfolder
+                self.client.BLOBfolder = blobfolder
                 self._newpath = str(blobfolder)
                 self.path_txt.text = self._newpath
                 self.path_txt.draw()
-                self.control.blobenabled = True
-                await self.control.send_enableBLOB()
                 self.pathwin.addstr(0, 0, "BLOBs are enabled  ", curses.A_BOLD)
                 await self.client.report("BLOB folder is set")
             else:
-                self.control.blobenabled = False
-                await self.control.send_disableBLOB()
+                self.client.BLOBfolder = None
                 self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
                 await self.client.report("Warning! BLOB folder is not a directory")
         else:
-            self.control.blobenabled = False
+            self.client.BLOBfolder = None
             self.pathwin.addstr(0, 0, "BLOBs are disabled ", curses.A_BOLD)
             await self.client.report("Warning! BLOB folder is invalid")
-            await self.control.send_disableBLOB()
         self.submit_btn.focus = False
         self.messages_btn.focus = True
 

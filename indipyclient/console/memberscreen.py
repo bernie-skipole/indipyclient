@@ -174,10 +174,8 @@ class MemberScreen(ParentScreen):
         "Draws the received BLOB filename"
         self.memwin.clear()
         # get the last received filename
-        nametuple = (self.vector.devicename, self.vectorname, self.membername)
-        if nametuple in self.control.BLOBfiles:
-            filename = self.control.BLOBfiles[nametuple].name
-        else:
+        filename = self.vector.member(self.membername).filename
+        if not filename:
             filename = "- file not yet received -"
         # draw the filename
         text = widgets.shorten(filename, width=self.memmaxcols-4, placeholder="...")
