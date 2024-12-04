@@ -28,25 +28,34 @@ class QueClient(IPyClient):
 
     def __init__(self, txque, rxque, indihost="localhost", indiport=7624, blobfolder=None):
         """txque and rxque should be instances of one of queue.Queue, asyncio.Queue, or collections.deque
-           If blobfolder is given, and an enableBLOB is sent, received blobs will be
-           saved to that folder and the appropriate member.user_string will be set to
-           the last filename saved
+           If blobfolder is given, received blobs will be saved to that folder and the appropriate
+           member.filename will be set to the last filename saved
         """
-        if blobfolder:
-            if isinstance(blobfolder, pathlib.Path):
-                blobfolderpath = blobfolder
-            else:
-                blobfolderpath = pathlib.Path(blobfolder).expanduser().resolve()
-            if not blobfolderpath.is_dir():
-                raise KeyError("If given, the BLOB's folder should be an existing directory")
-        else:
-            blobfolderpath = None
-        super().__init__(indihost, indiport, txque=txque, rxque=rxque, blobfolder=blobfolderpath)
+        super().__init__(indihost, indiport, txque=txque, rxque=rxque)
+        # self.clientdata will contain keys txque, rxque
 
-        # self.clientdata will contain keys txque, rxque, blobfolder
+        if blobfolder:
+            self.BLOBfolder = blobfolder
+
 
 
     async def _set_rxque_item(self, eventtype, devicename, vectorname, timestamp):
+        """This generates and adds an EventItem to rxque,
+           where an EventItem is a named tuple with attributes:
+
+           eventtype -  a string, one of Message, getProperties, Delete, Define, DefineBLOB, Set, SetBLOB,
+                        these indicate data is received from the client, and the type of event. It could
+                        also be the string "snapshot", which does not indicate a received event, but is a
+                        response to a snapshot request received from txque, or "TimeOut" which indicates an
+                        expected update has not occurred, or "State" which indicates you have just transmitted
+                        a new vector, and therefore the snapshot will have your vector state set to Busy.
+           devicename - usually the device name causing the event, or None if not applicable.
+           vectorname - usually the vector name causing the event, or None if not applicable.
+           timestamp -  the event timestamp, None for the snapshot request.
+           snapshot -   For anything other than eventtype 'snapshot' it will be a full snapshot of the client.
+                        If the eventtype is 'snapshot' and devicename and vectorname are None, it will be a
+                        client snapshot, if devicename only is given it will be a device snapshot, or if both
+                        devicename and vectorname are given it will be a vector snapshot."""
         rxque = self.clientdata['rxque']
         if eventtype == "snapshot":
             if devicename:
@@ -76,50 +85,8 @@ class QueClient(IPyClient):
 
 
     async def rxevent(self, event):
-        """On being called when an event is received, this generates and adds an EventItem to rxque,
-           where an EventItem is a named tuple with attributes:
-
-           eventtype -  a string, one of Message, getProperties, Delete, Define, DefineBLOB, Set, SetBLOB,
-                        these indicate data is received from the client, and the type of event. It could
-                        also be the string "snapshot", which does not indicate a received event, but is a
-                        response to a snapshot request received from txque, or "TimeOut" which indicates an
-                        expected update has not occurred, or "State" which indicates you have just transmitted
-                        a new vector, and therefore the snapshot will have your vector state set to Busy.
-           devicename - usually the device name causing the event, or None if not applicable.
-           vectorname - usually the vector name causing the event, or None if not applicable.
-           timestamp -  the event timestamp, None for the snapshot request.
-           snapshot -   For anything other than eventtype 'snapshot' it will be a full snapshot of the client.
-                        If the eventtype is 'snapshot' and devicename and vectorname are None, it will be a
-                        client snapshot, if devicename only is given it will be a device snapshot, or if both
-                        devicename and vectorname are given it will be a vector snapshot."""
-
-        # If this event is a setblob, and if blobfolder has been defined, then save the blob to
-        # a file in blobfolder, and set the member.user_string to the filename saved
-
-        blobfolder = self.clientdata['blobfolder']
-        if blobfolder and (event.eventtype == "SetBLOB"):
-            loop = asyncio.get_running_loop()
-            # save the BLOB to a file, make filename from timestamp
-            timestampstring = event.timestamp.strftime('%Y%m%d_%H_%M_%S')
-            for membername, membervalue in event.items():
-                if not membervalue:
-                    continue
-                sizeformat = event.sizeformat[membername]
-                filename =  membername + "_" + timestampstring + sizeformat[1]
-                counter = 0
-                while True:
-                    filepath = blobfolder / filename
-                    if filepath.exists():
-                        # append a digit to the filename
-                        counter += 1
-                        filename = membername + "_" + timestampstring + "_" + str(counter) + sizeformat[1]
-                    else:
-                        # filepath does not exist, so a new file with this filepath can be created
-                        break
-                await loop.run_in_executor(None, filepath.write_bytes, membervalue)
-                # add filename to members user_string
-                memberobj = event.vector.member(membername)
-                memberobj.user_string = filename
+        """On being called when an event is received, this calls self._set_rxque_item
+           to generate and add an EventItem to rxque"""
 
         # set this event into rxque
         await self._set_rxque_item(event.eventtype, event.devicename, event.vectorname, event.timestamp)
@@ -211,22 +178,11 @@ class QueClient(IPyClient):
 
 def runqueclient(txque, rxque, indihost="localhost", indiport=7624, blobfolder=None):
     """Blocking call which creates a QueClient object and runs its asyncrun method.
-       If blobfolder is given, and an enableBLOB is sent, received blobs will be
-       saved to that folder and the appropriate member.user_string will be set to
-       the last filename saved"""
-
-    if blobfolder:
-        if isinstance(blobfolder, pathlib.Path):
-            blobfolderpath = blobfolder
-        else:
-            blobfolderpath = pathlib.Path(blobfolder).expanduser().resolve()
-        if not blobfolderpath.is_dir():
-            raise KeyError("If given, the BLOB's folder should be an existing directory")
-    else:
-        blobfolderpath = None
+       If blobfolder is given, received blobs will be saved to that folder and the
+       appropriate member.filename will be set to the last filename saved"""
 
     # create a QueClient object
-    client = QueClient(txque, rxque, indihost, indiport, blobfolderpath)
+    client = QueClient(txque, rxque, indihost, indiport, blobfolder)
     asyncio.run(client.asyncrun())
 
 
