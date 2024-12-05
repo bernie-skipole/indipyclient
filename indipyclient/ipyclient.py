@@ -142,7 +142,7 @@ class IPyClient(collections.UserDict):
         self.enable_reports = True
 
         # holds dictionary of initial user strings
-        self._user_string_dict = {}
+        self.user_string_dict = {}
 
         # set and unset BLOBfolder
         self._BLOBfolder = None
@@ -207,14 +207,15 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
 
     def set_user_string(self, devicename, vectorname, membername, user_string = ""):
-        """Normally device, vector and member user strings are initially set to empty strings.
+        """Normally device, vector and member user strings are initially set to empty strings,
+           and are changed as the user of this library requires.
            This method can be used to set user_strings prior to the devices etc., being learnt
-           by the protocol and should be called before asyncrun is called.
+           by the client and should be called before asyncrun is called.
            This is only useful for those scripts which know in advance what devices they are connecting to.
            If membername is None, the user_string is applied to the vector, if vectorname is None
            it applies to the device.
-           user_strings are available for any usage a script may require, such as setting id values
-           for a database perhaps. However it is suggested they should be strings, so if JSON snapshots
+           user_strings may be used for any purpose, such as setting id values for a database perhaps.
+           However it is suggested they should be limited to strings, so if JSON snapshots
            are taken, they are easily displayed as JSON values.
            """
         if not devicename:
@@ -223,11 +224,11 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             raise KeyError("If a membername is specified, a vectorname must also be given")
 
         if not vectorname:
-            self._user_string_dict[devicename, None, None] = user_string
+            self.user_string_dict[devicename, None, None] = user_string
         elif not membername:
-            self._user_string_dict[devicename, vectorname, None] = user_string
+            self.user_string_dict[devicename, vectorname, None] = user_string
         else:
-            self._user_string_dict[devicename, vectorname, membername] = user_string
+            self.user_string_dict[devicename, vectorname, membername] = user_string
 
 
 
@@ -1023,10 +1024,6 @@ class _ParentDevice(collections.UserDict):
         # This device name
         self.devicename = devicename
 
-        # the user_string is available to be any string a user of
-        # this device may wish to set
-        self.user_string = ""
-
 
     @property
     def enable(self):
@@ -1087,6 +1084,10 @@ class Device(_ParentDevice):
 
     def __init__(self, devicename, client):
         super().__init__(devicename)
+
+        # the user_string is available to be any string a user of
+        # this device may wish to set
+        self.user_string = client.user_string_dict.get((devicename, None, None), "")
 
         # and the device has a reference to its client
         self._client = client

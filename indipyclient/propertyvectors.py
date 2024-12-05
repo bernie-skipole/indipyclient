@@ -38,11 +38,6 @@ class Vector(collections.UserDict):
         # if self.enable is False, this property is 'deleted'
         self.enable = True
 
-        # the user_string is available to be any string a user of
-        # this vector may wish to set
-        self.user_string = ""
-
-
     @property
     def state(self):
         return self._state
@@ -149,7 +144,6 @@ class SnapVector(Vector):
 
 
 
-
 class PropertyVector(Vector):
     "Inherits from Vector, and is the parent class of SwitchVector etc.."
 
@@ -163,6 +157,9 @@ class PropertyVector(Vector):
                               # set False when a setvector is received
         self._newtimer = 0    # Set to time.time() when a new vector is sent
 
+        # the user_string is available to be any string a user of
+        # this device may wish to set
+        self.user_string = client.user_string_dict.get((self.devicename, self.name, None), "")
 
 
     def checktimedout(self, nowtime):
@@ -267,7 +264,9 @@ class SwitchVector(PropertyVector):
         # self.data is a dictionary of switch name : switchmember
         # create  members
         for membername, membervalue in event.items():
-            self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
+            member = SwitchMember(membername, event.memberlabels[membername], membervalue)
+            member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+            self.data[membername] = member
 
     @property
     def perm(self):
@@ -313,7 +312,11 @@ class SwitchVector(PropertyVector):
                 self.data[membername].membervalue = membervalue
             else:
                 # create new member
-                self.data[membername] = SwitchMember(membername, event.memberlabels[membername], membervalue)
+                member = SwitchMember(membername, event.memberlabels[membername], membervalue)
+                member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+                self.data[membername] = member
+
+
         self.enable = True
 
     def _newSwitchVector(self, timestamp=None, members={}):
@@ -389,7 +392,9 @@ class LightVector(PropertyVector):
         # self.data is a dictionary of light name : lightmember
         # create  members
         for membername, membervalue in event.items():
-            self.data[membername] = LightMember(membername, event.memberlabels[membername], membervalue)
+            member = LightMember(membername, event.memberlabels[membername], membervalue)
+            member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+            self.data[membername] = member
 
     @property
     def perm(self):
@@ -424,7 +429,9 @@ class LightVector(PropertyVector):
                 self.data[membername].membervalue = membervalue
             else:
                 # create new member
-                self.data[membername] = LightMember(membername, event.memberlabels[membername], membervalue)
+                member = LightMember(membername, event.memberlabels[membername], membervalue)
+                member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+                self.data[membername] = member
         self.enable = True
 
     def snapshot(self):
@@ -454,7 +461,9 @@ class TextVector(PropertyVector):
         # self.data is a dictionary of text name : textmember
         # create  members
         for membername, membervalue in event.items():
-            self.data[membername] = TextMember(membername, event.memberlabels[membername], membervalue)
+            member = TextMember(membername, event.memberlabels[membername], membervalue)
+            member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+            self.data[membername] = member
 
     @property
     def perm(self):
@@ -489,7 +498,9 @@ class TextVector(PropertyVector):
                 self.data[membername].membervalue = membervalue
             else:
                 # create new member
-                self.data[membername] = TextMember(membername, event.memberlabels[membername], membervalue)
+                member = TextMember(membername, event.memberlabels[membername], membervalue)
+                member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+                self.data[membername] = member
         self.enable = True
 
 
@@ -577,7 +588,9 @@ class NumberVector(PropertyVector):
         # self.data is a dictionary of number name : numbermember
         # create  members
         for membername, membervalue in event.items():
-            self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
+            member = NumberMember(membername, *event.memberlabels[membername], membervalue)
+            member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+            self.data[membername] = member
 
     def getfloatvalue(self, membername):
         "Given a membername of this vector, returns the number as a float"
@@ -631,7 +644,12 @@ class NumberVector(PropertyVector):
                 self.data[membername].membervalue = membervalue
             else:
                 # create new member
-                self.data[membername] = NumberMember(membername, *event.memberlabels[membername], membervalue)
+                member = NumberMember(membername, *event.memberlabels[membername], membervalue)
+                member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+                self.data[membername] = member
+
+
+
         self.enable = True
 
 
@@ -718,7 +736,9 @@ class BLOBVector(PropertyVector):
         # self.data is a dictionary of blob name : blobmember
         # create  members
         for membername, label in event.memberlabels.items():
-            self.data[membername] = BLOBMember(membername, label)
+            member = BLOBMember(membername, label)
+            member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+            self.data[membername] = member
 
     def set_blobsize(self, membername, blobsize):
         "Used when an event is received to set the member blobsize"
@@ -769,7 +789,9 @@ class BLOBVector(PropertyVector):
                 self.data[membername].label = label
             else:
                 # create new member
-                self.data[membername] = BLOBMember(membername, label)
+                member = BLOBMember(membername, label)
+                member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
+                self.data[membername] = member
         if not self.enable:
             # so was previously disabled
             self.enable = True
