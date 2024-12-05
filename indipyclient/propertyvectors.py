@@ -770,7 +770,10 @@ class BLOBVector(PropertyVector):
             else:
                 # create new member
                 self.data[membername] = BLOBMember(membername, label)
-        self.enable = True
+        if not self.enable:
+            # so was previously disabled
+            self.enable = True
+            self._enableBLOB = event.device._enableBLOB
 
 
     def _setvector(self, event):

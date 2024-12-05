@@ -141,17 +141,36 @@ class IPyClient(collections.UserDict):
         # Enables reports, by adding INFO logs to client messages
         self.enable_reports = True
 
+        # holds dictionary of initial user strings
+        self._user_string_dict = {}
+
         # set and unset BLOBfolder
         self._BLOBfolder = None
         self._blobfolderchanged = False
+        # This is the default enableBLOB value
+        self._enableBLOBdefault = "Never"
 
+
+    # The enableBLOBdefault default should typically be set before asyncrun is
+    # called, so if set to Also, this will ensure all BLOBs will be received without
+    # further action
+    @property
+    def enableBLOBdefault(self):
+        return self._enableBLOBdefault
+
+    @enableBLOBdefault.setter
+    def enableBLOBdefault(self, value):
+        if value in ("Never", "Also", "Only"):
+            self._enableBLOBdefault = value
+
+    # Setting a BLOBfolder forces all BLOBs will be received and saved as files to the given folder
 
     def _get_BLOBfolder(self):
         return self._BLOBfolder
 
     def _set_BLOBfolder(self, value):
         """Setting the BLOBfolder to a folder will automatically set all devices to Also
-           Setting it to None, will set all devices to Never"""
+           Setting it to None, will set all devices to self._enableBLOBdefault"""
         if value:
             if isinstance(value, pathlib.Path):
                 blobpath = value
@@ -170,10 +189,10 @@ class IPyClient(collections.UserDict):
                 # no change
                 return
             for device in self.values():
-                device._enableBLOB = "Never"
+                device._enableBLOB = self._enableBLOBdefault
                 for vector in device.values():
                     if vector.vectortype == "BLOBVector":
-                        vector._enableBLOB = "Never"
+                        vector._enableBLOB = self._enableBLOBdefault
         self._BLOBfolder = blobpath
         self._blobfolderchanged = True
 
@@ -183,8 +202,32 @@ class IPyClient(collections.UserDict):
         fset=_set_BLOBfolder,
         doc= """Setting the BLOBfolder to a folder will automatically transmit an enableBLOB
 for all devices set to Also, and will save incoming BLOBs to that folder.
-Setting it to None will transmit an enableBLOB for all devices set to Never"""
+Setting it to None will transmit an enableBLOB for all devices set to the enableBLOBdefault value"""
         )
+
+
+    def set_user_string(self, devicename, vectorname, membername, user_string = ""):
+        """Normally device, vector and member user strings are initially set to empty strings.
+           This method can be used to set user_strings prior to the devices etc., being learnt
+           by the protocol and should be called before asyncrun is called.
+           This is only useful for those scripts which know in advance what devices they are connecting to.
+           If membername is None, the user_string is applied to the vector, if vectorname is None
+           it applies to the device.
+           user_strings are available for any usage a script may require, such as setting id values
+           for a database perhaps. However it is suggested they should be strings, so if JSON snapshots
+           are taken, they are easily displayed as JSON values.
+           """
+        if not devicename:
+            raise KeyError("A devicename must be given to set_user_string")
+        if membername and (not vectorname):
+            raise KeyError("If a membername is specified, a vectorname must also be given")
+
+        if not vectorname:
+            self._user_string_dict[devicename, None, None] = user_string
+        elif not membername:
+            self._user_string_dict[devicename, vectorname, None] = user_string
+        else:
+            self._user_string_dict[devicename, vectorname, membername] = user_string
 
 
 
@@ -844,7 +887,7 @@ Setting it to None will transmit an enableBLOB for all devices set to Never"""
     async def resend_enableBLOB(self, devicename, vectorname=None):
         """Sends an enableBLOB instruction, repeating the last value sent.
            Used as an automatic reply to a def packet received, if no last value sent
-           the default is Never"""
+           the default is the enableBLOBdefault value."""
         if self.connected:
             xmldata = ET.Element('enableBLOB')
             if not devicename:
@@ -1053,7 +1096,7 @@ class Device(_ParentDevice):
 
         # only applicable to BLOB vectors
         if client._BLOBfolder is None:
-            self._enableBLOB = "Never"  # can be set to one of Never, Also or Only
+            self._enableBLOB = client._enableBLOBdefault
         else:
             self._enableBLOB = "Also"
 
@@ -1066,6 +1109,14 @@ class Device(_ParentDevice):
     def rxvector(self, root):
         """Handle received data, sets new propertyvector into self.data,
            or updates existing property vector and returns an event"""
+
+        if (root.tag in DEFTAGS) and (not self.enable):
+            # if this device is disabled, but about to become enabled
+            # this action will set its enableBLOB value
+            if self._client._BLOBfolder is None:
+                self._enableBLOB = self._client._enableBLOBdefault
+            else:
+                self._enableBLOB = "Also"
         try:
             if root.tag == "delProperty":
                 return events.delProperty(root, self, self._client)
