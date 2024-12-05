@@ -14,7 +14,7 @@ A class 'QueClient' in module indipyclient.queclient is available if you wish to
 
 
 .. autoclass:: indipyclient.queclient.QueClient
-   :members: debug_verbosity, asyncrun
+   :members: debug_verbosity, asyncrun, set_user_string
 
 As QueClient inherits from PyClient it also has methods send_newVector etc., but these would not normally be called, since the point of this class is to send and receive all data via the two queues. The format of the items in these queues is described below.
 

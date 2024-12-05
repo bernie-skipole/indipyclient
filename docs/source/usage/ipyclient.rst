@@ -40,6 +40,14 @@ The port as given in the class argument.
 
 Dictionary of any named arguments.
 
+**self.BLOBfolder**
+
+If set to a directory, enableBLOB instructions will be sent automatically (with value Also) allowing the server to send BLOBs, which this client will receive and save to files in this directory.
+
+**self.enableBLOBdefault**
+
+If set to a string; one of "Never", "Also", "Only" then this value will be the default used by the client.
+
 **self.enable_reports**
 
 If True, then messages set into the report and warning methods will be injected into the client as a received message, and hence will be shown on the terminal messages window. As default this is True.
@@ -70,7 +78,7 @@ Note, messages are added with 'appendleft' so the newest message is messages[0] 
 user_string
 ^^^^^^^^^^^
 
-The client, and each device, vector and member all have 'user_string' attributes. These are not received from the server, or sent to the server, but are available for any string data you may want to associate with the object. These may be useful to provide additional data to your client display code, for example the queclient uses the member string to hold the last BLOB filename saved.
+The client, and each device, vector and member all have 'user_string' attributes. These are not received from the server, or sent to the server, but are available for any string data you may want to associate with the object. These may be useful to provide additional data to your client display code.
 
 Strings are specified rather than general Python Objects, so that the snapshot, together with its JSON methods can safely include these strings.
 

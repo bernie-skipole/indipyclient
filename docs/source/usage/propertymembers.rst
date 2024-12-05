@@ -107,6 +107,10 @@ These values, and self.membervalue are strings taken from the XML protocol. The 
 
 **self.user_string**
 
+**self.filename**
+
+A filename is set here if the client has a BLOBfolder set, and a received file has been saved. It is therefore the file name of the last file received.
+
 **self.membervalue**
 
 A Bytes value of the received BLOB.
