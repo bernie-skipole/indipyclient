@@ -214,9 +214,10 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
            This is only useful for those scripts which know in advance what devices they are connecting to.
            If membername is None, the user_string is applied to the vector, if vectorname is None
            it applies to the device.
-           user_strings may be used for any purpose, such as setting id values for a database perhaps.
+           user_strings may be used for any purpose, such as setting associated id values
+           for a database perhaps.
            However it is suggested they should be limited to strings, so if JSON snapshots
-           are taken, they are easily displayed as JSON values.
+           are taken, they are easily converted to JSON values.
            """
         if not devicename:
             raise KeyError("A devicename must be given to set_user_string")
