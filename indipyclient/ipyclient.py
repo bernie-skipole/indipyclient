@@ -207,17 +207,16 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
 
     def set_user_string(self, devicename, vectorname, membername, user_string = ""):
-        """Normally device, vector and member user strings are initially set to empty strings,
-           and are changed as the user of this library requires.
-           This method can be used to set user_strings prior to the devices etc., being learnt
-           by the client and should be called before asyncrun is called.
+        """Each device, vector and member has a user_string attribute, initially set to empty strings,
+           and can be changed to any string you may require. These strings may be used for any purpose,
+           such as setting associated id values for a database perhaps.
+           It is suggested they should be limited to strings, so if JSON snapshots
+           are taken, they are easily converted to JSON values.
+           This method can be called multiple times to set initial user_string values prior to the
+           devices etc., being learnt by the client. The method should be called before asyncrun is called.
            This is only useful for those scripts which know in advance what devices they are connecting to.
            If membername is None, the user_string is applied to the vector, if vectorname is None
            it applies to the device.
-           user_strings may be used for any purpose, such as setting associated id values
-           for a database perhaps.
-           However it is suggested they should be limited to strings, so if JSON snapshots
-           are taken, they are easily converted to JSON values.
            """
         if not devicename:
             raise KeyError("A devicename must be given to set_user_string")
@@ -887,7 +886,8 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
 
     async def resend_enableBLOB(self, devicename, vectorname=None):
-        """Sends an enableBLOB instruction, repeating the last value sent.
+        """Internal method used by the framework, which sends an enableBLOB instruction,
+           repeating the last value sent.
            Used as an automatic reply to a def packet received, if no last value sent
            the default is the enableBLOBdefault value."""
         if self.connected:
