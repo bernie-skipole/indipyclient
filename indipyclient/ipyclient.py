@@ -212,9 +212,9 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
            such as setting associated id values for a database perhaps.
            It is suggested they should be limited to strings, so if JSON snapshots
            are taken, they are easily converted to JSON values.
-           This method can be called multiple times to set initial user_string values prior to the
-           devices etc., being learnt by the client. The method should be called before asyncrun is called.
-           This is only useful for those scripts which know in advance what devices they are connecting to.
+           This method can be called before asyncrun is called, and before the devices are learnt, which
+           would only be useful for those scripts which know in advance what devices they are connecting to.
+           As soon as the device, vector or member becomes learnt it will then be set with the user string.
            If membername is None, the user_string is applied to the vector, if vectorname is None
            it applies to the device.
            """
@@ -225,11 +225,56 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
         if not vectorname:
             self.user_string_dict[devicename, None, None] = user_string
+            if devicename in self:
+                self[devicename].user_string = user_string
+
         elif not membername:
             self.user_string_dict[devicename, vectorname, None] = user_string
+            if devicename in self:
+                if vectorname in self[devicename]:
+                    self[devicename][vectorname].user_string = user_string
+
         else:
             self.user_string_dict[devicename, vectorname, membername] = user_string
+            if devicename in self:
+                if vectorname in self[devicename]:
+                    vector = self[devicename][vectorname]
+                    if membername in vector:
+                        member = vector.members(membername)
+                        member.user_string = user_string
 
+
+    def get_user_string(self, devicename, vectorname, membername):
+        """Each device, vector and member has a user_string attribute. If devicename,
+           vectorname and membername are given this method returns the user string of the member.
+           If membername is None, the user_string of the vector is returned, if vectorname is None
+           as well, the user_string of the device is returned. If no object can be found, and no
+           initial string has been set with the set_user_string method, None will be returned."""
+        if not devicename:
+            raise KeyError("A devicename must be given to set_user_string")
+        if membername and (not vectorname):
+            raise KeyError("If a membername is specified, a vectorname must also be given")
+
+        if vectorname and membername:
+            if devicename in self:
+                device = self[devicename]
+                if vectorname in device:
+                    vector = device[vectorname]
+                    if membername in vector:
+                        return vector.member(membername).user_string
+            return self.user_string_dict.get( (devicename, vectorname, membername) )
+
+        if vectorname:
+            if devicename in self:
+                device = self[devicename]
+                if vectorname in device:
+                    return device[vectorname].user_string
+            return self.user_string_dict.get( (devicename, vectorname, None) )
+
+        if devicename in self:
+            return self[devicename].user_string
+
+        return self.user_string_dict.get( (devicename, None, None) )
 
 
     def debug_verbosity(self, verbose):
