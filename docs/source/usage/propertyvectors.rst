@@ -107,8 +107,6 @@ For example, if the attribute is "OneOfMany", of the members of this vector, one
 
 .. autoclass:: indipyclient.propertyvectors.LightVector
 
-As Lights are read only, no send_newLightVector is available.
-
 ----
 
 .. autoclass:: indipyclient.propertyvectors.TextVector
