@@ -74,7 +74,7 @@ BLOBs
 
 BLOBs received by the client will appear as a bytes object in a setBLOBVector event, but when a client first connects, the server assumes that transmitting BLOBs to the client is disabled. To enable BLOB's the client must transmit an enableBLOB command.
 
-The framework does this automatically on receiving a vector definition packet. It sends one of the values:
+The ipclient does this automatically on receiving a vector definition packet. It sends one of the values:
 
 **Never**
 
@@ -88,9 +88,9 @@ This enables BLOBs, which will be sent together with any other vectors generated
 
 This enables BLOBs, but disallows any other vectors, so the connection is dedicated to BLOBs only.
 
-The actual value sent in enableBLOB, by default will be "Never", but this default can be changed by setting the client enableBLOBdefault attribute, so if this is set to 'Also', then receiving all BLOBs will be enabled.
+The default value automatically sent in the enableBLOB command will be "Never", but this default can be changed by setting the client enableBLOBdefault attribute, so if this is set to 'Also', then receiving all BLOBs will be enabled.
 
-The IPyClient object has the following method:
+If fine control of which devices and vectors can receive BLOBs from the server, then the IPyClient object has the following method:
 
 async def send_enableBLOB(self, value, devicename, vectorname=None)
 
@@ -100,11 +100,13 @@ The devicename must be specified, but if the vectorname is not, the command appl
 
 If devicename and vectorname are both specified, the command applies to that particular vector.
 
-Therefore if fine control of which devices and vectors can receive BLOBs from the server, then the send_enableBLOB method can be used.
+So by leaving enableBLOBdefault as "Never", and using the above method to send an "Also" for a particular device, you can limit BLOBs sent by the server to just that device.
 
-A further facility is available, if the client attribute BLOBfolder is set to a directory, the client will automatically enable BLOB's (by sending Also), and will save any received BLOBs to a file within the given directory.
+A further facility is available, which has precedence over the above options, if the client attribute BLOBfolder is set to a directory, the client will automatically enable all BLOB's (by sending Also), and will save any received BLOBs to a file within the given directory.
 
 If BLOBfolder is subsequently set to None, the client will send the enableBLOBdefault attribute, which is typically "Never", turning off BLOBs.
+
+So if writing your own client, simply setting ipclient.BLOBfolder to a directory path will enable BLOBs and save incoming BLOBs to the directory, and you can ignore the incoming setBLOBVector event.
 
 
 Asynchronous operation
