@@ -1,5 +1,7 @@
 
-import asyncio, curses, sys, pathlib, time
+import asyncio, curses, sys, time
+
+from pathlib import Path
 
 from datetime import timezone
 
@@ -1289,7 +1291,7 @@ class BLOBMember(BaseMember):
                 self.send_btn.focus = False
                 self.send_btn.draw()
                 try:
-                    filepath = pathlib.Path(self._newvalue.strip()).expanduser().resolve()
+                    filepath = Path(self._newvalue.strip()).expanduser().resolve()
                     blobformat = ''.join(filepath.suffixes)
                     members = {self.name : (filepath, 0, blobformat)}
                     await self.vector.send_newBLOBVector(members=members)
@@ -1357,7 +1359,7 @@ class BLOBMember(BaseMember):
                 self.send_btn.focus = False
                 self.send_btn.draw()
                 try:
-                    filepath = pathlib.Path(self._newvalue.strip()).expanduser().resolve()
+                    filepath = Path(self._newvalue.strip()).expanduser().resolve()
                     blobformat = ''.join(filepath.suffixes)
                     members = {self.name : (filepath, 0, blobformat)}
                     await self.vector.send_newBLOBVector(members=members)
