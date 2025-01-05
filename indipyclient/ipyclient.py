@@ -240,7 +240,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 if vectorname in self[devicename]:
                     vector = self[devicename][vectorname]
                     if membername in vector:
-                        member = vector.members(membername)
+                        member = vector.member(membername)
                         member.user_string = user_string
 
 
