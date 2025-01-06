@@ -44,7 +44,8 @@ The package help is:
     The BLOB's folder can also be set from within the session.
     Setting loglevel and logfile should only be used for brief
     diagnostic purposes, the logfile could grow very big.
-    loglevel:1 Information and error messages only,
+    loglevel:1 Information and error messages only, no exception trace.
+    The following levels enable exception traces in the logs
     loglevel:2 As 1 plus xml vector tags without members or contents,
     loglevel:3 As 1 plus xml vectors and members - but not BLOB contents,
     loglevel:4 As 1 plus xml vectors and all contents
