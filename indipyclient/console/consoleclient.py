@@ -199,7 +199,7 @@ class ConsoleClient:
                     # the remaining screens are only affected if the event devicename
                     # is the device they refer to
                     if isinstance(event, delProperty):
-                        if event.vectorname is None:
+                        if (event.vectorname is None) or (not event.device.enable):
                             # the whole device is disabled,
                             self.screen.close("Devices")
                         elif isinstance(self.screen, ChooseVectorScreen):
