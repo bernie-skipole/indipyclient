@@ -31,7 +31,7 @@ All the vector classes have the following methods:
 The snapshot will have the same common attributes and methods as the vector, apart from the snapshot method, and the device attribute. It will also have the extra methods:
 
 **dictdump()**
-    Returns a dictionary of this vector
+    Returns a dictionary of this vector, with datetime objects converted to strings.
 
 **dump(fp, indent=None, separators=None)**
     Serialize the snapshot as a JSON formatted stream to fp, a file-like object.
@@ -58,6 +58,12 @@ One of "Idle", "Ok", "Busy" or "Alert"
 
 **self.message**
 
+When values are received from the server, the values may have an optional message set. This attribute holds the last message received.
+
+**self.message_timestamp**
+
+If a message is received, this holds the UTC datetime of the message.
+
 **self.devicename**
 
 **self.user_string**
@@ -66,7 +72,7 @@ This is initially an empty string, but can be set by your code to any string you
 
 **self.timestamp**
 
-A UTC datetime object
+A UTC datetime object, updated from the server as values are received.
 
 **self.timeout**
 
