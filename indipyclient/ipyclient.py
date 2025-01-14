@@ -997,6 +997,9 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
         self._stop = False
         try:
             await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), self.hardware())
+        except asyncio.CancelledError:
+            self._stop = True
+            raise
         finally:
             self.stopped.set()
             self._stop = True
