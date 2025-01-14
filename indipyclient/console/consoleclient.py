@@ -361,6 +361,9 @@ class ConsoleClient:
         self._stop = False
         try:
             await asyncio.gather(self.client.asyncrun(), self.updatescreen(), self.getinput(), self._checkshutdown())
+        except asyncio.CancelledError:
+            self._stop = True
+            raise
         finally:
             self.stopped.set()
             self._stop = True
