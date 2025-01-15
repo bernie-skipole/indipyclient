@@ -60,12 +60,6 @@ True if a connection has been made.
 
 This is initially an empty string, but can be set by your code to any string you like.
 
-**self.stopped**
-
-This is an asyncio.Event object, which is set when asyncrun is finished.
-
-awaiting self.stopped.wait() will wait until the client has shutdown. This could be used to clear up after a client has closed.
-
 **self.messages**
 
 This is a collections.deque of item tuples (Timestamp, message).
