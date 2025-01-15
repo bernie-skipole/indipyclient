@@ -132,8 +132,6 @@ class IPyClient(collections.UserDict):
 
         # and shutdown routine sets this to True to stop coroutines
         self._stop = False
-        # this is set when asyncrun is finished
-        self.stopped = asyncio.Event()
 
         # Indicates how verbose the debug xml logs will be when created.
         self._verbose = 1
@@ -1001,7 +999,6 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             self._stop = True
             raise
         finally:
-            self.stopped.set()
             self._stop = True
 
 
