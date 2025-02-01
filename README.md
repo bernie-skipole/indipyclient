@@ -4,21 +4,36 @@ You may have Python programs implementing some form of data collection or contro
 
 An associated package 'indipydriver' can be used to take your data, organise it into a data structure defined by the INDI protocol, and serve it on a port.
 
-This indipyclient package provides a terminal client, which connects to the port, allowing you to view and control your instrument from a terminal session.
-
-It can be installed from Pypi with:
-
-    pip install indipyclient
-
-indipydriver and indipyclient communicate with the INDI protocol.
-
 INDI - Instrument Neutral Distributed Interface.
 
 See https://en.wikipedia.org/wiki/Instrument_Neutral_Distributed_Interface
 
-The indipyclient terminal client can be started from the command line, and can also be imported if required, in which case it provides a set of classes which can be used to create scripts to control the remote instrument.
+This indipyclient package provides a set of classes which can be used to create scripts to control the remote instrument. In particular your script can import and create an instance of the 'IPyClient' class. The IPyClient object has an asyncrun() coroutine method which needs to be awaited, typically gathered with your own tasks, to run your script or client.
 
-The client can be run with
+In general, a client transmits a 'getProperties' request (this indipyclient package does this for you on connecting).
+
+The server replies with definition packets (defSwitchVector, defLightVector, .. ) that define the format of the instrument data.
+
+The indipyclient package reads these, and its IPyClient instance becomes a mapping of the devices, vectors and members.
+
+For example, if ipyclient is your instance of IPyClient:
+
+ipyclient[devicename][vectorname][membername] will be the value of a particular parameter.
+
+Multiple devices can be served, a 'vector' is a collection of members, so a switch vector may have one or more switches in it.
+
+As the instrument produces changing values, the server sends 'set' packets, such as setSwitchVector, setLightVector ..., these contain new values, which update the ipyclient values. They also cause the ipyclient.rxevent(event) method to be called, which you could overwrite to take any actions you prefer.
+
+To transmit a new value you could call the ipyclient.send_newVector coroutine method.
+
+Indipyclient can be installed from Pypi with:
+
+    pip install indipyclient
+
+
+The package also provides a general purpose terminal client (Linux only) developed with the Python standard library Curses package, and no dependencies. When run this connects to the INDI server port, allowing you to view and control your instrument from a terminal session.
+
+The terminal client can be run from a virtual environment with
 
 indipyclient [options]
 
@@ -73,3 +88,9 @@ and indipydriver is available at:
 https://pypi.org/project/indipydriver
 
 https://github.com/bernie-skipole/indipydriver
+
+A further terminal client 'indipyterm' is available, which itself calls on indipyclient to do the heavy lifting, and uses the textual package to present terminal characters, this should also work on Windows and is available at:
+
+https://pypi.org/project/indipyterm
+
+https://github.com/bernie-skipole/indipyterm
