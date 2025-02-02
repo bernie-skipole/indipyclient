@@ -8,6 +8,10 @@ INDI - Instrument Neutral Distributed Interface.
 
 See https://en.wikipedia.org/wiki/Instrument_Neutral_Distributed_Interface
 
+The INDI protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object). The client is general purpose, taking the format of switches, numbers etc., from the protocol.
+
+INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control.
+
 This indipyclient package provides a set of classes which can be used to create scripts to control the remote instrument. In particular your script can import and create an instance of the 'IPyClient' class. The IPyClient object has an asyncrun() coroutine method which needs to be awaited, typically gathered with your own tasks, to run your script or client.
 
 In general, a client transmits a 'getProperties' request (this indipyclient package does this for you on connecting).
@@ -70,10 +74,6 @@ A typical session would look like:
 
 ![Terminal screenshot](https://github.com/bernie-skipole/indipyclient/raw/main/docs/source/usage/image.png)
 
-
-The INDI protocol defines the format of the data sent, such as light, number, text, switch or BLOB (Binary Large Object). The client is general purpose, taking the format of switches, numbers etc., from the protocol.
-
-INDI is often used with astronomical instruments, but is a general purpose protocol which can be used for any instrument control.
 
 Further documentation is available at:
 

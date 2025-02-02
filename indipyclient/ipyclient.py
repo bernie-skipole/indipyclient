@@ -340,14 +340,12 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
     async def warning(self, message):
         """The given string message will be logged at level WARNING,
-           and if self.enable_reports is True will be injected into
-           the received data, which will be picked up by the rxevent method.
+           and will be injected into the received data, which will be
+           picked up by the rxevent method.
            It is a way to set a message on to your client display, in the
            same way messages come from the INDI service."""
         try:
             logger.warning(message)
-            if not self.enable_reports:
-                return
             timestamp = datetime.now(tz=timezone.utc)
             timestamp = timestamp.replace(tzinfo=None)
             root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
