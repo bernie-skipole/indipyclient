@@ -7,7 +7,6 @@ A pure Python INDI terminal client
    :maxdepth: 1
 
    usage/introduction
-   usage/installation
    usage/concept
    usage/ipyclient
    usage/devices

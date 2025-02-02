@@ -1,19 +1,11 @@
 Concept
 =======
 
-You may have Python programs reading or controlling external instruments, or GPIO pins or any form of data collection or control.
-
 The associated package 'indipydriver' can be used to take your data, organise it into a structure defined by the INDI protocol, and serve it on a port.
 
 The INDI protocol (Instrument Neutral Distributed Interface) specifies a limited number of ways the data can be presented, as switches, lights, text, numbers and BLOBs (Binary Large Objects), together with grouping and label values which may be useful to display the data.
 
-As the protocol contains the format of the data, a client could learn and present the controls when it connects. It could also be much simpler if it is written for a particular instrument, in which case the controls can be immediately set up, and present the data as it is received.
-
-This 'indipyclient' package is an INDI client.
-
-It provides a general purpose terminal client, which learns the devices and their controls. If using it for that purpose only, then simply run the program from the command line.
-
-It also contains classes which make the connection, decode the protocol, and present the data as class attributes, and have methods which can transmit data.
+This 'indipyclient' package contains classes which make the connection to the server, decode the protocol, and present the data as class attributes, and have methods which can transmit data.
 
 Note: other INDI servers and clients are available. See :ref:`references`.
 
@@ -24,25 +16,65 @@ The protocol is defined at:
 
 https://www.clearskyinstitute.com/INDI/INDI.pdf
 
-In general, a client transmits a 'getProperties' request (this indipyclient package does this for you on connecting).
 
-The server replies with definition packets (defSwitchVector, defLightVector, .. ) that define the format of the instrument data.
+Asynchronous operation
+----------------------
 
-The indipyclient package reads these, and its main IPyClient instance becomes a mapping of the devices, vectors and members.
+The indipyclient classes send and receive data asynchronously, and the ipyclient.asyncrun() coroutine method, when awaited, causes the client to make its call and run.
 
-For example, if ipyclient is your instance of IPyClient:
+The asyncrun method could be gathered together with any of your own coroutines, or could be called with the asyncio.run() call.
 
-ipyclient[devicename][vectorname][membername] will be the value of a particular parameter.
+Assuming ipyclient is your instance of the IPyClient class.
 
-Multiple devices can be served, a 'vector' is a collection of members, so a switch vector may have one or more switches in it.
+If your own code is blocking, then you will probably need to await ipyclient.asyncrun() in another thread, a common method would be to introduce queues to pass data between threads. To help with this, IPyClient has a snapshot() method which returns a copy of the state of the client, with devices, vectors and members, but without the methods to send or update data. This snapshot could be passed to other threads providing them with the current client information. See :ref:`queclient`.
 
-As the instrument produces changing values, the server sends 'set' packets, such as setSwitchVector, setLightVector ..., these contain new values, and are read and update the ipyclient values. They also cause the ipyclient.rxevent(event) method to be called, which you could overwrite to take any actions you prefer. The possible event objects are described within this documentation.
 
-To transmit a new value you could call the ipyclient.send_newVector coroutine method, or if you have a vector object, you could call its specified send method, for example vector.send_newSwitchVector, these are called with the appropriate new member values.
+Receiving Example
+-----------------
+
+This script monitors a remote "Thermostat" and prints the temperature as events are received. The thermostat driver is described as an example at https://indipydriver.readthedocs.io
+
+The script checks for a setNumberVector event, and if the event matches the device, vector and member names, prints the received value. This continues indefinitely, printing the temperature as values are received::
+
+    import asyncio
+    import indipyclient as ipc
+
+    class MyClient(ipc.IPyClient):
+
+        async def rxevent(self, event):
+            "Prints the temperature as it is received"
+            if isinstance(event, ipc.setNumberVector):
+                if event.devicename != "Thermostat":
+                    return
+                if event.vectorname != "temperaturevector":
+                    return
+                # use dictionary get method which returns None
+                # if this member name is not present in the event
+                value = event.get("temperature")
+                if value:
+                    print(value)
+
+    ipclient = MyClient()
+
+    asyncio.run(ipclient.asyncrun())
+
+
+As well as IPyClient, the function getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
+
+.. autofunction:: indipyclient.getfloat
+
+
+Sending data
+------------
+
+To transmit a new value to the server you could call the ipyclient.send_newVector coroutine method
+
+Or if you have a vector object, obtained from ipyclient[devicename][vectorname], you could call its specified send method, for example vector.send_newSwitchVector, these are called with the appropriate new member values.
 
 Each vector has a state attribute, set to a string, one of "Idle", "Ok", "Busy" or "Alert".
 
 When a send method is called, the vector's state is automatically set to "Busy", and when a 'set' packet is received, it will update the ipyclient values and also provide confirmation of the changed state by setting it to "Ok".
+
 
 Timeouts
 --------
@@ -68,6 +100,7 @@ Note 'Property' and 'Vector' are interchangeable terms. The spec also states:
 *Timeout values give Clients a simple ability to detect dysfunctional Devices or broken communication...*
 
 You have the option of handling timeouts however you prefer.
+
 
 BLOBs
 -----
@@ -107,51 +140,6 @@ A further facility is available, which has precedence over the above options, if
 If BLOBfolder is subsequently set to None, the client will send the enableBLOBdefault attribute, which is typically "Never", turning off BLOBs.
 
 So if writing your own client, simply setting ipclient.BLOBfolder to a directory path will enable BLOBs and save incoming BLOBs to the directory, and you can ignore the incoming setBLOBVector event.
-
-
-Asynchronous operation
-----------------------
-
-The indipyclient classes send and receive data asynchronously, and the ipyclient.asyncrun() coroutine method, when awaited, causes the client to make its call and run.
-
-The asyncrun method could be gathered together with any of your own coroutines, or could be called with the asyncio.run() call.
-
-If your own code is blocking, then you will probably need to await ipyclient.asyncrun() in another thread, a common method would be to introduce queues to pass data between threads. To help with this, IPyClient has a snapshot() method which returns a copy of the state of the client, with devices, vectors and members, but without the methods to send or update data. This snapshot could be passed to other threads providing them with the current client information. See :ref:`queclient`.
-
-
-Example
--------
-
-This script monitors a remote "Thermostat" and prints the temperature as events are received. The thermostat driver is described as an example at https://indipydriver.readthedocs.io
-
-The script checks for a setNumberVector event, and if the event matches the device, vector and member names, prints the received value. This continues indefinitely, printing the temperature as values are received::
-
-    import asyncio
-    import indipyclient as ipc
-
-    class MyClient(ipc.IPyClient):
-
-        async def rxevent(self, event):
-            "Prints the temperature as it is received"
-            if isinstance(event, ipc.setNumberVector):
-                if event.devicename != "Thermostat":
-                    return
-                if event.vectorname != "temperaturevector":
-                    return
-                # use dictionary get method which returns None
-                # if this member name is not present in the event
-                value = event.get("temperature")
-                if value:
-                    print(value)
-
-    myclient = MyClient()
-
-    asyncio.run(myclient.asyncrun())
-
-
-As well as IPyClient, the function getfloat(value) is available which, given a string version of a number as described in the INDI specification, will return a float. This could be used in the above example to ensure value is a float.
-
-.. autofunction:: indipyclient.getfloat
 
 
 Logging
