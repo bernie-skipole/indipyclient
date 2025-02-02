@@ -219,10 +219,12 @@ A third, using DearPyGui is given as example ledclient3.py, and (without much at
 .. image:: ./ledclient3.png
 
 
-And a fourth, ledclient4.py which is somewhat different as this uses textualize - a framework that creates terminal applications. This has the advantage that with a headless setup, a remote user can simply SSH to the server and run your client.  Though the consoleclient which is part of this package also allows this, using textualize makes it easier to create a good looking dedicated terminal client for a particular instrument, and also works on Windows. The screenshot below is the example of controlling the LED with ledclient4.py:
+And a fourth, ledclient4.py which is somewhat different as this uses textualize - a framework that creates terminal applications. This has the advantage that with a headless setup, a remote user can simply SSH to the server and run the client.
+
+The textualize package is an asynchronous library, and all its dependencies are available via Pypi which makes it easier to create and install a good looking dedicated terminal client for a particular instrument, which also works on Windows. The screenshot below is the example of controlling the LED with ledclient4.py. Note this uses an IPyClient object rather than QueClient as it is fully asynchronous:
 
 .. image:: ./ledclient4.png
 
-textualize is simply available with:
+If anyone with more experience of textualize than myself could look at ledclient4.py and suggest any improvements, I would be gratefull.
 
-pip install textual
+The package indipyterm is also available which is a full general purpose terminal client written using textualize.
