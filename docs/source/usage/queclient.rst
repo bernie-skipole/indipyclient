@@ -227,4 +227,4 @@ The textualize package is an asynchronous library, and all its dependencies are 
 
 If anyone with more experience of textualize than myself could look at ledclient4.py and suggest any improvements, I would be gratefull.
 
-The package indipyterm is also available which is a full general purpose terminal client written using textualize.
+The package indipyterm is also available which uses textualize to create a full general purpose terminal client .
