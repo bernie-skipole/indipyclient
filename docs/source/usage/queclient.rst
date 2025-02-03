@@ -46,7 +46,7 @@ The items passed in these queues are described below:
 
 
 txque
-=====
+^^^^^
 
 For thread safety txque can be either a queue.Queue, or a collections.deque object.
 
@@ -92,7 +92,7 @@ The blobvalue could be a bytes object, a pathlib.Path, a string path to a file o
 
 
 rxque
-=====
+^^^^^
 
 rxque can be either a queue.Queue, a collections.deque object, or (if you are not using threading) an asyncio.Queue.
 
