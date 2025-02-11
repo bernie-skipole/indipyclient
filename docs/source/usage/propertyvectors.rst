@@ -30,16 +30,19 @@ All the vector classes have the following methods:
 
 The snapshot will have the same common attributes and methods as the vector, apart from the snapshot method, and the device attribute. It will also have the extra methods:
 
-**dictdump()**
+**dictdump(inc_blob=False)**
     Returns a dictionary of this vector, with datetime objects converted to strings.
+    Set inc_blob to True to include BLOB values in the dictionary.
 
-**dump(fp, indent=None, separators=None)**
+**dump(fp, indent=None, separators=None, inc_blob=False)**
     Serialize the snapshot as a JSON formatted stream to fp, a file-like object.
     This uses the Python json module which always produces str objects, not bytes
     objects. Therefore, fp.write() must support str input.
+    Set inc_blob to True to include BLOB values in the file.
 
-**dumps(indent=None, separators=None)**
+**dumps(indent=None, separators=None, inc_blob=False)**
     Returns a JSON string of the snapshot.
+    Set inc_blob to True to include BLOB values in the string.
 
 
 

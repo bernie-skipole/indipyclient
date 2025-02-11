@@ -91,7 +91,7 @@ class SnapMember(Member):
         super().__init__(name, label, membervalue)
         self.user_string = user_string
 
-    def dictdump(self):
+    def dictdump(self, inc_blob=False):
         "Returns a dictionary of this member"
         return {"label": self.label,
                 "user_string":self.user_string,
@@ -337,7 +337,7 @@ class SnapNumberMember(ParentNumberMember):
         super().__init__(name, label, format, min, max, step, membervalue)
         self.user_string = user_string
 
-    def dictdump(self):
+    def dictdump(self, inc_blob=False):
         "Returns a dictionary of this member"
         return {"label": self.label,
                 "user_string":self.user_string,
@@ -452,14 +452,23 @@ class SnapBLOBMember(ParentBLOBMember):
         self.user_string = user_string
         self.filename = filename
 
-    def dictdump(self):
-        "Returns a dictionary of this member, value is always None"
-        return {"label": self.label,
-                "user_string":self.user_string,
-                "filename":self.filename,
-                "blobsize": self.blobsize,
-                "blobformat": self.blobformat,
-                "value": None}
+
+    def dictdump(self, inc_blob=False):
+        "Returns a dictionary of this member, if inc_blob is False, value will be None"
+        if inc_blob:
+            return {"label": self.label,
+                    "user_string":self.user_string,
+                    "filename":self.filename,
+                    "blobsize": self.blobsize,
+                    "blobformat": self.blobformat,
+                    "value": self._membervalue}
+        else:
+            return {"label": self.label,
+                    "user_string":self.user_string,
+                    "filename":self.filename,
+                    "blobsize": self.blobsize,
+                    "blobformat": self.blobformat,
+                    "value": None}
 
 
 class BLOBMember(ParentBLOBMember):
@@ -526,5 +535,5 @@ class BLOBMember(ParentBLOBMember):
 
 
     def _snapshot(self):
-        snapmember = SnapBLOBMember(self.name, self.label, self.blobsize, self.blobformat, self._membervalue, self.user_string, self.filename)
-        return snapmember
+        "Returns a snapshot"
+        return SnapBLOBMember(self.name, self.label, self.blobsize, self.blobformat, self._membervalue, self.user_string, self.filename)

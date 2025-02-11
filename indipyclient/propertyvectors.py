@@ -107,12 +107,13 @@ class SnapVector(Vector):
         for membername, member in data.items():
             self.data[membername] = member._snapshot()
 
-    def dictdump(self):
-        "Returns a dictionary of this vector"
+    def dictdump(self, inc_blob=False):
+        """Returns a dictionary of this vector. If this is a BLOB vector, and inc_blob is False
+           the BLOB value will not be included"""
         vecdict = {}
         memdict = {}
         for membername, member in self.data.items():
-            memdict[membername] = member.dictdump()
+            memdict[membername] = member.dictdump(inc_blob)
         vecdict = {"vectortype":self.vectortype,
                    "name":self.name,
                    "devicename":self.devicename,
@@ -133,16 +134,19 @@ class SnapVector(Vector):
         vecdict["members"] = memdict
         return vecdict
 
-    def dumps(self, indent=None, separators=None):
-        "Returns a JSON string of the snapshot."
-        return json.dumps(self.dictdump(), indent=indent, separators=separators)
+    def dumps(self, indent=None, separators=None, inc_blob=False):
+        """Returns a JSON string of the snapshot. If this is a BLOB vector, and inc_blob is False
+           the BLOB value will not be included"""
+        return json.dumps(self.dictdump(inc_blob), indent=indent, separators=separators)
 
 
-    def dump(self, fp, indent=None, separators=None):
+    def dump(self, fp, indent=None, separators=None, inc_blob=False):
         """Serialize the snapshot as a JSON formatted stream to fp, a file-like object.
            This uses the Python json module which always produces str objects, not bytes
-           objects. Therefore, fp.write() must support str input."""
-        return json.dump(self.dictdump(), fp, indent=indent, separators=separators)
+           objects. Therefore, fp.write() must support str input.
+           If this is a BLOB vector, and inc_blob is Falsethe BLOB value will not be included
+        """
+        return json.dump(self.dictdump(inc_blob), fp, indent=indent, separators=separators)
 
 
 

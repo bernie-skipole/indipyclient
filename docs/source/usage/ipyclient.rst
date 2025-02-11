@@ -94,7 +94,7 @@ The snapshot is a mapping of devicename to snapshot copies of devices and vector
 .. autoclass:: indipyclient.ipyclient.Snap
    :members:
 
-The dumps and dump methods can be used to create JSON records of the client state. The JSON record does not include BLOB values, they are set as null.
+The dumps and dump methods can be used to create JSON records of the client state.
 
 The Snap object has attributes, which are copies of the IPyClient attributes.
 
