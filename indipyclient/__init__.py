@@ -12,6 +12,4 @@ if sys.version_info < (3, 10):
     raise ImportError('indipyclient requires Python >= 3.10')
 
 
-version = "0.7.1"
-
-
+version = "0.7.2"
