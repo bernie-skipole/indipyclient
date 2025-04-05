@@ -62,13 +62,14 @@ A possible reason to import ConsoleClient is to run the console, driver and inst
     logger.addHandler(logging.NullHandler())
 
     from indipyclient.console import ConsoleClient
+    from indipydriver import IPyServer
     from example1 import make_driver
 
-    async def main(client, driver):
-        """Run the client and driver"""
+    async def main(client, server):
+        """Run the client and server"""
 
-        # start the driver
-        drivertask = asyncio.create_task( driver.asyncrun() )
+        # start the server
+        servertask = asyncio.create_task( server.asyncrun() )
 
         # start the client, and wait for it to close
         try:
@@ -78,20 +79,21 @@ A possible reason to import ConsoleClient is to run the console, driver and inst
             client.console_reset()
         print("Shutting down, please wait")
 
-        # ask the driver to stop
-        driver.shutdown()
+        # ask the server to stop
+        server.shutdown()
 
-        # wait for the driver to shutdown
-        await drivertask
+        # wait for the server to shutdown
+        await servertask
+
 
 
     if __name__ == "__main__":
 
         # make a driver for the thermostat
         thermodriver = make_driver("Thermostat", 15)
-        # set driver listening on localhost
-        thermodriver.listen()
+        # create server listening on localhost
+        server = IPyServer(thermodriver)
         # create a ConsoleClient calling localhost
         client = ConsoleClient()
         # run all coroutines
-        asyncio.run( main(client, thermodriver) )
+        asyncio.run( main(client, server) )
