@@ -125,7 +125,7 @@ class QueClient(IPyClient):
                     continue
             elif isinstance(txque, asyncio.Queue):
                 try:
-                    item = await asyncio.wait_for(txque, timeout=0.1)
+                    item = await asyncio.wait_for(txque.get(), timeout=0.1)
                 except asyncio.TimeoutError:
                     continue
                 txque.task_done()
