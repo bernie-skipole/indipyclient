@@ -44,7 +44,7 @@ This will normally be True, but will become False if the INDI server sends a req
 
 
 Device Snapshot
-===============
+---------------
 
 The snapshot() method of the device returns a SnapDevice object which is a copy of the state of the device and vectors. This could be used if you wish to pass this state to your own routines, perhaps to record values in another thread without danger of them being updated.
 

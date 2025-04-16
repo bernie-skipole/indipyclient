@@ -83,7 +83,7 @@ Strings are specified rather than general Python Objects, so that the snapshot, 
 
 
 Client Snapshot
-===============
+---------------
 
 The snapshot() method of IPyClient returns a Snap object which is a copy of the state of the client, devices etc.. This could be used if you wish to pass this state to your own routines, perhaps to record values in another thread without danger of them being updated.
 

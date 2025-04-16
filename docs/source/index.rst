@@ -4,7 +4,7 @@ A pure Python INDI terminal client
 ==================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    usage/introduction
    usage/concept

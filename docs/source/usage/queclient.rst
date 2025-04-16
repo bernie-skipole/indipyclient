@@ -189,7 +189,7 @@ The following example prints temperature on request. example1.py should be set r
 
 
 Valkey client
-=============
+-------------
 
 An example has been written of a QueClient used to save INDI data to a Valkey server, it uses asyncio.Queue's for the txdata and rxdata queues:
 
@@ -203,7 +203,7 @@ vkprint.py only depends on 'valkey' available from Pypi. Several Valkey servers 
 
 
 Example GUI client
-==================
+------------------
 
 If you are using a GUI framework, you may prefer to use a framework native to your system. In which case, when creating a virtual environment, use the --system-site-packages option to allow your script to use system packages::
 

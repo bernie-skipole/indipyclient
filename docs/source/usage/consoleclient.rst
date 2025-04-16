@@ -49,7 +49,7 @@ awaiting self.stopped.wait() will wait until the client has shutdown. This could
 
 
 DriverClient
-============
+------------
 
 A possible reason to import ConsoleClient is to run the console, driver and instrument in a single script. The example below imports 'make_driver' from example1 of the indipydriver documentation, and also the ConsoleClient, and runs them together::
 
