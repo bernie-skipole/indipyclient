@@ -219,7 +219,7 @@ The package help is:
 
 A typical session would look like:
 
-.. image:: ./images/image2.png
+.. image:: ./image2.png
 
 Further information about indipyterm can be found from:
 
