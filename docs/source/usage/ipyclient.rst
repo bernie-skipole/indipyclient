@@ -75,7 +75,7 @@ Note, messages are added with 'appendleft' so the newest message is messages[0] 
 
 
 user_string
-^^^^^^^^^^^
+-----------
 
 The client, and each device, vector and member all have 'user_string' attributes. These are not received from the server, or sent to the server, but are available for any string data you may want to associate with the object. These may be useful to provide additional data to your client display code.
 

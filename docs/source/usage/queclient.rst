@@ -1,14 +1,17 @@
 .. _queclient:
 
 
-QueClient
-=========
+Threaded synchronous Client
+===========================
 
 Using IPyClient is convenient for creating a script to control a remote instrument, however if you want to make your own client you may prefer to run the async code in one thread, and perhaps a GUI display or other blocking code, in another.
 
 Creating a full general purpose client which 'learns' devices and their properties is a large task, but creating a client to match a known instrument, in which the devices, vectors and members are already known, is simpler, and gives you the opportunity to create an elegant display.
 
 A common method would be to introduce queues to pass data between threads.
+
+QueClient
+---------
 
 A class 'QueClient' in module indipyclient.queclient is available if you wish to use it, together with a function that when called with transmit and receive queues will instantiate and run the class.
 

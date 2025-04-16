@@ -10,10 +10,7 @@ You should never need to instantiate these classes yourself.
 All these vectors are mappings of membername to membervalue, and have the
 following methods and attributes:
 
-Common Methods
-^^^^^^^^^^^^^^
-
-All the vector classes have the following methods:
+**Common Methods - All the vector classes have the following methods:**
 
 
 **member(membername)**
@@ -45,9 +42,7 @@ The snapshot will have the same common attributes and methods as the vector, apa
     Set inc_blob to True to include BLOB values in the string.
 
 
-
-Common Attributes
-^^^^^^^^^^^^^^^^^
+**Common Attributes - All the vector classes have the following attributes:**
 
 **self.name**
 
