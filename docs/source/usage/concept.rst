@@ -185,14 +185,52 @@ As default, logs at level WARNING and above will appear on your console, which m
 Terminal Example
 ----------------
 
-The package indipyterm is also available which uses IPyClient and textualize - a framework that creates terminal applications, to create a full general purpose terminal client.
+A terminal client has the advantage that with a headless setup, a remote user can simply SSH to the server and run the client.
 
-This has the advantage that with a headless setup, a remote user can simply SSH to the server and run the client.
+This indipyclient package includes a class indipyclient.console.ConsoleClient which generates a terminal client purely using Python standard library functions (the curses module), which is convenient but does not work on Windows.
 
-A textualize terminal client example, (ledclient4.py) has been written at:
+However the package indipyterm is also available which uses IPyClient and textualize - a framework that creates terminal applications, to create a full general purpose terminal client, which should also work on Windows and has a better terminal look and feel. It is also from Pypi.
+
+https://pypi.org/project/indipyterm
+
+The client can be run from a virtual environment with
+
+indipyterm [options]
+
+or with
+
+python3 -m indipyterm [options]
+
+The package help is:
+
+.. code-block:: text
+
+    usage: indipyterm [options]
+
+    Terminal client to communicate to an INDI service.
+
+    options:
+      -h, --help               show this help message and exit
+      --port PORT              Port of the INDI server (default 7624).
+      --host HOST              Hostname/IP of the INDI server (default localhost).
+      --blobfolder BLOBFOLDER  Optional folder where BLOB's will be saved.
+
+      --version    show program's version number and exit
+
+A typical session would look like:
+
+.. image:: ./images/image2.png
+
+Further information about indipyterm can be found from:
+
+https://github.com/bernie-skipole/indipyterm
+
+A simplified textualize terminal client example, (ledclient4.py) has been written at:
 
 https://github.com/bernie-skipole/inditest/tree/main/gui
 
-This is not general purpose, but simplified by being dedicated to controlling an LED driver, also listed in the above directory. A screenshot is shown below:
+This is not general purpose, but is dedicated to controlling an LED driver, also listed in the above directory. A screenshot is shown below:
 
 .. image:: ./ledclient4.png
+
+By being dedicated to a known device, vector and member, it does not need to 'learn' about remote devices but can simply display the expected instrument.
