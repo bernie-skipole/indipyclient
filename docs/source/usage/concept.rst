@@ -180,3 +180,19 @@ As default, logs at level WARNING and above will appear on your console, which m
     import logging
     logger = logging.getLogger()
     logger.addHandler(logging.NullHandler())
+
+
+Terminal Example
+----------------
+
+The package indipyterm is also available which uses IPyClient and textualize - a framework that creates terminal applications, to create a full general purpose terminal client.
+
+This has the advantage that with a headless setup, a remote user can simply SSH to the server and run the client.
+
+A textualize terminal client example, (ledclient4.py) has been written at:
+
+https://github.com/bernie-skipole/inditest/tree/main/gui
+
+This is not general purpose, but simplified by being dedicated to controlling an LED driver, also listed in the above directory. A screenshot is shown below:
+
+.. image:: ./ledclient4.png

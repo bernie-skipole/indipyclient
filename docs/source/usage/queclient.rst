@@ -202,7 +202,7 @@ This could be used where multiple displays can simply read member values from th
 
 https://github.com/bernie-skipole/inditest/blob/main/gui/vkprint.py
 
-vkprint.py only depends on 'valkey' available from Pypi. Several Valkey servers could be populated each using vkclient.py to make connections to your INDI service, and each Valkey server could 'fan out' to multiple displays enabling a large number of displays to show instrument values.
+vkprint.py depends on 'valkey' available from Pypi and only uses synchronous Python. Several Valkey servers could be populated each using vkclient.py to make connections to your INDI service, and each Valkey server could 'fan out' to multiple displays enabling a large number of displays to show instrument values.
 
 
 Example GUI client
@@ -234,14 +234,3 @@ A further, very similar example, ledclient2.py which uses Python GTK+ 3 has also
 A third, using DearPyGui is given as example ledclient3.py, and (without much attempt to layout the widgets) gives:
 
 .. image:: ./ledclient3.png
-
-
-And a fourth, ledclient4.py which is somewhat different as this uses textualize - a framework that creates terminal applications. This has the advantage that with a headless setup, a remote user can simply SSH to the server and run the client.
-
-The textualize package is an asynchronous library, and all its dependencies are available via Pypi which makes it easier to create and install a good looking dedicated terminal client for a particular instrument, which also works on Windows. The screenshot below is the example of controlling the LED with ledclient4.py. Note this uses an IPyClient object rather than QueClient as it is fully asynchronous:
-
-.. image:: ./ledclient4.png
-
-If anyone with more experience of textualize than myself could look at ledclient4.py and suggest any improvements, I would be gratefull.
-
-The package indipyterm is also available which uses textualize to create a full general purpose terminal client .
