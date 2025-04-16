@@ -188,6 +188,20 @@ The following example prints temperature on request. example1.py should be set r
     clientthread.join()
 
 
+Valkey client
+=============
+
+An example has been written of a QueClient used to save INDI data to a Valkey server, it uses asyncio.Queue's for the txdata and rxdata queues:
+
+https://github.com/bernie-skipole/inditest/blob/main/gui/vkclient.py
+
+This could be used where multiple displays can simply read member values from the Valkey server, which therefore acts as a cache. An example of reading such a server is given at:
+
+https://github.com/bernie-skipole/inditest/blob/main/gui/vkprint.py
+
+vkprint.py only depends on 'valkey' available from Pypi. Several Valkey servers could be populated each using vkclient.py to make connections to your INDI service, and each Valkey server could 'fan out' to multiple displays enabling a large number of displays to show instrument values.
+
+
 Example GUI client
 ==================
 
