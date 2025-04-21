@@ -5,7 +5,7 @@ You may have Python programs implementing some form of data collection or contro
 
 This indipyclient package provides a set of classes which can be used to create scripts to control or display the remote instrument. In particular your script can import and create an instance of the 'IPyClient' class.
 
-An associated package 'indipydriver' can be used to take your data, organise it into a data structure defined by the INDI protocol, and serve it on a port.
+An associated package 'indipydriver' can be used to take your data, organise it into a data structure defined by the INDI protocol, and serve it on a port, ready for this client to connect to.
 
 INDI - Instrument Neutral Distributed Interface.
 
