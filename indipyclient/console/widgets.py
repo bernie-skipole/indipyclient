@@ -1,18 +1,13 @@
 
-import asyncio, curses, sys, time
+import asyncio, curses, time, logging
 
 from pathlib import Path
 
-from datetime import timezone
-
 from decimal import Decimal
 
-from curses import ascii
-
-import logging
-logger = logging.getLogger(__name__)
-
 from ..propertymembers import getfloat
+
+logger = logging.getLogger(__name__)
 
 def shorten(text, width=0, placeholder="..."):
     "Shorten text"
@@ -347,7 +342,7 @@ class EditString():
 
     def gettext(self, key):
         "called with each keypress, returns new text"
-        if ascii.isprint(key):
+        if curses.ascii.isprint(key):
             if self.stringpos >= self.length:
                 # at max length, return
                 return self.text
@@ -368,13 +363,13 @@ class EditString():
 
     def getnumber(self, key):
         "called with each keypress, returns new number string"
-        if ascii.isdigit(key):
+        if curses.ascii.isdigit(key):
             if self.stringpos >= self.length:
                 # at max length, return
                 return self.text
             ch = chr(key)
             self.insertch(ch)
-        elif ascii.isprint(key):
+        elif curses.ascii.isprint(key):
             if self.stringpos >= self.length:
                 # at max length, return
                 return self.text
@@ -454,7 +449,7 @@ class BaseMember:
         return self.startline + self.linecount - 1
 
     def draw(self, startline=None):
-        if not startline is None:
+        if startline is not None:
             self.startline = startline
         displaylabel = shorten(self.vector.memberlabel(self.name), width=self.maxcols-5, placeholder="...")
         self.window.addstr( self.startline, 1, displaylabel, curses.A_BOLD )

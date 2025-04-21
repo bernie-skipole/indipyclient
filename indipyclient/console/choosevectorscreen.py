@@ -1,4 +1,4 @@
-import asyncio, curses
+import curses
 
 from . import widgets
 
@@ -496,7 +496,7 @@ class GroupWin(ParentScreen):
 
         # active is the name of the group currently being shown
         # it cannot be None
-        if (active is None) or (not active in groups):
+        if (active is None) or (active not in groups):
             self.active = groups[0]
         else:
             self.active = active
@@ -611,7 +611,7 @@ class GroupWin(ParentScreen):
         # groups is a list of group names
         groups = self.grps.groups
 
-        if not self.active in groups:
+        if self.active not in groups:
             self.active = groups[0]
 
         self.grpbuttons = {}
@@ -1176,7 +1176,6 @@ class VectorListWin(ParentScreen):
         names = list(self.vectors.keys())
         lastidx = len(names)-1            # index of last vector
 
-        displayedbtns = list(self.vecbuttons.values())
         displayednames = list(self.vecbuttons.keys())
         bottomidx = self.botindex()       # index of last displayed vector
 

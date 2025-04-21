@@ -11,15 +11,15 @@ For a description of options
 
 import sys, argparse, asyncio, pathlib, logging
 
+from . import version
+
+from .console import ConsoleClient
+
 logger = logging.getLogger()
 
 # logger is the root logger, with level and handler set here
 # by the arguments given. If no logging option is given, it
 # has a NullHandler() added
-
-from . import version
-
-from .console import ConsoleClient
 
 
 def setlogging(client, level, logfile):
@@ -32,7 +32,7 @@ def setlogging(client, level, logfile):
     # loglevel:4 log vectors and all contents
 
     try:
-        if not level in (1, 2, 3, 4):
+        if level not in (1, 2, 3, 4):
             return
         logfile = pathlib.Path(logfile).expanduser().resolve()
 

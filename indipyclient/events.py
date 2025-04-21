@@ -1,5 +1,5 @@
 
-import sys
+
 
 from datetime import datetime, timezone
 
@@ -151,7 +151,7 @@ class defVector(Event, UserDict):
         state = root.get("state")
         if not state:
             raise ParseException("defVector has no state given")
-        if not state in ('Idle','Ok','Busy','Alert'):
+        if state not in ('Idle','Ok','Busy','Alert'):
             raise ParseException("defVector has invalid state")
         self.state = state
         self.message = root.get("message", "")
@@ -375,7 +375,7 @@ class defLightVector(defVector):
                 if not member.text:
                     raise ParseException("No value given in defLight")
                 value = member.text.strip()
-                if not value in ('Idle','Ok','Busy','Alert'):
+                if value not in ('Idle','Ok','Busy','Alert'):
                     raise ParseException("Invalid value given in defLight")
                 self.data[membername] = value
             else:
@@ -499,7 +499,7 @@ class setSwitchVector(setVector):
         setVector.__init__(self, root, device, client)
         try:
             timeout = root.get("timeout")
-            if not timeout is None:
+            if timeout is not None:
                 self.timeout = float(timeout)
         except Exception:
             # dont update
@@ -536,7 +536,7 @@ class setTextVector(setVector):
         setVector.__init__(self, root, device, client)
         try:
             timeout = root.get("timeout")
-            if not timeout is None:
+            if timeout is not None:
                 self.timeout = float(timeout)
         except Exception:
             # dont update
@@ -570,7 +570,7 @@ class setNumberVector(setVector):
         setVector.__init__(self, root, device, client)
         try:
             timeout = root.get("timeout")
-            if not timeout is None:
+            if timeout is not None:
                 self.timeout = float(timeout)
         except Exception:
             # dont update
@@ -588,7 +588,7 @@ class setNumberVector(setVector):
                     raise ParseException("Missing value in oneNumber")
                 # test membervalue ok
                 try:
-                    memberfloat = getfloat(membervalue)
+                    getfloat(membervalue)
                 except TypeError:
                     raise ParseException("Invalid number in setNumberVector")
                 self.data[membername] = membervalue
@@ -617,7 +617,7 @@ class setLightVector(setVector):
                 if not member.text:
                     raise ParseException("Missing value in oneLight")
                 value = member.text.strip()
-                if not value in ('Idle','Ok','Busy','Alert'):
+                if value not in ('Idle','Ok','Busy','Alert'):
                     raise ParseException("Invalid value in oneLight")
                 self.data[membername] = value
             else:
@@ -643,7 +643,7 @@ class setBLOBVector(setVector):
         self.eventtype = "SetBLOB"
         try:
             timeout = root.get("timeout")
-            if not timeout is None:
+            if timeout is not None:
                 self.timeout = float(timeout)
         except Exception:
             # dont update
@@ -661,7 +661,7 @@ class setBLOBVector(setVector):
                 if not membersize:
                     raise ParseException("Missing size in oneBLOB")
                 try:
-                    memberize = int(membersize)
+                    membersize = int(membersize)
                 except Exception:
                     raise ParseException("Invalid size in oneBLOB")
                 memberformat = member.get("format")

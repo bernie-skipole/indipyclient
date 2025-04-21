@@ -8,7 +8,7 @@ and communicate via the queues to this client running in another thread.
 
 
 
-import asyncio, queue, collections, pathlib
+import asyncio, queue, collections
 
 from datetime import datetime, timezone
 

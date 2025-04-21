@@ -1,4 +1,4 @@
-import asyncio, curses, sys, os, pathlib, time
+import curses, time
 
 from . import widgets
 
@@ -244,7 +244,7 @@ class VectorScreen(ParentScreen):
         # after an update, the cursor may need putting back into an editable field
         if self.memberswin.focus:
             index = self.memberswin.widgetindex_in_focus()
-            if not index is None:
+            if index is not None:
                 widget = self.memberswin.memberwidgets[index]
                 if hasattr(widget, "edit_txt"):
                     if widget.edit_txt.focus:

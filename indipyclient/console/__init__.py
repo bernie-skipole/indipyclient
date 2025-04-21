@@ -1,1 +1,1 @@
-from .consoleclient import ConsoleClient
+from .consoleclient import ConsoleClient as ConsoleClient

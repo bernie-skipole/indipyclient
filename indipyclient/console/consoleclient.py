@@ -1,22 +1,18 @@
 
-import asyncio, sys, traceback, pathlib
-
-import curses
-
-import logging
-logger = logging.getLogger(__name__)
+import asyncio, sys, curses, logging
 
 from ..ipyclient import IPyClient
 from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message, VectorTimeOut)
 
 from . import windows
-from . import widgets
 
 from .devicesscreen import DevicesScreen
 from .choosevectorscreen import ChooseVectorScreen
 from .vectorscreen import VectorScreen
 from .memberscreen import MemberScreen
+
+logger = logging.getLogger(__name__)
 
 # set limit to terminal size
 MINROWS = 22

@@ -1,9 +1,7 @@
 
-import collections, sys, time, json, pathlib
+import collections, time, json, pathlib, asyncio
 
 from datetime import datetime, timezone
-
-import asyncio
 
 import xml.etree.ElementTree as ET
 
@@ -45,7 +43,7 @@ class Vector(collections.UserDict):
 
     @state.setter
     def state(self, value):
-        if not value in ('Idle','Ok','Busy','Alert'):
+        if value not in ('Idle','Ok','Busy','Alert'):
             raise ValueError("Invalid state given")
         self._state = value
 
@@ -223,7 +221,7 @@ class PropertyVector(Vector):
             self.message = event.message
             self.message_timestamp = event.timestamp
         if hasattr(event, 'timeout'):
-            if not self.timeout is None:
+            if self.timeout is not None:
                 self.timeout = event.timeout
         for membername, membervalue in event.items():
             if membername in self.data:
@@ -337,7 +335,7 @@ class SwitchVector(PropertyVector):
         if not isinstance(timestamp, datetime):
             # invalid timestamp given
             return
-        if not (timestamp.tzinfo is None):
+        if timestamp.tzinfo is not None:
             if timestamp.tzinfo == timezone.utc:
                 timestamp = timestamp.replace(tzinfo = None)
             else:
@@ -525,7 +523,7 @@ class TextVector(PropertyVector):
         if not isinstance(timestamp, datetime):
             # invalid timestamp given
             return
-        if not (timestamp.tzinfo is None):
+        if timestamp.tzinfo is not None:
             if timestamp.tzinfo == timezone.utc:
                 timestamp = timestamp.replace(tzinfo = None)
             else:
@@ -675,7 +673,7 @@ class NumberVector(PropertyVector):
         if not isinstance(timestamp, datetime):
             # invalid timestamp given
             return
-        if not (timestamp.tzinfo is None):
+        if timestamp.tzinfo is not None:
             if timestamp.tzinfo == timezone.utc:
                 timestamp = timestamp.replace(tzinfo = None)
             else:
@@ -835,7 +833,7 @@ class BLOBVector(PropertyVector):
         if not isinstance(timestamp, datetime):
             # invalid timestamp given
             return
-        if not (timestamp.tzinfo is None):
+        if timestamp.tzinfo is not None:
             if timestamp.tzinfo == timezone.utc:
                 timestamp = timestamp.replace(tzinfo = None)
             else:

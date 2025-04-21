@@ -1,7 +1,7 @@
 """This displays the screen showing a list of devices, allowing one to be chosen"""
 
 
-import asyncio, curses
+import curses
 
 from . import widgets
 

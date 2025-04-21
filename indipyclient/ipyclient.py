@@ -1,19 +1,16 @@
 
 
-import os, sys, collections, asyncio, time, copy, json, pathlib
-
-from time import sleep
+import collections, asyncio, time, copy, json, pathlib, logging
 
 from datetime import datetime, timezone
 
 import xml.etree.ElementTree as ET
 
-import logging
-logger = logging.getLogger(__name__)
-
 from . import events
 
 from .propertymembers import ParseException
+
+logger = logging.getLogger(__name__)
 
 
 # All xml data received from the driver should be contained in one of the following tags
@@ -410,7 +407,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 if self._stop:
                     break
                 else:
-                    await self.warning(f"Connection failed, re-trying...")
+                    await self.warning("Connection failed, re-trying...")
                 # wait five seconds before re-trying, but keep checking
                 # that self._stop has not been set
                 count = 0
@@ -609,7 +606,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                     # the message is complete, handle message here
                     try:
                         root = ET.fromstring(message.decode("us-ascii"))
-                    except ET.ParseError as e:
+                    except ET.ParseError:
                        # failed to parse the message, continue at beginning
                         message = b''
                         messagetagnumber = None
@@ -625,7 +622,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 # the message is complete, handle message here
                 try:
                     root = ET.fromstring(message.decode("us-ascii"))
-                except ET.ParseError as e:
+                except ET.ParseError:
                     # failed to parse the message, continue at beginning
                     message = b''
                     messagetagnumber = None
@@ -811,11 +808,11 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
            As default, timeouts are enabled, minimum is set to 2 seconds, maximum 10 seconds.
            """
-        if not timeout_enable is None:
+        if timeout_enable is not None:
             self.timeout_enable = timeout_enable
-        if not timeout_min is None:
+        if timeout_min is not None:
             self.vector_timeout_min = timeout_min
-        if not timeout_max is None:
+        if timeout_max is not None:
             self.vector_timeout_max = timeout_max
             self.idle_timeout = 2 * timeout_max
             self.respond_timeout = 4 * timeout_max

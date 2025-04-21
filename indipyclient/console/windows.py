@@ -1,5 +1,5 @@
 
-import asyncio, curses, sys, os, pathlib, time
+import asyncio, curses, pathlib
 
 from . import widgets
 

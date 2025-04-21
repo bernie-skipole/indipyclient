@@ -1,7 +1,7 @@
 
 import xml.etree.ElementTree as ET
 
-import sys, pathlib
+import pathlib
 
 from base64 import standard_b64encode
 
