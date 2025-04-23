@@ -9,7 +9,7 @@ from .events import (delProperty, defSwitchVector, defTextVector, defNumberVecto
 
 from .propertymembers import getfloat
 
-version = "0.7.4"
+version = "0.7.5"
 
 __all__ = ["version", "IPyClient", "getfloat",
            "delProperty", "defSwitchVector", "defTextVector", "defNumberVector", "defLightVector", "defBLOBVector",
