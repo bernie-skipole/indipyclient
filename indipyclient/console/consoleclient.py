@@ -2,8 +2,7 @@
 import asyncio, sys, curses, logging
 
 from ..ipyclient import IPyClient
-from ..events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
-                     setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message, VectorTimeOut)
+from ..events import delProperty, VectorTimeOut
 
 from . import windows
 

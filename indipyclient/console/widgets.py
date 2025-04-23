@@ -1,6 +1,8 @@
 
 import asyncio, curses, time, logging
 
+import curses.ascii
+
 from pathlib import Path
 
 from decimal import Decimal

@@ -1,1 +1,3 @@
-from .consoleclient import ConsoleClient as ConsoleClient
+from .consoleclient import ConsoleClient
+
+__all__ = ["ConsoleClient"]
