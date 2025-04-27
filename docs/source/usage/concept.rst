@@ -189,7 +189,47 @@ A terminal client has the advantage that with a headless setup, a remote user ca
 
 This indipyclient package includes a class indipyclient.console.ConsoleClient which generates a terminal client purely using Python standard library functions (the curses module), which is convenient but does not work on Windows.
 
-However the package indipyterm is also available which uses IPyClient and textualize - a framework that creates terminal applications, to create a full general purpose terminal client, which should also work on Windows and has a better terminal look and feel. It is also from Pypi.
+The terminal client can be run from a virtual environment with:
+
+indipyclient [options]
+
+or with
+
+python3 -m indipyclient [options]
+
+The package help is:
+
+.. code-block:: text
+
+    usage: indipyclient [options]
+
+    Terminal client to communicate to an INDI service.
+
+    options:
+      -h, --help               show this help message and exit
+      -p PORT, --port PORT     Port of the INDI server (default 7624).
+      --host HOST              Hostname/IP of the INDI server (default localhost).
+      -b BLOBS, --blobs BLOBS  Optional folder where BLOB's will be saved.
+      --loglevel LOGLEVEL      Enables logging, value 1, 2, 3 or 4.
+      --logfile LOGFILE        File where logs will be saved
+      --version                show program's version number and exit
+
+    The BLOB's folder can also be set from within the session.
+    Setting loglevel and logfile should only be used for brief
+    diagnostic purposes, the logfile could grow very big.
+    loglevel:1 Information and error messages only, no exception trace.
+    The following levels enable exception traces in the logs
+    loglevel:2 As 1 plus xml vector tags without members or contents,
+    loglevel:3 As 1 plus xml vectors and members - but not BLOB contents,
+    loglevel:4 As 1 plus xml vectors and all contents
+
+
+A typical session would look like:
+
+.. image:: ./image.png
+
+
+The package indipyterm is also available which uses IPyClient and textualize - a framework that creates terminal applications, to create a full general purpose terminal client, which should also work on Windows and has a better terminal look and feel. It is also available from Pypi.
 
 https://pypi.org/project/indipyterm
 
@@ -214,8 +254,8 @@ The package help is:
       --port PORT              Port of the INDI server (default 7624).
       --host HOST              Hostname/IP of the INDI server (default localhost).
       --blobfolder BLOBFOLDER  Optional folder where BLOB's will be saved.
-
       --version    show program's version number and exit
+
 
 A typical session would look like:
 
@@ -225,7 +265,7 @@ Further information about indipyterm can be found from:
 
 https://github.com/bernie-skipole/indipyterm
 
-A simplified textualize terminal client example, (ledclient4.py) has been written at:
+Using indipyclient and textual it would be possible to write your own terminal clients, dedicated to a specific instrument. This would require a good knowledge of textual. A simplified example, (ledclient4.py) has been written at:
 
 https://github.com/bernie-skipole/inditest/tree/main/gui
 

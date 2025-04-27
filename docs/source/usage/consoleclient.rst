@@ -1,11 +1,13 @@
 ConsoleClient
 =============
 
-The class indipyclient.console.ConsoleClient is primarily intended to be run from the command line.
+The class indipyclient.console.ConsoleClient provides a terminal client which is primarily intended to be run from the command line using:
 
-Inspect indipyclient.\_\_main\_\_.py to see how that is done.
+python3 -m indipyclient [options]
 
-The class could be used to create a script dedicated to connecting to a particular server without needing to repeatedly insert the hostname or port::
+Try using the option -h for help with arguments.
+
+It would be rare to import the class to use in your own scripts, but, for example, it could be used to create a script dedicated to connecting to a particular server without needing to repeatedly insert the hostname or port::
 
 
     import asyncio
@@ -27,7 +29,8 @@ The class could be used to create a script dedicated to connecting to a particul
         # clear curses setup
         client.console_reset()
 
-The class calls on the standard library curses package to create the terminal client.
+
+This ConsoleClient class is written to have no dependency other than the Python standard library, it uses the curses module, which only works with Linux.
 
 
 .. autoclass:: indipyclient.console.ConsoleClient
