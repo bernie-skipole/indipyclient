@@ -34,47 +34,6 @@ Indipyclient can be installed from Pypi with:
 
     pip install indipyclient
 
-
-The package also provides a general purpose terminal client (Linux only) developed with the Python standard library Curses package, and no dependencies. When run this connects to the INDI server port, allowing you to view and control your instrument from a terminal session.
-
-The terminal client can be run from a virtual environment with
-
-indipyclient [options]
-
-or with
-
-python3 -m indipyclient [options]
-
-The package help is:
-
-    usage: indipyclient [options]
-
-    Terminal client to communicate to an INDI service.
-
-    options:
-      -h, --help                show this help message and exit
-      -p PORT, --port PORT      Port of the INDI server (default 7624).
-      --host HOST               Hostname/IP of the INDI server (default localhost).
-      -b BLOBS, --blobs BLOBS   Optional folder where BLOB's will be saved.
-      --loglevel LOGLEVEL       Enables logging, value 1, 2, 3 or 4.
-      --logfile LOGFILE         File where logs will be saved
-      --version                 show program's version number and exit
-
-    The BLOB's folder can also be set from within the session.
-    Setting loglevel and logfile should only be used for brief
-    diagnostic purposes, the logfile could grow very big.
-    loglevel:1 Information and error messages only, no exception trace.
-    The following levels enable exception traces in the logs
-    loglevel:2 As 1 plus xml vector tags without members or contents,
-    loglevel:3 As 1 plus xml vectors and members - but not BLOB contents,
-    loglevel:4 As 1 plus xml vectors and all contents
-
-
-A typical session would look like:
-
-![Terminal screenshot](https://github.com/bernie-skipole/indipyclient/raw/main/docs/source/usage/image.png)
-
-
 Further documentation is available at:
 
 https://indipyclient.readthedocs.io
@@ -89,7 +48,7 @@ https://pypi.org/project/indipydriver
 
 https://github.com/bernie-skipole/indipydriver
 
-A further terminal client 'indipyterm' is available, which itself calls on indipyclient to do the heavy lifting, and uses the textual package to present terminal characters, this should also work on Windows and is available at:
+A terminal client 'indipyterm' is available, which itself calls on indipyclient to do the heavy lifting, and uses the textual package to present terminal characters, this is available at:
 
 https://pypi.org/project/indipyterm
 

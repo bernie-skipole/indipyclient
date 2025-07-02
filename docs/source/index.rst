@@ -1,7 +1,7 @@
 
 
-A pure Python INDI client
-=========================
+A pure Python INDI client library
+=================================
 
 .. toctree::
    :maxdepth: 2
@@ -13,7 +13,6 @@ A pure Python INDI client
    usage/propertyvectors
    usage/propertymembers
    usage/events
-   usage/consoleclient
    usage/queclient
    usage/references
 

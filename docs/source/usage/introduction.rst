@@ -35,23 +35,13 @@ Indipyclient can be installed from Pypi with::
 
     pip install indipyclient
 
-The package also provides a general purpose terminal client (Linux only) developed with the Python standard library Curses package, and no dependencies. When run this connects to the INDI server port, allowing you to view and control your instrument from a terminal session.
-
-The terminal client can be run with:
-
-python3 -m indipyclient [options]
-
-indipyclient can be installed from:
-
-https://pypi.org/project/indipyclient
-
 and indipydriver is available at:
 
 https://pypi.org/project/indipydriver
 
 https://github.com/bernie-skipole/indipydriver
 
-A further terminal client 'indipyterm' is available, which itself calls on indipyclient to do the heavy lifting, and uses the textual package to present terminal characters, this should also work on Windows and is available at:
+A terminal client 'indipyterm' is available, which itself calls on indipyclient to do the heavy lifting, and uses the textual package to present terminal characters, this is available at:
 
 https://pypi.org/project/indipyterm
 
