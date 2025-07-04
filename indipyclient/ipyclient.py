@@ -86,11 +86,10 @@ class IPyClient(collections.UserDict):
         # dictionary of optional data
         self.clientdata = clientdata
 
-        # create queue where client will put xml data to be transmitted
-        self._writerque = asyncio.Queue(4)
-
-        # and create readerque where received xmldata will be put
-        self._readerque = asyncio.Queue(4)
+        # These will be created when a connection is made using
+        # await asyncio.open_connection(self.indihost, self.indiport)
+        self._writer = None
+        self._reader = None
 
         # self.messages is a deque of (Timestamp, message) tuples
         self.messages = collections.deque(maxlen=8)
@@ -99,8 +98,6 @@ class IPyClient(collections.UserDict):
         # so newest message is messages[0]
         # oldest message is messages[-1] or can be obtained with .pop()
 
-        # self.connected is True if connection has been made
-        self.connected = False
 
         #####################
         # The following sets of timers are only enabled if this is True
@@ -146,6 +143,15 @@ class IPyClient(collections.UserDict):
         self._blobfolderchanged = False
         # This is the default enableBLOB value
         self._enableBLOBdefault = "Never"
+
+
+    @property
+    def connected(self):
+        "property showing connected status, True or False"
+        if self._writer is None:
+            return False
+        else:
+            return True
 
 
     # The enableBLOBdefault default should typically be set before asyncrun is
@@ -300,22 +306,6 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
         return self._stop
 
 
-    async def queueput(self, queue, value, timeout=0.5):
-        """Method used internally, but available if usefull.
-           Given an asyncio.Queue object attempts to put value into the queue.
-           If the queue is full, checks self._stop every timeout seconds.
-           Returns True when the value is added to queue,
-           or False if self._stop is True and the value not added."""
-        while not self._stop:
-            try:
-                await asyncio.wait_for(queue.put(value), timeout)
-            except asyncio.TimeoutError:
-                # queue is full, continue while loop, checking stop flag
-                continue
-            return True
-        return False
-
-
     async def report(self, message):
         """The given string message will be logged at level INFO,
            and if self.enable_reports is True will be injected into
@@ -328,9 +318,9 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 return
             timestamp = datetime.now(tz=timezone.utc)
             timestamp = timestamp.replace(tzinfo=None)
-            root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
-            # and place root into readerque
-            await self.queueput(self._readerque, root)
+            xmldata = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
+            # and call the receive handler, as if this was received data
+            await self._rxhandler(xmldata)
         except Exception :
             logger.exception("Exception report from IPyClient.report method")
 
@@ -345,9 +335,9 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             logger.warning(message)
             timestamp = datetime.now(tz=timezone.utc)
             timestamp = timestamp.replace(tzinfo=None)
-            root = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
-            # and place root into readerque
-            await self.queueput(self._readerque, root)
+            xmldata = ET.fromstring(f"<message timestamp=\"{timestamp.isoformat(sep='T')}\" message=\"{message}\" />")
+            # and call the receive handler, as if this was received data
+            await self._rxhandler(xmldata)
         except Exception :
             logger.exception("Exception report from IPyClient.warning method")
 
@@ -368,36 +358,30 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             while not self._stop:
                 self.tx_timer = None
                 self.idle_timer = time.time()
-                t1 = None
                 t2 = None
                 t3 = None
                 try:
                     # start by openning a connection
                     await self.warning(f"Attempting to connect to {self.indihost}:{self.indiport}")
-                    reader, writer = await asyncio.open_connection(self.indihost, self.indiport)
-                    self.connected = True
+                    self._reader, self._writer = await asyncio.open_connection(self.indihost, self.indiport)
                     self.messages.clear()
                     # clear devices etc
                     self.clear()
                     await self.warning(f"Connected to {self.indihost}:{self.indiport}")
-                    t1 = asyncio.create_task(self._run_tx(writer))
-                    t2 = asyncio.create_task(self._run_rx(reader))
-                    t3 = asyncio.create_task(self._check_alive(writer))
-                    await asyncio.gather(t1, t2, t3)
+                    t2 = asyncio.create_task(self._run_rx())
+                    t3 = asyncio.create_task(self._check_alive())
+                    await asyncio.gather(t2, t3)
                 except ConnectionRefusedError:
                     await self.warning(f"Connection refused on {self.indihost}:{self.indiport}")
                 except ConnectionError:
                     await self.warning(f"Connection Lost on {self.indihost}:{self.indiport}")
-                except OSError:
+                except OSError as e:
                     await self.warning(f"Connection Error on {self.indihost}:{self.indiport}")
                 except Exception:
                     logger.exception(f"Connection Error on {self.indihost}:{self.indiport}")
                     await self.warning("Connection failed")
                 self._clear_connection()
                 # connection has failed, ensure all tasks are done
-                if t1:
-                    while not t1.done():
-                        await asyncio.sleep(0)
                 if t2:
                     while not t2.done():
                         await asyncio.sleep(0)
@@ -424,20 +408,43 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
 
     def _clear_connection(self):
-        "On a connection closing down, self.connected is set to False"
-        self.connected = False
+        "Clears a connection"
         self.tx_timer = None
+        self._writer = None
+        self._reader = None
 
 
 
     async def send(self, xmldata):
         """Transmits xmldata, this is an internal method, not normally called by a user.
            xmldata is an xml.etree.ElementTree object"""
-        if self.connected and (not self._stop):
-            await self.queueput(self._writerque, xmldata)
+        if not self.connected:
+            return
+        if self._stop:
+            return
+        try:
+            # send it out on the port
+            binarydata = ET.tostring(xmldata)
+            # Send to the port
+            self._writer.write(binarydata)
+            await self._writer.drain()
+            if self.timeout_enable:
+                # data has been transmitted set timers going, do not set timer
+                # for enableBLOB as no answer is expected for that
+                if (self.tx_timer is None) and (xmldata.tag != "enableBLOB"):
+                    self.tx_timer = time.time()
+            self.idle_timer = time.time()
+            if logger.isEnabledFor(logging.DEBUG):
+                self._logtx(xmldata)
+        except Exception:
+            await self.warning(f"Connection Error on {self.indihost}:{self.indiport}")
+            self._writer.close()
+            await self._writer.wait_closed()
+            self._clear_connection()
 
 
-    async def _check_alive(self, writer):
+
+    async def _check_alive(self):
         try:
             while self.connected and (not self._stop):
                 await asyncio.sleep(0.1)
@@ -446,20 +453,19 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                     telapsed = time.time() - self.tx_timer
                     if telapsed > self.respond_timeout:
                         # no response to transmission self.respond_timeout seconds ago
-                       writer.close()
-                       await writer.wait_closed()
+                       self._writer.close()
+                       await self._writer.wait_closed()
                        self._clear_connection()
                        if not self._stop:
                            await self.warning("Error: Connection timed out")
             if self.connected and self._stop:
-                writer.close()
-                await writer.wait_closed()
-                self._clear_connection()
+                self._writer.close()
+                await self._writer.wait_closed()
         except Exception:
             logger.exception("Error in IPyClient._check_alive method")
             raise
         finally:
-            self.connected = False
+            self._clear_connection()
 
     def _logtx(self, txdata):
         "log tx data with level debug, and detail depends on self._verbose"
@@ -487,38 +493,6 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             logger.debug(startlog + binarydata[0].decode()+">")
 
 
-    async def _run_tx(self, writer):
-        "Monitors self._writerque and if it has data, uses writer to send it"
-        try:
-            while self.connected and (not self._stop):
-                try:
-                    txdata = await asyncio.wait_for(self._writerque.get(), timeout=0.5)
-                except asyncio.TimeoutError:
-                    continue
-                self._writerque.task_done()
-                if not self.connected:
-                    break
-                if self._stop:
-                    break
-                # send it out on the port
-                binarydata = ET.tostring(txdata)
-                # Send to the port
-                writer.write(binarydata)
-                await writer.drain()
-                if self.timeout_enable:
-                    # data has been transmitted set timers going, do not set timer
-                    # for enableBLOB as no answer is expected for that
-                    if (self.tx_timer is None) and (txdata.tag != "enableBLOB"):
-                        self.tx_timer = time.time()
-                self.idle_timer = time.time()
-                if logger.isEnabledFor(logging.DEBUG):
-                    self._logtx(txdata)
-        except ConnectionError:
-            raise
-        except Exception:
-            logger.exception("Exception report from IPyClient._run_tx method")
-            raise
-
     def _logrx(self, rxdata):
         "log rx data to file"
         if not self._verbose:
@@ -543,21 +517,18 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             binarydata = ET.tostring(data, short_empty_elements=False).split(b">")
             logger.debug(startlog + binarydata[0].decode() + ">")
 
-    async def _run_rx(self, reader):
-        "pass xml.etree.ElementTree data to readerque"
+    async def _run_rx(self):
+        "pass xml.etree.ElementTree data receive handler"
         try:
             # get block of xml.etree.ElementTree data
-            # from self._xmlinput and append it to  readerque
+            # from self._xmlinput
             while self.connected and (not self._stop):
-                rxdata = await self._xmlinput(reader)
+                rxdata = await self._xmlinput()
                 if rxdata is None:
                     return
-                # and place rxdata into readerque
-                result = await self.queueput(self._readerque, rxdata, 0.2)
-                if not result:
-                    # self._stop must be set
-                    return
-                # rxdata in readerque, log it, then continue with next block
+                # and call the receive handler
+                await self._rxhandler(rxdata)
+                # log it, then continue with next block
                 if logger.isEnabledFor(logging.DEBUG):
                     self._logrx(rxdata)
         except ConnectionError:
@@ -567,14 +538,14 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             raise
 
 
-    async def _xmlinput(self, reader):
+    async def _xmlinput(self):
         """get received data, parse it, and return it as xml.etree.ElementTree object
            Returns None if notconnected/stop flags arises"""
         message = b''
         messagetagnumber = None
         while self.connected and (not self._stop):
             await asyncio.sleep(0)
-            data = await self._datainput(reader)
+            data = await self._datainput()
             # data is either None, or binary data ending in b">"
             if data is None:
                 return
@@ -633,16 +604,16 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             # but no valid endtag received yet, so continue the loop
 
 
-    async def _datainput(self, reader):
+    async def _datainput(self):
         """Waits for binary string of data ending in > from the port
            Returns None if notconnected/stop flags arises"""
         binarydata = b""
         while self.connected and (not self._stop):
             await asyncio.sleep(0)
             try:
-                data = await reader.readuntil(separator=b'>')
+                data = await self._reader.readuntil(separator=b'>')
             except asyncio.LimitOverrunError:
-                data = await reader.read(n=32000)
+                data = await self._reader.read(n=32000)
             except asyncio.IncompleteReadError:
                 binarydata = b""
                 await asyncio.sleep(0.1)
@@ -661,90 +632,81 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             # could put a max value here to stop this increasing indefinetly
 
 
-    async def _rxhandler(self):
-        """Populates the events using data from self._readerque"""
+    async def _rxhandler(self, xmldata):
+        """Populates the events using received data"""
+        if not self.connected:
+            return
+        if self._stop:
+            return
         try:
-            while not self._stop:
-                # get block of data from the self._readerque
-                try:
-                    root = await asyncio.wait_for(self._readerque.get(), timeout=0.5)
-                except asyncio.TimeoutError:
-                    # nothing to read, continue while loop which re-checks the _stop flag
-                    continue
-                devicename = root.get("device")
-                try:
-                    if devicename is None:
-                        if root.tag == "message":
-                            # create event
-                            event = events.Message(root, None, self)
-                        elif root.tag == "getProperties":
-                            # create event
-                            event = events.getProperties(root, None, self)
-                        else:
-                            # if no devicename and not message or getProperties, do nothing
-                            continue
-                    elif devicename in self:
-                        # device is known about
-                        device = self[devicename]
-                        event = device.rxvector(root)
-                    elif root.tag == "getProperties":
-                        # device is not known about, but this is a getProperties, so raise an event
-                        event = events.getProperties(root, None, self)
-                    elif root.tag in DEFTAGS:
-                        # device not known, but a def is received
-                        newdevice = Device(devicename, self)
-                        event = newdevice.rxvector(root)
-                        # no error has occurred, so add this device to self.data
-                        self.data[devicename] = newdevice
+            devicename = xmldata.get("device")
+            try:
+                if devicename is None:
+                    if xmldata.tag == "message":
+                        # create event
+                        event = events.Message(xmldata, None, self)
+                    elif xmldata.tag == "getProperties":
+                        # create event
+                        event = events.getProperties(xmldata, None, self)
                     else:
-                        # device not known, not a def or getProperties, so ignore it
-                        continue
-                except ParseException as pe:
-                    # if a ParseException is raised, it is because received data is malformed
-                    await self.warning(str(pe))
-                    continue
-                finally:
-                    self._readerque.task_done()
-                # and to get here, continue has not been called
-                # and an event has been created,
+                        # if no devicename and not message or getProperties, do nothing
+                        return
+                elif devicename in self:
+                    # device is known about
+                    device = self[devicename]
+                    event = device.rxvector(xmldata)
+                elif xmldata.tag == "getProperties":
+                    # device is not known about, but this is a getProperties, so raise an event
+                    event = events.getProperties(xmldata, None, self)
+                elif xmldata.tag in DEFTAGS:
+                    # device not known, but a def is received
+                    newdevice = Device(devicename, self)
+                    event = newdevice.rxvector(xmldata)
+                    # no error has occurred, so add this device to self.data
+                    self.data[devicename] = newdevice
+                else:
+                    # device not known, not a def or getProperties, so ignore it
+                    return
+            except ParseException as pe:
+                # if a ParseException is raised, it is because received data is malformed
+                await self.warning(str(pe))
+                return
 
-                if event.eventtype == "DefineBLOB":
-                    # every time a defBLOBVector is received, send an enable BLOB instruction
-                    await self.resend_enableBLOB(event.devicename, event.vectorname)
-                elif self._BLOBfolder and (event.eventtype == "SetBLOB"):
-                    # If this event is a setblob, and if blobfolder has been defined, then save the blob to
-                    # a file in blobfolder, and set the member.filename to the filename saved
-                    loop = asyncio.get_running_loop()
-                    # save the BLOB to a file, make filename from timestamp
-                    timestampstring = event.timestamp.strftime('%Y%m%d_%H_%M_%S')
-                    for membername, membervalue in event.items():
-                        if not membervalue:
-                            continue
-                        sizeformat = event.sizeformat[membername]
-                        filename =  membername + "_" + timestampstring + sizeformat[1]
-                        counter = 0
-                        while True:
-                            filepath = self._BLOBfolder / filename
-                            if filepath.exists():
-                                # append a digit to the filename
-                                counter += 1
-                                filename = membername + "_" + timestampstring + "_" + str(counter) + sizeformat[1]
-                            else:
-                                # filepath does not exist, so a new file with this filepath can be created
-                                break
-                        await loop.run_in_executor(None, filepath.write_bytes, membervalue)
-                        # add filename to member
-                        memberobj = event.vector.member(membername)
-                        memberobj.filename = filename
+            if event.eventtype == "DefineBLOB":
+                # every time a defBLOBVector is received, send an enable BLOB instruction
+                await self.resend_enableBLOB(event.devicename, event.vectorname)
+            elif self._BLOBfolder and (event.eventtype == "SetBLOB"):
+                # If this event is a setblob, and if blobfolder has been defined, then save the blob to
+                # a file in blobfolder, and set the member.filename to the filename saved
+                loop = asyncio.get_running_loop()
+                # save the BLOB to a file, make filename from timestamp
+                timestampstring = event.timestamp.strftime('%Y%m%d_%H_%M_%S')
+                for membername, membervalue in event.items():
+                    if not membervalue:
+                        return
+                    sizeformat = event.sizeformat[membername]
+                    filename =  membername + "_" + timestampstring + sizeformat[1]
+                    counter = 0
+                    while True:
+                        filepath = self._BLOBfolder / filename
+                        if filepath.exists():
+                            # append a digit to the filename
+                            counter += 1
+                            filename = membername + "_" + timestampstring + "_" + str(counter) + sizeformat[1]
+                        else:
+                            # filepath does not exist, so a new file with this filepath can be created
+                            break
+                    await loop.run_in_executor(None, filepath.write_bytes, membervalue)
+                    # add filename to member
+                    memberobj = event.vector.member(membername)
+                    memberobj.filename = filename
 
-                # call the user event handling function
-                await self.rxevent(event)
+            # call the user event handling function
+            await self.rxevent(event)
 
         except Exception:
             logger.exception("Exception report from IPyClient._rxhandler method")
-            raise
-        finally:
-            self.shutdown()
+
 
 
     def snapshot(self):
@@ -991,7 +953,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
         "Await this method to run the client."
         self._stop = False
         try:
-            await asyncio.gather(self._comms(), self._rxhandler(), self._timeout_monitor(), self.hardware())
+            await asyncio.gather(self._comms(), self._timeout_monitor(), self.hardware())
         except asyncio.CancelledError:
             self._stop = True
             raise

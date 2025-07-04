@@ -106,7 +106,7 @@ The Snap object has attributes, which are copies of the IPyClient attributes.
 
 **self.connected**
 
-This is the connected value at the point the snapshot is taken, it does not update.
+This is the connected value, True or False, at the point the snapshot is taken, it does not update.
 
 **self.messages**
 
