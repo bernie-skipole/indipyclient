@@ -443,24 +443,100 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             self._clear_connection()
 
 
-
     async def _check_alive(self):
+        "Checks timers, drops connection on error"
+
         try:
-            while self.connected and (not self._stop):
+            count = -1 # increases by 1 every 0.1 seconds, after 5 seconds, goes to zero
+            while self.connected:
+                if self._stop:
+                    self._writer.close()
+                    await self._writer.wait_closed()
+                    break
                 await asyncio.sleep(0.1)
+                if self._stop:
+                    self._writer.close()
+                    await self._writer.wait_closed()
+                    break
+
+                count += 1
+                if count >= 50:      # 50 x 0.1 is 5 seconds
+                    count = 0
+                devices = list(device for device in self.data.values() if device.enable)
+
+                # send a getProperties every five seconds if no devices have been learnt
+                if not count:
+                    # count is zero, on startup and every five seconds
+                    if not devices
+                        # no devices, send a getProperties
+                        await self.send_getProperties()
+                        await self.report("getProperties sent")
+
+                if not devices:
+                    # no point doing any further tests, continue while loop
+                    continue
+
+                # devices exist
+
+                # connection is up and devices exist
+                if self._blobfolderchanged:
+                    # devices all have an _enableBLOB attribute set
+                    # when the BLOBfolder changed, this ensures an
+                    # enableBLOB is sent with that value
+                    self._blobfolderchanged = False
+                    for device in devices:
+                        await self.resend_enableBLOB(device.devicename)
+                        if self._stop:
+                            break
+                        for vector in device.values():
+                            if vector.enable and (vector.vectortype == "BLOBVector"):
+                                await self.resend_enableBLOB(device.devicename, vector.name)
+                                if self._stop:
+                                    break
+                        if self._stop:
+                            break
+                    # as enableBLOBs have been sent, leave
+                    # checking timeouts for the next count (0.1 second)
+                    continue
+
+                if not self.timeout_enable:
+                    # only test timeouts if this is True
+                    continue
+
+                # test these timers every 0.5 seconds
+                if count % 5 :
+                    continue
+
+                nowtime = time.time()
+
+                # if nothing received after self.respond_timeout, break out
                 if self.tx_timer:
                     # data has been sent, waiting for reply
-                    telapsed = time.time() - self.tx_timer
+                    telapsed = nowtime - self.tx_timer
                     if telapsed > self.respond_timeout:
                         # no response to transmission self.respond_timeout seconds ago
                        self._writer.close()
                        await self._writer.wait_closed()
-                       self._clear_connection()
                        if not self._stop:
                            await self.warning("Error: Connection timed out")
-            if self.connected and self._stop:
-                self._writer.close()
-                await self._writer.wait_closed()
+                       break
+
+                # If nothing has been sent or received
+                # for self.idle_timeout seconds, send a getProperties
+                telapsed = nowtime - self.idle_timer
+                if telapsed > self.idle_timeout:
+                    await self.send_getProperties()
+
+                # check if any vectors have timed out
+                for device in devices:
+                    for vector in device.values():
+                        if not vector.enable:
+                            continue
+                        if vector.checktimedout(nowtime):
+                            # Creat a VectorTimeOut event
+                            event = events.VectorTimeOut(device, vector)
+                            await self.rxevent(event)
+
         except Exception:
             logger.exception("Error in IPyClient._check_alive method")
             raise
@@ -780,72 +856,6 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             self.respond_timeout = 4 * timeout_max
 
 
-    async def _timeout_monitor(self):
-        """Sends a getProperties every five seconds if no devices have been learnt
-           or every self.idle_timeout seconds if nothing has been transmitted or received"""
-        try:
-            count = 0
-            while (not self._stop):
-                await asyncio.sleep(0.5)
-                # This loop tests timeout values every half second
-                if not self.connected:
-                    count = 0
-                else:
-                    # so the connection is up, check enabled devices exist
-                    devices = list(device for device in self.data.values() if device.enable)
-                    if devices:
-                        # connection is up and devices exist
-                        if self._blobfolderchanged:
-                            # devices all have an _enableBLOB attribute set
-                            # when the BLOBfolder changed, this ensures an
-                            # enableBLOB is sent with that value
-                            self._blobfolderchanged = False
-                            for device in devices:
-                                if self._stop:
-                                    break
-                                await self.resend_enableBLOB(device.devicename)
-                                if self._stop:
-                                    break
-                                for vector in device.values():
-                                    if vector.enable and (vector.vectortype == "BLOBVector"):
-                                        await self.resend_enableBLOB(device.devicename, vector.name)
-                                        if self._stop:
-                                            break
-                            # as enableBLOBs have been sent, leave
-                            # checking timeouts for the next .5 second
-                            continue
-                        if self.timeout_enable:
-                            # If nothing has been sent or received
-                            # for self.idle_timeout seconds, send a getProperties
-                            nowtime = time.time()
-                            telapsed = nowtime - self.idle_timer
-                            if telapsed > self.idle_timeout:
-                                await self.send_getProperties()
-                            # check if any vectors have timed out
-                            for device in devices:
-                                for vector in device.values():
-                                    if not vector.enable:
-                                        continue
-                                    if vector.checktimedout(nowtime):
-                                        # Creat a VectorTimeOut event
-                                        event = events.VectorTimeOut(device, vector)
-                                        await self.rxevent(event)
-                    else:
-                        # no devices
-                        # then send a getProperties, every five seconds, when count is zero
-                        if not count:
-                            await self.send_getProperties()
-                            await self.report("getProperties sent")
-                        count += 1
-                        if count >= 10:
-                            count = 0
-        except Exception:
-            logger.exception("Exception report from IPyClient._timeout_monitor method")
-            raise
-        finally:
-            self.shutdown()
-
-
     async def send_getProperties(self, devicename=None, vectorname=None):
         """Sends a getProperties request. On startup the IPyClient object
            will automatically send getProperties, so typically you will
@@ -953,7 +963,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
         "Await this method to run the client."
         self._stop = False
         try:
-            await asyncio.gather(self._comms(), self._timeout_monitor(), self.hardware())
+            await asyncio.gather(self._comms(), self.hardware())
         except asyncio.CancelledError:
             self._stop = True
             raise
