@@ -467,7 +467,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 # send a getProperties every five seconds if no devices have been learnt
                 if not count:
                     # count is zero, on startup and every five seconds
-                    if not devices
+                    if not devices:
                         # no devices, send a getProperties
                         await self.send_getProperties()
                         await self.report("getProperties sent")
