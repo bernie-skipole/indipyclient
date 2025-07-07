@@ -380,7 +380,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 except Exception:
                     logger.exception(f"Connection Error on {self.indihost}:{self.indiport}")
                     await self.warning("Connection failed")
-                self._clear_connection()
+                await self._clear_connection()
                 # connection has failed, ensure all tasks are done
                 if t2:
                     while not t2.done():
@@ -407,11 +407,17 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             self.shutdown()
 
 
-    def _clear_connection(self):
+    async def _clear_connection(self):
         "Clears a connection"
+        if self._writer is not None:
+            self._writer.close()
+            await self._writer.wait_closed()
         self.tx_timer = None
         self._writer = None
         self._reader = None
+        self.messages.clear()
+        # clear devices etc
+        self.clear()
 
 
 
@@ -438,9 +444,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 self._logtx(xmldata)
         except Exception:
             await self.warning(f"Connection Error on {self.indihost}:{self.indiport}")
-            self._writer.close()
-            await self._writer.wait_closed()
-            self._clear_connection()
+            await self._clear_connection()
 
 
     async def _check_alive(self):
@@ -448,15 +452,9 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
         try:
             count = -1 # increases by 1 every 0.1 seconds, after 5 seconds, goes to zero
-            while self.connected:
-                if self._stop:
-                    self._writer.close()
-                    await self._writer.wait_closed()
-                    break
+            while self.connected and not self._stop:
                 await asyncio.sleep(0.1)
                 if self._stop:
-                    self._writer.close()
-                    await self._writer.wait_closed()
                     break
 
                 count += 1
@@ -515,11 +513,9 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                     telapsed = nowtime - self.tx_timer
                     if telapsed > self.respond_timeout:
                         # no response to transmission self.respond_timeout seconds ago
-                       self._writer.close()
-                       await self._writer.wait_closed()
-                       if not self._stop:
-                           await self.warning("Error: Connection timed out")
-                       break
+                        if not self._stop:
+                            await self.warning("Error: Connection timed out")
+                        break
 
                 # If nothing has been sent or received
                 # for self.idle_timeout seconds, send a getProperties
@@ -541,7 +537,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             logger.exception("Error in IPyClient._check_alive method")
             raise
         finally:
-            self._clear_connection()
+            await self._clear_connection()
 
     def _logtx(self, txdata):
         "log tx data with level debug, and detail depends on self._verbose"
