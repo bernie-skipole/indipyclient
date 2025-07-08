@@ -713,10 +713,6 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
     async def _rxhandler(self, xmldata):
         """Populates the events using received data"""
-        if not self.connected:
-            return
-        if self._stop:
-            return
         try:
             devicename = xmldata.get("device")
             try:
