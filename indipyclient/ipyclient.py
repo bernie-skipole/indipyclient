@@ -404,7 +404,9 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             logger.exception("Exception report from IPyClient._comms method")
             raise
         finally:
+            await self._clear_connection()
             self.shutdown()
+
 
 
     async def _clear_connection(self):
@@ -415,6 +417,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 await self._writer.wait_closed()
         except Exception:
             logger.exception("Exception report from IPyClient._clear_connection method")
+        await self.warning(f"Connection closed on {self.indihost}:{self.indiport}")
         self.tx_timer = None
         self._writer = None
         self._reader = None
@@ -446,7 +449,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             if logger.isEnabledFor(logging.DEBUG):
                 self._logtx(xmldata)
         except Exception:
-            await self.warning(f"Connection Error on {self.indihost}:{self.indiport}")
+            await self.warning(f"Sending Error on {self.indihost}:{self.indiport}")
             await self._clear_connection()
 
 
@@ -541,6 +544,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             raise
         finally:
             await self._clear_connection()
+
 
     def _logtx(self, txdata):
         "log tx data with level debug, and detail depends on self._verbose"
