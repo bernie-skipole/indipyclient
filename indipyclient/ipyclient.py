@@ -409,9 +409,12 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
     async def _clear_connection(self):
         "Clears a connection"
-        if self._writer is not None:
-            self._writer.close()
-            await self._writer.wait_closed()
+        try:
+            if self._writer is not None:
+                self._writer.close()
+                await self._writer.wait_closed()
+        except Exception:
+            logger.exception("Exception report from IPyClient._clear_connection method")
         self.tx_timer = None
         self._writer = None
         self._reader = None
