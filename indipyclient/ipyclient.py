@@ -415,9 +415,9 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             if self._writer is not None:
                 self._writer.close()
                 await self._writer.wait_closed()
+                await self.warning(f"Connection closed on {self.indihost}:{self.indiport}")
         except Exception:
             logger.exception("Exception report from IPyClient._clear_connection method")
-        await self.warning(f"Connection closed on {self.indihost}:{self.indiport}")
         self.tx_timer = None
         self._writer = None
         self._reader = None
