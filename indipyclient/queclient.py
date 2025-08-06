@@ -38,7 +38,6 @@ class QueClient(IPyClient):
             self.BLOBfolder = blobfolder
 
 
-
     async def _set_rxque_item(self, eventtype, devicename, vectorname, timestamp):
         """This generates and adds an EventItem to rxque,
            where an EventItem is a named tuple with attributes:
@@ -76,7 +75,12 @@ class QueClient(IPyClient):
                 else:
                     break
         elif isinstance(rxque, asyncio.Queue):
-            await self.queueput(rxque, item, timeout=0.1)
+            while not self._stop:
+                try:
+                    await asyncio.wait_for(rxque.put(item), 0.1)
+                except asyncio.TimeoutError:
+                    # queue is full, continue while loop, checking stop flag
+                    continue
         elif isinstance(rxque, collections.deque):
             # append item to right side of rxque
             rxque.append(item)
