@@ -81,6 +81,8 @@ class QueClient(IPyClient):
                 except asyncio.TimeoutError:
                     # queue is full, continue while loop, checking stop flag
                     continue
+                else:
+                    break
         elif isinstance(rxque, collections.deque):
             # append item to right side of rxque
             rxque.append(item)
