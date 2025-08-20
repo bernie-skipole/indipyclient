@@ -22,10 +22,20 @@ following methods and attributes:
 **members()**
     Returns a dictionary of member objects
 
+**async create_clientevent(eventtype="ClientEvent",  \*\*payload)**
+    Creates a ClientEvent, and calls the IPyClient rxevent co-routine
+
+This can be used to generate an event which may be of use to the programmer
+if the rxevent co-routine processes data in some way, and it is wanted
+to inject data into that process for any purpose, then this can be used.
+
+The event will be a ClientEvent object, the attribute eventtype is by default "ClientEvent"
+but can be set to any string, the payload can be any kwargs wanted.
+
 **snapshot()**
     Take a snapshot of the vector and returns an object which is a restricted copy of the current state of the vector. Vector methods for sending data will not be available. This copy will not be updated by events. This is provided so that you can handle the vector data, without fear of the value changing.
 
-The snapshot will have the same common attributes and methods as the vector, apart from the snapshot method, and the device attribute. It will also have the extra methods:
+The snapshot will have the same common attributes and methods as the vector, apart from the snapshot and create_clientevent methods, and the device attribute. It will also have the extra methods:
 
 **dictdump(inc_blob=False)**
     Returns a dictionary of this vector, with datetime objects converted to strings.

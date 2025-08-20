@@ -7,11 +7,13 @@ from .ipyclient import IPyClient
 from .events import (delProperty, defSwitchVector, defTextVector, defNumberVector, defLightVector, defBLOBVector,
                      setSwitchVector, setTextVector, setNumberVector, setLightVector, setBLOBVector, Message, VectorTimeOut)
 
+from .propertyvectors import ClientEvent
+
 from .propertymembers import getfloat
 
 version = "0.8.4"
 
-__all__ = ["version", "IPyClient", "getfloat",
+__all__ = ["version", "IPyClient", "ClientEvent", "getfloat",
            "delProperty", "defSwitchVector", "defTextVector", "defNumberVector", "defLightVector", "defBLOBVector",
            "setSwitchVector", "setTextVector", "setNumberVector", "setLightVector", "setBLOBVector", "Message", "VectorTimeOut"]
 
