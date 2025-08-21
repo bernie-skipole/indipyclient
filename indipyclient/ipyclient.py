@@ -368,6 +368,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                     # clear devices etc
                     self.clear()
                     await self.warning(f"Connected to {self.indihost}:{self.indiport}")
+                    await self.rxevent(events.ConnectionMade())
                     t2 = asyncio.create_task(self._run_rx())
                     t3 = asyncio.create_task(self._check_alive())
                     await asyncio.gather(t2, t3)
@@ -416,6 +417,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 self._writer.close()
                 await self._writer.wait_closed()
                 await self.warning(f"Connection closed on {self.indihost}:{self.indiport}")
+                await self.rxevent(events.ConnectionLost())
         except Exception:
             logger.exception("Exception report from IPyClient._clear_connection method")
         self.tx_timer = None

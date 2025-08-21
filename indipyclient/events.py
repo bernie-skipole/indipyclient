@@ -54,6 +54,31 @@ class VectorTimeOut:
         self.root = None
 
 
+class ConnectionMade:
+    """This event is generated on connection, not by received data."""
+
+    def __init__(self):
+        self.device = None
+        self.devicename = None
+        self.vector = None
+        self.vectorname = None
+        self.timestamp = datetime.now(tz=timezone.utc)
+        self.eventtype = "ConnectionMade"
+        self.root = None
+
+class ConnectionLost:
+    """This event is generated on connection fail, not by received data."""
+
+    def __init__(self):
+        self.device = None
+        self.devicename = None
+        self.vector = None
+        self.vectorname = None
+        self.timestamp = datetime.now(tz=timezone.utc)
+        self.eventtype = "ConnectionLost"
+        self.root = None
+
+
 class Event:
     "Parent class for events received from drivers"
     def __init__(self, root, device, client):
