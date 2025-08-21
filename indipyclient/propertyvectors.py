@@ -191,8 +191,8 @@ class PropertyVector(Vector):
            The event will be a ClientEvent object, the attribute eventtype is by default "ClientEvent"
            but can be set to any string, the payload can be any kwargs wanted."""
 
-       event = ClientEvent(eventtype, self.device, self, **payload)
-       await self._client.rxevent(event)
+        event = ClientEvent(eventtype, self.device, self, **payload)
+        await self._client.rxevent(event)
 
 
     def checktimedout(self, nowtime):
