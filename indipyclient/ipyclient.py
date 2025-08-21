@@ -414,10 +414,10 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
         "Clears a connection"
         try:
             if self._writer is not None:
-                self._writer.close()
-                await self._writer.wait_closed()
                 await self.warning(f"Connection closed on {self.indihost}:{self.indiport}")
                 await self.rxevent(events.ConnectionLost())
+                self._writer.close()
+                await self._writer.wait_closed()
         except Exception:
             logger.exception("Exception report from IPyClient._clear_connection method")
         self.tx_timer = None
@@ -695,7 +695,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 data = await self._reader.readuntil(separator=b'>')
             except asyncio.LimitOverrunError:
                 data = await self._reader.read(n=32000)
-            except asyncio.IncompleteReadError:
+            except Exception:
                 binarydata = b""
                 await asyncio.sleep(0.1)
                 continue
