@@ -41,10 +41,70 @@ https://pypi.org/project/indipydriver
 
 https://github.com/bernie-skipole/indipydriver
 
-A terminal client 'indipyterm' is available, which itself calls on indipyclient to do the heavy lifting, and uses the textual package to present terminal characters, this is available at:
+The rest of this document describes the classes available in indipyclient which could be imported to provide your own client scripts.
+
+
+Terminal Example
+----------------
+
+indipyclient is a library only, which can be used to create a client or client scripts controlling the devices. However 'indipyterm' is available if you prefer a full ready-made client. It is a terminal client which has the advantage that with a headless setup, a remote user can simply SSH to the server and run the client.
+
+indipyterm uses IPyClient and textualize - a framework that creates terminal applications. It can be installed from Pypi.
 
 https://pypi.org/project/indipyterm
 
+The client can be run from a virtual environment with
+
+indipyterm [options]
+
+or with
+
+python3 -m indipyterm [options]
+
+If you use uv, it can be very simply run directly from Pypi with
+
+uvx indipyterm [options]
+
+The package help is:
+
+.. code-block:: text
+
+    usage: indipyterm [options]
+
+    Terminal client to communicate to an INDI service.
+
+    options:
+      -h, --help               show this help message and exit
+      --port PORT              Port of the INDI server (default 7624).
+      --host HOST              Hostname/IP of the INDI server (default localhost).
+      --blobfolder BLOBFOLDER  Optional folder where BLOB's will be saved.
+      --version    show program's version number and exit
+
+
+A typical session would look like:
+
+.. image:: ./image2.png
+
+Further information about indipyterm can be found from:
+
 https://github.com/bernie-skipole/indipyterm
 
-The rest of this document describes the classes available in indipyclient which could be imported to provide your own client scripts.
+Using textual_serve (available from Pypi) indipyterm can be served as a web service, and viewed with a browser. Simply write the following file and run it:
+
+.. code-block:: text
+
+    from textual_serve.server import Server
+
+    server = Server("python -m indipyterm")
+
+    server.serve()
+
+Then connect with your browser to localhost:8000 and the terminal will be displayed.
+
+Using indipyclient and textual it would be possible to write your own terminal clients, dedicated to a specific instrument. By being dedicated to a known device, vector and member, it does not need to 'learn' about remote devices but can simply display the expected instrument, making creating a specialist client much easier, nevertheless this would require a good knowledge of textual. A simplified example, (ledclient4.py) has been written at:
+
+https://github.com/bernie-skipole/inditest/tree/main/gui
+
+This is not general purpose, but is dedicated to controlling an LED driver, also listed in the above directory. A screenshot is shown below:
+
+.. image:: ./ledclient4.png

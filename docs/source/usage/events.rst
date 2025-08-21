@@ -515,3 +515,65 @@ As default, "ClientEvent", but can be set to any string when calling vector.crea
 A keyword arguments dictionary, set to any value desired when calling vector.create_clientevent
 
 ----
+
+
+.. autoclass:: indipyclient.events.ConnectionMade
+
+**Attributes**
+
+**self.device**
+
+This is None
+
+**self.devicename**
+
+This is None
+
+**self.vector**
+
+This is None
+
+**self.vectorname**
+
+This is None
+
+**self.timestamp**
+
+This is created by datetime.now(tz=timezone.utc)
+
+**self.eventtype**
+
+Set to the string "ConnectionMade".
+
+----
+
+.. autoclass:: indipyclient.events.ConnectionLost
+
+
+**Attributes**
+
+**self.device**
+
+This is None
+
+**self.devicename**
+
+This is None
+
+**self.vector**
+
+This is None
+
+**self.vectorname**
+
+This is None
+
+**self.timestamp**
+
+This is created by datetime.now(tz=timezone.utc)
+
+**self.eventtype**
+
+Set to the string "ConnectionLost".
+
+----

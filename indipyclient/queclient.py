@@ -43,11 +43,13 @@ class QueClient(IPyClient):
            where an EventItem is a named tuple with attributes:
 
            eventtype -  a string, one of Message, getProperties, Delete, Define, DefineBLOB, Set, SetBLOB,
-                        these indicate data is received from the client, and the type of event. It could
-                        also be the string "snapshot", which does not indicate a received event, but is a
-                        response to a snapshot request received from txque, or "TimeOut" which indicates an
-                        expected update has not occurred, or "State" which indicates you have just transmitted
-                        a new vector, and therefore the snapshot will have your vector state set to Busy.
+                        snapshot, TimeOut, State, ConnectionMade, ConnectionLost.
+                        The first seven indicate data is received from the client, and the type of event.
+                        "snapshot", is a response to a snapshot request received from txque.
+                        "TimeOut" indicates an expected update has not occurred
+                        "State" indicates you have just transmitted a new vector, and
+                        therefore the snapshot will have your vector state set to Busy.
+                        "ConnectionMade", "ConnectionLost" are self explanotary.
            devicename - usually the device name causing the event, or None if not applicable.
            vectorname - usually the vector name causing the event, or None if not applicable.
            timestamp -  the event timestamp, None for the snapshot request.
