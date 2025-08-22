@@ -165,7 +165,7 @@ class ClientEvent(collections.UserDict):
         self.root = None
         # this is a mapping of member name to value
         for membername, member in self.vector.items():
-            self.data[membername] = member.membervalue
+            self.data[membername] = member
 
 
 
@@ -295,6 +295,10 @@ class SwitchVector(PropertyVector):
        AtMostOne - of the SwitchMembers in this vector, one or none can be On.
 
        AnyOfMany - multiple switch members can be On.
+
+       As data is received, this vector is a mapping of membername:membervalue where membervalue
+       is the 'On' or 'Off' string.
+
        """
 
     def __init__(self, event):
@@ -426,7 +430,10 @@ class LightVector(PropertyVector):
        with values 'Idle', 'Ok', 'Busy' or 'Alert'. In general a client will
        indicate this state with different colours.
 
-       This class has no 'send_newLightVector method, since lights are read-only"""
+       This class has no 'send_newLightVector method, since lights are read-only
+
+       As data is received, this vector is a mapping of membername:membervalue where membervalue
+       is the string of 'Idle', 'Ok', 'Busy' or 'Alert'."""
 
     def __init__(self, event):
         super().__init__(event.vectorname, event.label, event.group, event.state,
@@ -495,7 +502,10 @@ class LightVector(PropertyVector):
 
 class TextVector(PropertyVector):
 
-    """A TextVector is used to send and receive text between instrument and client."""
+    """A TextVector is used to send and receive text between instrument and client.
+
+       As data is received, this vector is a mapping of membername:membervalue where membervalue
+       is the string received."""
 
 
     def __init__(self, event):
@@ -761,9 +771,6 @@ class NumberVector(PropertyVector):
         snapvector._perm = self._perm
         snapvector.message_timestamp = self.message_timestamp
         return snapvector
-
-
-
 
 
 class BLOBVector(PropertyVector):
