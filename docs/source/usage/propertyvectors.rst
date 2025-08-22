@@ -34,7 +34,7 @@ but can be set to any string, the payload can be any kwargs wanted.
 
 An example of using the create_clientevent method is at:
 
-https://github.com/bernie-skipole/inditest/docexamples/clientevent.py
+https://github.com/bernie-skipole/inditest/blob/main/docexamples/clientevent.py
 
 **snapshot()**
     Take a snapshot of the vector and returns an object which is a restricted copy of the current state of the vector. Vector methods for sending data will not be available. This copy will not be updated by events. This is provided so that you can handle the vector data, without fear of the value changing.

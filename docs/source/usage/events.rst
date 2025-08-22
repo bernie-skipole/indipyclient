@@ -516,7 +516,7 @@ A keyword arguments dictionary, set to any value desired when calling vector.cre
 
 An example of using the create_clientevent method is at:
 
-https://github.com/bernie-skipole/inditest/docexamples/clientevent.py
+https://github.com/bernie-skipole/inditest/blob/main/docexamples/clientevent.py
 
 ----
 
