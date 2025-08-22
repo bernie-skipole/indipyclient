@@ -19,7 +19,7 @@ The IPyClient object has an asyncrun() coroutine method which needs to be awaite
 
 The server replies with definition packets (defSwitchVector, defLightVector, .. ) that define the format of the instrument data.
 
-The indipyclient package reads these, and its IPyClient instance becomes a mapping of the devices, vectors and members.
+The indipyclient package reads these, and its IPyClient instance becomes a mapping of the devices, vectors and member values.
 
 For example, if ipyclient is your instance of IPyClient:
 
@@ -44,8 +44,8 @@ https://github.com/bernie-skipole/indipydriver
 The rest of this document describes the classes available in indipyclient which could be imported to provide your own client scripts.
 
 
-Terminal Example
-----------------
+indipyterm
+----------
 
 indipyclient is a library only, which can be used to create a client or client scripts controlling the devices. However 'indipyterm' is available if you prefer a full ready-made client. It is a terminal client which has the advantage that with a headless setup, a remote user can simply SSH to the server and run the client.
 
