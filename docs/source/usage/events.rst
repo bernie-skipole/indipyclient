@@ -37,6 +37,8 @@ An xml.etree.ElementTree object of the received xml data.
 
 **self.timestamp**
 
+A datetime.datetime object.
+
 **self.message**
 
 If self.device is None, the tuple (self.timestamp, self.message) is appended to the IPyClient messages deque.
@@ -73,6 +75,8 @@ An xml.etree.ElementTree object of the received xml data.
 
 **self.timestamp**
 
+A datetime.datetime object.
+
 **self.eventtype**
 
 Set to the string "getProperties".
@@ -97,6 +101,8 @@ Could be None, to indicate the whole device is deleted.
 An xml.etree.ElementTree object of the received xml data.
 
 **self.timestamp**
+
+A datetime.datetime object.
 
 **self.message**
 

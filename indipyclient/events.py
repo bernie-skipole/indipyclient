@@ -16,9 +16,9 @@ from .propertymembers import ParseException, getfloat
 
 
 def _parse_timestamp(timestamp_string):
-    """Parse a timestamp string and return either None on failure, or a datetime object
-       If the given timestamp_string is None, return the datetime for the current time.
-       Everything is UTC"""
+    """Parse a timestamp string and return a datetime object
+       If the given timestamp_string cannot be parsed, returns
+       the datetime for the current time. Everything is UTC"""
     if timestamp_string:
         try:
             if '.' in timestamp_string:
@@ -35,7 +35,7 @@ def _parse_timestamp(timestamp_string):
                 timestamp = datetime.fromisoformat(timestamp_string)
                 timestamp = timestamp.replace(tzinfo=timezone.utc)
         except Exception:
-            timestamp = None
+            timestamp = datetime.now(tz=timezone.utc)
     else:
         timestamp = datetime.now(tz=timezone.utc)
     return timestamp
