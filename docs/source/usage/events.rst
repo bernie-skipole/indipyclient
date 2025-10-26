@@ -31,6 +31,10 @@ Could be None
 
 Always None, as this message is either a global message or only associated with a device
 
+**self.vector**
+
+None
+
 **self.root**
 
 An xml.etree.ElementTree object of the received xml data.
@@ -69,6 +73,10 @@ Could be None
 
 Could be None
 
+**self.vector**
+
+None
+
 **self.root**
 
 An xml.etree.ElementTree object of the received xml data.
@@ -95,6 +103,10 @@ Set to the string "getProperties".
 **self.vectorname**
 
 Could be None, to indicate the whole device is deleted.
+
+**self.vector**
+
+None
 
 **self.root**
 

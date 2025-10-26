@@ -85,6 +85,7 @@ class Event:
         self.device = device
         self._client = client
         self.vectorname = None
+        self.vector = None
         if device is None:
             self.devicename = None
         else:
