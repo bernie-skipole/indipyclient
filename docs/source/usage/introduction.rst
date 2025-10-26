@@ -1,7 +1,7 @@
 Introduction
 ============
 
-This indipyclient package provides a classes used to communicate to an INDI server. In particular your script can import and create an instance of the 'IPyClient' class.
+This indipyclient package provides classes used to communicate to an INDI server. In particular your script can import and create an instance of the 'IPyClient' class.
 
 INDI - Instrument Neutral Distributed Interface.
 
