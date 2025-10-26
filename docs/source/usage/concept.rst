@@ -1,7 +1,7 @@
 Concept
 =======
 
-The associated package 'indipydriver' can be used to take your data, organise it into a structure defined by the INDI protocol, and serve it on a port.
+The associated package 'indipydriver' can be used to interface with an instrument, take your data, organise it into a structure defined by the INDI protocol, and together with the 'indipyserver' package, serve it on a port.
 
 The INDI protocol (Instrument Neutral Distributed Interface) specifies a limited number of ways the data can be presented, as switches, lights, text, numbers and BLOBs (Binary Large Objects), together with grouping and label values which may be useful to display the data.
 
