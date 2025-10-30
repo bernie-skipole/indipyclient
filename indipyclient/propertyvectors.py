@@ -439,6 +439,7 @@ class LightVector(PropertyVector):
         super().__init__(event.vectorname, event.label, event.group, event.state,
                          event.timestamp, event.message, event.device, event._client)
         self._perm = "ro"
+        self.timeout = None
         # self.data is a dictionary of light name : lightmember
         # create  members
         for membername, membervalue in event.items():
@@ -495,6 +496,7 @@ class LightVector(PropertyVector):
         snapvector = SnapVector(self.name, self.label, self.group, self.state, self.timestamp, self.message,
                                 self.vectortype, self.devicename, self.enable, self.user_string, self.data)
         snapvector._perm = "ro"
+        snapvector.timeout = None
         snapvector.message_timestamp = self.message_timestamp
         return snapvector
 
