@@ -30,6 +30,10 @@ The attributes of the device object are:
 
 This is initially an empty string, but can be set by your code to any string you like.
 
+**self.itemid**
+
+An integer associated with this device when the client first learns of the device. Created by calling the client.create_itemid() method.
+
 **self.messages**
 
 This is a collections.deque of item tuples (Timestamp, message).

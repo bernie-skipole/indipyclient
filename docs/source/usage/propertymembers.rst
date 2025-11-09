@@ -30,6 +30,8 @@ You should never need to instantiate these classes yourself.
 
 **self.user_string**
 
+**self.itemid**
+
 **self.membervalue**
 
 ----
@@ -43,6 +45,8 @@ You should never need to instantiate these classes yourself.
 **self.label**
 
 **self.user_string**
+
+**self.itemid**
 
 **self.membervalue**
 
@@ -58,6 +62,8 @@ You should never need to instantiate these classes yourself.
 
 **self.user_string**
 
+**self.itemid**
+
 **self.membervalue**
 
 ----
@@ -72,6 +78,8 @@ You should never need to instantiate these classes yourself.
 **self.label**
 
 **self.user_string**
+
+**self.itemid**
 
 **self.membervalue**
 
@@ -106,6 +114,8 @@ These values, and self.membervalue are strings taken from the XML protocol. The 
 **self.label**
 
 **self.user_string**
+
+**self.itemid**
 
 **self.filename**
 

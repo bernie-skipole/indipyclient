@@ -80,6 +80,9 @@ class IPyClient(collections.UserDict):
         # this client may wish to set
         self.user_string = ""
 
+        # initial value of an incrementing integer, used by create_itemid method
+        self._itemid = 0
+
         self.indihost = indihost
         self.indiport = indiport
 
@@ -144,6 +147,20 @@ class IPyClient(collections.UserDict):
         # This is the default enableBLOB value
         self._enableBLOBdefault = "Never"
 
+
+    def create_itemid(self, devicename='', vectorname='', membername=''):
+        """This is called as each device, vector and member is learnt, and returns an integer.
+           This integer is set as an itemid attribute into the device/vector/member.
+           As default this method just increments a counter whenever it is called
+           ensuring the itemid attributes are unique.
+           The devicename,vectorname and membername arguments are ignored and the itemid's
+           are not used any further, other than being copied to snapshots.
+           Their only purpose is to be available as itemid attributes and can be used if useful
+           to client software.
+           If you wish, this method may be overwritten to provide an id scheme of your own choosing.
+        """
+        self._itemid += 1
+        return self._itemid
 
     @property
     def connected(self):
@@ -1077,10 +1094,11 @@ class SnapDevice(_ParentDevice):
     """This object is used as a snapshot of this device
        It is a mapping of vector name to vector snapshots"""
 
-    def __init__(self, devicename, messages, user_string):
+    def __init__(self, devicename, messages, user_string, itemid):
         super().__init__(devicename)
         self.messages = list(messages)
         self.user_string = user_string
+        self.itemid = itemid
 
     def dictdump(self, inc_blob=False):
         """Returns a dictionary of this device information
@@ -1131,6 +1149,9 @@ class Device(_ParentDevice):
         # the user_string is available to be any string a user of
         # this device may wish to set
         self.user_string = client.user_string_dict.get((devicename, None, None), "")
+
+        # unique integer associated with this device
+        self.itemid = client.create_itemid(devicename=devicename)
 
         # and the device has a reference to its client
         self._client = client
@@ -1203,7 +1224,7 @@ class Device(_ParentDevice):
            Vector methods for sending data will not be available.
            This copy will not be updated by events. This is provided so that you can
            handle the device data, without fear of the value changing."""
-        snapdevice = SnapDevice(self.devicename, self.messages, self.user_string)
+        snapdevice = SnapDevice(self.devicename, self.messages, self.user_string, self.itemid)
         for vectorname, vector in self.data.items():
             snapdevice[vectorname] = vector.snapshot()
         return snapdevice

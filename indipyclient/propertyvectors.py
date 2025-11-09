@@ -96,12 +96,13 @@ class SnapVector(Vector):
 
 
     def __init__(self, name, label, group, state, timestamp, message,
-                       vectortype, devicename, enable, user_string, data):
+                       vectortype, devicename, enable, user_string, itemid, data):
         super().__init__(name, label, group, state, timestamp, message)
         self.vectortype = vectortype
         self.devicename = devicename
         self.enable = enable
         self.user_string = user_string
+        self.itemid = itemid
         for membername, member in data.items():
             self.data[membername] = member._snapshot()
 
@@ -178,6 +179,7 @@ class PropertyVector(Vector):
         self._client = client
         self.device = device
         self.devicename = device.devicename
+        self.itemid = client.create_itemid(devicename=self.devicename, vectorname=name)
 
         self._timer = False   # Set true when a timer is going after a newvector is sent
                               # set False when a setvector is received
@@ -275,7 +277,7 @@ class PropertyVector(Vector):
            handle the vector data, without fear of the value changing."""
 
         snapvector = SnapVector(self.name, self.label, self.group, self.state, self.timestamp, self.message,
-                                self.vectortype, self.devicename, self.enable, self.user_string, self.data)
+                                self.vectortype, self.devicename, self.enable, self.user_string, self.itemid, self.data)
         snapvector.timeout = self.timeout
         snapvector._rule = self._rule
         snapvector._perm = self._perm
@@ -311,6 +313,7 @@ class SwitchVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             member = SwitchMember(membername, event.memberlabels[membername], membervalue)
+            member.itemid = self._client.create_itemid(devicename=self.devicename, vectorname=self.name, membername=membername)
             member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
             self.data[membername] = member
 
@@ -443,7 +446,9 @@ class LightVector(PropertyVector):
         # self.data is a dictionary of light name : lightmember
         # create  members
         for membername, membervalue in event.items():
+
             member = LightMember(membername, event.memberlabels[membername], membervalue)
+            member.itemid = self._client.create_itemid(devicename=self.devicename, vectorname=self.name, membername=membername)
             member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
             self.data[membername] = member
 
@@ -494,7 +499,7 @@ class LightVector(PropertyVector):
            handle the vector data, without fear of the value changing."""
 
         snapvector = SnapVector(self.name, self.label, self.group, self.state, self.timestamp, self.message,
-                                self.vectortype, self.devicename, self.enable, self.user_string, self.data)
+                                self.vectortype, self.devicename, self.enable, self.user_string, self.itemid, self.data)
         snapvector._perm = "ro"
         snapvector.timeout = None
         snapvector.message_timestamp = self.message_timestamp
@@ -519,6 +524,7 @@ class TextVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             member = TextMember(membername, event.memberlabels[membername], membervalue)
+            member.itemid = self._client.create_itemid(devicename=self.devicename, vectorname=self.name, membername=membername)
             member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
             self.data[membername] = member
 
@@ -647,6 +653,7 @@ class NumberVector(PropertyVector):
         # create  members
         for membername, membervalue in event.items():
             member = NumberMember(membername, *event.memberlabels[membername], membervalue)
+            member.itemid = self._client.create_itemid(devicename=self.devicename, vectorname=self.name, membername=membername)
             member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
             self.data[membername] = member
 
@@ -768,7 +775,7 @@ class NumberVector(PropertyVector):
            handle the vector data, without fear of the value changing."""
 
         snapvector = SnapNumberVector(self.name, self.label, self.group, self.state, self.timestamp, self.message,
-                                self.vectortype, self.devicename, self.enable, self.user_string, self.data)
+                                self.vectortype, self.devicename, self.enable, self.user_string, self.itemid, self.data)
         snapvector.timeout = self.timeout
         snapvector._perm = self._perm
         snapvector.message_timestamp = self.message_timestamp
@@ -794,6 +801,7 @@ class BLOBVector(PropertyVector):
         # create  members
         for membername, label in event.memberlabels.items():
             member = BLOBMember(membername, label)
+            member.itemid = self._client.create_itemid(devicename=self.devicename, vectorname=self.name, membername=membername)
             member.user_string = self._client.user_string_dict.get((self.devicename, self.name, membername), "")
             self.data[membername] = member
 

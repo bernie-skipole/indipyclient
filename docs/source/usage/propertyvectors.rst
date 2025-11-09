@@ -82,6 +82,10 @@ If a message is received, this holds the UTC datetime of the message.
 
 This is initially an empty string, but can be set by your code to any string you like.
 
+**self.itemid**
+
+An integer associated with this vector when the client first learns of the vector. Created by calling the client.create_itemid() method.
+
 **self.timestamp**
 
 A UTC datetime object, updated from the server as values are received.

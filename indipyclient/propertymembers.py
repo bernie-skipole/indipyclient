@@ -71,6 +71,8 @@ class Member():
         # the user_string is available to be any string a user of
         # this member may wish to set
         self.user_string = ""
+        # the itemid is an integer set by the client.create_itemid method when the member is created
+        self.itemid = 0
 
     @property
     def membervalue(self):
@@ -87,9 +89,10 @@ class SnapMember(Member):
        the snapshot members for Switch, Light and Text will be objects
        of this class."""
 
-    def __init__(self, name, label, membervalue, user_string):
+    def __init__(self, name, label, membervalue, user_string, itemid):
         super().__init__(name, label, membervalue)
         self.user_string = user_string
+        self.itemid = itemid
 
     def dictdump(self, inc_blob=False):
         "Returns a dictionary of this member"
@@ -126,7 +129,7 @@ class SwitchMember(Member):
         return value
 
     def _snapshot(self):
-        snapmember = SnapMember(self.name, self.label, self._membervalue, self.user_string)
+        snapmember = SnapMember(self.name, self.label, self._membervalue, self.user_string, self.itemid)
         return snapmember
 
     def oneswitch(self, newvalue):
@@ -164,7 +167,7 @@ class LightMember(Member):
         return value
 
     def _snapshot(self):
-        snapmember = SnapMember(self.name, self.label, self._membervalue, self.user_string)
+        snapmember = SnapMember(self.name, self.label, self._membervalue, self.user_string, self.itemid)
         return snapmember
 
 
@@ -189,7 +192,7 @@ class TextMember(Member):
             self._membervalue = value
 
     def _snapshot(self):
-        snapmember = SnapMember(self.name, self.label, self._membervalue, self.user_string)
+        snapmember = SnapMember(self.name, self.label, self._membervalue, self.user_string, self.itemid)
         return snapmember
 
     def onetext(self, newvalue):
@@ -333,9 +336,10 @@ class SnapNumberMember(ParentNumberMember):
     """Should you use the ipyclient.snapshot method to create a snapshot,
        the snapshot members for Numbers will be objects of this class."""
 
-    def __init__(self, name, label, format, min, max, step, membervalue, user_string):
+    def __init__(self, name, label, format, min, max, step, membervalue, user_string, itemid):
         super().__init__(name, label, format, min, max, step, membervalue)
         self.user_string = user_string
+        self.itemid = itemid
 
     def dictdump(self, inc_blob=False):
         "Returns a dictionary of this member"
@@ -420,7 +424,7 @@ class NumberMember(ParentNumberMember):
         return xmldata
 
     def _snapshot(self):
-        snapmember = SnapNumberMember(self.name, self.label, self.format, self.min, self.max, self.step, self._membervalue, self.user_string)
+        snapmember = SnapNumberMember(self.name, self.label, self.format, self.min, self.max, self.step, self._membervalue, self.user_string, self.itemid)
         return snapmember
 
 
@@ -447,9 +451,10 @@ class SnapBLOBMember(ParentBLOBMember):
     """Should you use the ipyclient.snapshot method to create a snapshot,
        the snapshot members for BLOBs will be objects of this class."""
 
-    def __init__(self, name, label, blobsize, blobformat, membervalue, user_string, filename):
+    def __init__(self, name, label, blobsize, blobformat, membervalue, user_string, itemid, filename):
         super().__init__(name, label, blobsize, blobformat, membervalue)
         self.user_string = user_string
+        self.itemid = itemid
         self.filename = filename
 
 
@@ -536,4 +541,4 @@ class BLOBMember(ParentBLOBMember):
 
     def _snapshot(self):
         "Returns a snapshot"
-        return SnapBLOBMember(self.name, self.label, self.blobsize, self.blobformat, self._membervalue, self.user_string, self.filename)
+        return SnapBLOBMember(self.name, self.label, self.blobsize, self.blobformat, self._membervalue, self.user_string, self.itemid, self.filename)
