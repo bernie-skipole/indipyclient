@@ -148,16 +148,17 @@ class IPyClient(collections.UserDict):
         self._enableBLOBdefault = "Never"
 
 
-    def create_itemid(self, devicename='', vectorname='', membername=''):
+    def create_itemid(self, devicename='', vectorname='', membername='', **kwargs):
         """This is called as each device, vector and member is learnt, and returns an integer.
            This integer is set as an itemid attribute into the device/vector/member.
-           As default this method just increments a counter whenever it is called
-           ensuring the itemid attributes are unique.
-           The devicename,vectorname and membername arguments are ignored and the itemid's
-           are not used any further, other than being copied to snapshots.
-           Their only purpose is to be available as itemid attributes and can be used if useful
+           As default this method just increments a counter (self._itemid) whenever
+           it is called, and returns the integer ensuring the itemid attributes are unique.
+           The devicename,vectorname and membername arguments are given, but not used and the itemid
+           attributes are not used any further, other than being copied to snapshots.
+           Their only purpose is to be available as itemid attributes which may be useful
            to client software.
-           If you wish, this method may be overwritten to provide an id scheme of your own choosing.
+           If you wish, this method may be overwritten to provide an id scheme of your own choosing,
+           the kwargs argument being available for your convenience.
         """
         self._itemid += 1
         return self._itemid
@@ -1026,41 +1027,47 @@ class Snap(collections.UserDict):
         return propertyvector.state
 
 
-    def dictdump(self, inc_blob=False):
+    def dictdump(self, inc_blob=False, inc_user_string=False, inc_itemid=False):
         """Returns a dictionary of this client information
            and is used to generate the JSON output.
            If any BLOB vectors are included and inc_blob is False, the
            BLOB values will be given as None in the dictionary, set inc_blob
-           to True to also include the BLOB in the dictionary."""
+           to True to also include the BLOB in the dictionary.
+           If inc_user_string and inc_itemid are set to True, then these
+           values will be included, otherwise not,"""
         messlist = []
         for message in self.messages:
             messlist.append([message[0].isoformat(sep='T'), message[1]])
         devdict = {}
         for devicename, device in self.items():
-            devdict[devicename] = device.dictdump(inc_blob)
-        return {"indihost":self.indihost,
+            devdict[devicename] = device.dictdump(inc_blob, inc_user_string, inc_itemid)
+        dmp = {"indihost":self.indihost,
                 "indiport":self.indiport,
                 "connected":self.connected,
-                "user_string":self.user_string,
                 "messages":messlist,
                 "devices":devdict}
+        if inc_user_string:
+            dmp["user_string"] = self.user_string
+        if inc_itemid:
+            dmp["itemid"] = self.itemid
+        return dmp
 
-    def dumps(self, indent=None, separators=None, inc_blob=False):
+    def dumps(self, indent=None, separators=None, inc_blob=False, inc_user_string=False, inc_itemid=False):
         """Returns a JSON string of the snapshot.
            If any BLOB vectors are included and inc_blob is False, the
            BLOB values will be given as Null in the string, set inc_blob
            to True to also include the BLOB."""
-        return json.dumps(self.dictdump(inc_blob), indent=indent, separators=separators)
+        return json.dumps(self.dictdump(inc_blob, inc_user_string, inc_itemid), indent=indent, separators=separators)
 
 
-    def dump(self, fp, indent=None, separators=None, inc_blob=False):
+    def dump(self, fp, indent=None, separators=None, inc_blob=False, inc_user_string=False, inc_itemid=False):
         """Serialize the snapshot as a JSON formatted stream to fp, a file-like object.
            This uses the Python json module which always produces str objects, not bytes
            objects. Therefore, fp.write() must support str input.
            If any BLOB vectors are included and inc_blob is False, the
            BLOB values will be given as Null in the file, set inc_blob
            to True to also include the BLOB."""
-        return json.dump(self.dictdump(inc_blob), fp, indent=indent, separators=separators)
+        return json.dump(self.dictdump(inc_blob, inc_user_string, inc_itemid), fp, indent=indent, separators=separators)
 
 
 
@@ -1100,7 +1107,7 @@ class SnapDevice(_ParentDevice):
         self.user_string = user_string
         self.itemid = itemid
 
-    def dictdump(self, inc_blob=False):
+    def dictdump(self, inc_blob=False, inc_user_string=False, inc_itemid=False):
         """Returns a dictionary of this device information
            and is used to generate the JSON output.
            If any BLOB vectors are included and inc_blob is False, the
@@ -1111,29 +1118,33 @@ class SnapDevice(_ParentDevice):
             messlist.append([message[0].isoformat(sep='T'), message[1]])
         vecdict = {}
         for vectorname, vector in self.items():
-            vecdict[vectorname] = vector.dictdump(inc_blob)
-        return {"devicename":self.devicename,
+            vecdict[vectorname] = vector.dictdump(inc_blob, inc_user_string, inc_itemid)
+        dmp = {"devicename":self.devicename,
                 "enable":self.enable,
-                "user_string":self.user_string,
                 "messages":messlist,
                 "vectors":vecdict}
+        if inc_user_string:
+            dmp["user_string"] = self.user_string
+        if inc_itemid:
+            dmp["itemid"] = self.itemid
+        return dmp
 
-    def dumps(self, indent=None, separators=None, inc_blob=False):
+    def dumps(self, indent=None, separators=None, inc_blob=False, inc_user_string=False, inc_itemid=False):
         """Returns a JSON string of the snapshot.
            If any BLOB vectors are included and inc_blob is False, the
            BLOB values will be given as Null in the string, set inc_blob
            to True to also include the BLOB."""
-        return json.dumps(self.dictdump(inc_blob), indent=indent, separators=separators)
+        return json.dumps(self.dictdump(inc_blob, inc_user_string, inc_itemid), indent=indent, separators=separators)
 
 
-    def dump(self, fp, indent=None, separators=None, inc_blob=False):
+    def dump(self, fp, indent=None, separators=None, inc_blob=False, inc_user_string=False, inc_itemid=False):
         """Serialize the snapshot as a JSON formatted stream to fp, a file-like object.
            This uses the Python json module which always produces str objects, not bytes
            objects. Therefore, fp.write() must support str input.
            If any BLOB vectors are included and inc_blob is False, the
            BLOB values will be given as Null in the file, set inc_blob
            to True to also include the BLOB."""
-        return json.dump(self.dictdump(inc_blob), fp, indent=indent, separators=separators)
+        return json.dump(self.dictdump(inc_blob, inc_user_string, inc_itemid), fp, indent=indent, separators=separators)
 
 
 

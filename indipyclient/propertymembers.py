@@ -94,11 +94,15 @@ class SnapMember(Member):
         self.user_string = user_string
         self.itemid = itemid
 
-    def dictdump(self, inc_blob=False):
+    def dictdump(self, inc_blob=False, inc_user_string=False, inc_itemid=False):
         "Returns a dictionary of this member"
-        return {"label": self.label,
-                "user_string":self.user_string,
-                "value": self._membervalue}
+        dmp = {"label": self.label,
+               "value": self._membervalue}
+        if inc_user_string:
+            dmp["user_string"] = self.user_string
+        if inc_itemid:
+            dmp["itemid"] = self.itemid
+        return dmp
 
 
 class SwitchMember(Member):
@@ -341,10 +345,9 @@ class SnapNumberMember(ParentNumberMember):
         self.user_string = user_string
         self.itemid = itemid
 
-    def dictdump(self, inc_blob=False):
+    def dictdump(self, inc_blob=False, inc_user_string=False, inc_itemid=False):
         "Returns a dictionary of this member"
-        return {"label": self.label,
-                "user_string":self.user_string,
+        dmp = {"label": self.label,
                 "format": self.format,
                 "min": self.min,
                 "max": self.max,
@@ -353,6 +356,11 @@ class SnapNumberMember(ParentNumberMember):
                 "floatvalue": self.getfloatvalue(),
                 "formattedvalue": self.getformattedvalue()
                 }
+        if inc_user_string:
+            dmp["user_string"] = self.user_string
+        if inc_itemid:
+            dmp["itemid"] = self.itemid
+        return dmp
 
 
 class NumberMember(ParentNumberMember):
@@ -458,22 +466,20 @@ class SnapBLOBMember(ParentBLOBMember):
         self.filename = filename
 
 
-    def dictdump(self, inc_blob=False):
+    def dictdump(self, inc_blob=False, inc_user_string=False, inc_itemid=False):
         "Returns a dictionary of this member, if inc_blob is False, value will be None"
+        dmp = {"label": self.label,
+               "filename":self.filename,
+               "blobsize": self.blobsize,
+               "blobformat": self.blobformat,
+               "value": None}
         if inc_blob:
-            return {"label": self.label,
-                    "user_string":self.user_string,
-                    "filename":self.filename,
-                    "blobsize": self.blobsize,
-                    "blobformat": self.blobformat,
-                    "value": self._membervalue}
-        else:
-            return {"label": self.label,
-                    "user_string":self.user_string,
-                    "filename":self.filename,
-                    "blobsize": self.blobsize,
-                    "blobformat": self.blobformat,
-                    "value": None}
+            dmp["value"] = self._membervalue
+        if inc_user_string:
+            dmp["user_string"] = self.user_string
+        if inc_itemid:
+            dmp["itemid"] = self.itemid
+        return dmp
 
 
 class BLOBMember(ParentBLOBMember):
