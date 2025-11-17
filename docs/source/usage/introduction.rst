@@ -135,7 +135,7 @@ The package help is:
 
 A typical session would look like:
 
-.. image:: ./images/indipyweb.png
+.. image:: ./indipyweb.png
 
 Further information about indipyweb can be found from:
 
