@@ -31,15 +31,15 @@ Indipyclient can be installed from Pypi with::
 
     pip install indipyclient
 
-The rest of this document describes the classes available in indipyclient which could be imported to provide your own client scripts.
-
 
 indipyterm
 ----------
 
 indipyclient is a library only, which can be used to create a client or client scripts controlling the devices. However 'indipyterm' is available if you prefer a full ready-made client. It is a terminal client which has the advantage that with a headless setup, a remote user can simply SSH to the server and run the client.
 
-indipyterm uses IPyClient and textualize - a framework that creates terminal applications. It can be installed from Pypi.
+indipyterm uses IPyClient to do the work and the framework 'textualize' to create the display.
+
+indipyterm can be installed from Pypi.
 
 https://pypi.org/project/indipyterm
 
