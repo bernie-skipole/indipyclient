@@ -79,18 +79,6 @@ Further information about indipyterm can be found from:
 
 https://github.com/bernie-skipole/indipyterm
 
-Using textual_serve (available from Pypi) indipyterm can be served as a web service, and viewed with a browser. Simply write the following file and run it:
-
-.. code-block:: text
-
-    from textual_serve.server import Server
-
-    server = Server("python -m indipyterm")
-
-    server.serve()
-
-Then connect with your browser to localhost:8000 and the terminal will be displayed.
-
 Using indipyclient and textual it would be possible to write your own terminal clients, dedicated to a specific instrument. By being dedicated to a known device, vector and member, it does not need to 'learn' about remote devices but can simply display the expected instrument, making creating a specialist client much easier, nevertheless this would require a good knowledge of textual. A simplified example, (ledclient4.py) has been written at:
 
 https://github.com/bernie-skipole/inditest/tree/main/gui
@@ -98,3 +86,57 @@ https://github.com/bernie-skipole/inditest/tree/main/gui
 This is not general purpose, but is dedicated to controlling an LED driver, also listed in the above directory. A screenshot is shown below:
 
 .. image:: ./ledclient4.png
+
+
+indipyweb
+---------
+
+The associated package indipyweb provides a client which serves web pages, and is also available from Pypi, again behind the scenes this uses indipyclient.
+
+https://pypi.org/project/indipyweb
+
+The client can be run from a virtual environment with
+
+indipyweb [options]
+
+or with
+
+python3 -m indipyweb [options]
+
+The package help is:
+
+.. code-block:: text
+
+    usage: indipyweb [options]
+
+    Web server to communicate to an INDI service.
+
+    options:
+      -h, --help                   show this help message and exit
+      --port PORT                  Listening port of the web server.
+      --host HOST                  Hostname/IP of the web server.
+      --dbfolder DBFOLDER          Folder where the database will be set.
+      --securecookie SECURECOOKIE  Set True to enforce https only for cookies.
+      --version                    show program's version number and exit
+
+    The host and port set here have priority over values set in the database.
+    If not given, and not set in the database, 'localhost:8000' is used.
+    The database file holds user and INDI port configuration, and can be
+    populated via browser using the 'edit' button.
+    If it does not already exist, a database file will be created in the
+    given db folder, or if not set, the current working directory will be used.
+    A newly generated database file will contain a single default username
+    and password 'admin' and 'password!'. These should be changed as soon as
+    possible and the INDI host/port set (default localhost:7624).
+    The securecookie argument is 'False' by default, if using a reverse
+    proxy providing https connectivity, set securecookie to the string 'True'
+    to ensure loggedin cookies can only pass over https.
+
+
+A typical session would look like:
+
+.. image:: ./images/indipyweb.png
+
+Further information about indipyweb can be found from:
+
+https://github.com/bernie-skipole/indipyweb
