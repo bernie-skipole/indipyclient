@@ -43,3 +43,9 @@ A terminal client 'indipyterm' is available, which itself calls on indipyclient 
 https://pypi.org/project/indipyterm
 
 https://github.com/bernie-skipole/indipyterm
+
+Similarly 'indipyweb' is available, also using indipyclient, and creates a web service which enables browsers to view and control the connected instruments. This is available at:
+
+https://pypi.org/project/indipyweb
+
+https://github.com/bernie-skipole/indipyweb
