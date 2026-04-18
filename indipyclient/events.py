@@ -183,7 +183,7 @@ class defVector(Event, UserDict):
         self.message = root.get("message", "")
 
 
-    def __setitem__(self, membername):
+    def __setitem__(self, membername, value):
         raise KeyError
 
 
@@ -512,7 +512,7 @@ class setVector(Event, UserDict):
             self.state = None
         self.message = root.get("message", "")
 
-    def __setitem__(self, membername):
+    def __setitem__(self, membername, value):
         raise KeyError
 
 
