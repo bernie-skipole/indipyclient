@@ -365,7 +365,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
         return sum(map(lambda x:1 if x.enable else 0, self.data.values()))
 
 
-    def __setitem__(self, device):
+    def __setitem__(self, devicename, device):
         "Devices are added by being learnt from the driver, they cannot be manually added"
         raise KeyError
 
