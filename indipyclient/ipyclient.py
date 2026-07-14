@@ -675,7 +675,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                 if message.endswith(b'/>'):
                     # the message is complete, handle message here
                     try:
-                        root = ET.fromstring(message.decode("us-ascii"))
+                        root = ET.fromstring(message.decode("utf-8"))
                     except ET.ParseError:
                        # failed to parse the message, continue at beginning
                         message = b''
@@ -691,7 +691,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             if message.endswith(_ENDTAGS[messagetagnumber]):
                 # the message is complete, handle message here
                 try:
-                    root = ET.fromstring(message.decode("us-ascii"))
+                    root = ET.fromstring(message.decode("utf-8"))
                 except ET.ParseError:
                     # failed to parse the message, continue at beginning
                     message = b''
