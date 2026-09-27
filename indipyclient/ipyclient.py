@@ -138,6 +138,13 @@ class IPyClient(collections.UserDict):
         # Enables reports, by adding INFO logs to client messages
         self.enable_reports = True
 
+        # when a define BLOB is received, if self.resend_enableBLOB_on_def is True
+        # this client then calls resend_enableBLOB to automatically send a BLOB enable
+        # instruction for the device and vector defined.
+        # If this is set to False, no auto resend will be used, leaving it to
+        # you to call send_enableBLOB when a defBLOBVector event is received
+        self.resend_enableBLOB_on_def = True
+
         # holds dictionary of initial user strings
         self.user_string_dict = {}
 
@@ -604,7 +611,7 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
             data = copy.deepcopy(rxdata)
             tag = data.tag
             for element in data:
-                if tag  == "newBLOBVector":
+                if tag  == "newBLOBVector" or tag == "setBLOBVector":
                     element.text = "NOT LOGGED"
             binarydata = ET.tostring(data)
             logger.debug(startlog + binarydata.decode())
@@ -769,7 +776,8 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
 
             if event.eventtype == "DefineBLOB":
                 # every time a defBLOBVector is received, send an enable BLOB instruction
-                await self.resend_enableBLOB(event.devicename, event.vectorname)
+                if self.resend_enableBLOB_on_def:
+                    await self.resend_enableBLOB(event.devicename, event.vectorname)
             elif self._BLOBfolder and (event.eventtype == "SetBLOB"):
                 # If this event is a setblob, and if blobfolder has been defined, then save the blob to
                 # a file in blobfolder, and set the member.filename to the filename saved

@@ -48,6 +48,13 @@ If set to a directory, enableBLOB instructions will be sent automatically (with 
 
 If set to a string; one of "Never", "Also", "Only" then this value will be the default used by the client.
 
+**self.resend_enableBLOB_on_def**
+
+Default True
+
+When a define BLOB is received, if self.resend_enableBLOB_on_def is True this client then calls resend_enableBLOB to automatically send a BLOB enable instruction for the device and vector defined. If this is set to False, no auto resend will be used, leaving it to you to call send_enableBLOB when a defBLOBVector event is received
+
+
 **self.enable_reports**
 
 If True, then messages set into the report method will be injected into the client as a received message, and hence will be shown on the terminal messages window. As default this is True.

@@ -11,7 +11,7 @@ from .propertyvectors import ClientEvent
 
 from .propertymembers import getfloat
 
-version = "0.9.2"
+version = "0.9.3"
 
 __all__ = ["version", "IPyClient", "ClientEvent", "getfloat", "ConnectionMade", "ConnectionLost",
            "delProperty", "defSwitchVector", "defTextVector", "defNumberVector", "defLightVector", "defBLOBVector",
