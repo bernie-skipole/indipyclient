@@ -693,12 +693,18 @@ class setBLOBVector(setVector):
                 memberformat = member.get("format")
                 if not memberformat:
                     raise ParseException("Missing format in oneBLOB")
-                if not member.text:
-                    raise ParseException("Missing value in oneBLOB")
-                try:
-                    self.data[membername] = standard_b64decode(member.text.encode('ascii'))
-                except Exception:
-                    raise ParseException("Unable to decode oneBLOB contents")
+                if membersize == 0:
+                    # LOCAL upload mode: driver sends the local file path as text instead of
+                    # base64-encoded binary data.  Store as raw bytes so callers can detect
+                    # this mode via the zero size and extract the path.
+                    self.data[membername] = (member.text or "").strip().encode()
+                else:
+                    if not member.text:
+                        raise ParseException("Missing value in oneBLOB")
+                    try:
+                        self.data[membername] = standard_b64decode(member.text.encode('ascii'))
+                    except Exception:
+                        raise ParseException("Unable to decode oneBLOB contents")
                 self.sizeformat[membername] = (membersize, memberformat)
             else:
                 raise ParseException("Invalid child tag of setBLOBVector")
