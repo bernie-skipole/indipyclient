@@ -1226,10 +1226,16 @@ class Device(_ParentDevice):
                 return events.defBLOBVector(root, self, self._client)
             elif root.tag == "setBLOBVector":
                 return events.setBLOBVector(root, self, self._client)
+            elif root.tag == "newSwitchVector":
+                return events.newSwitchVector(root, self, self._client)
+            elif root.tag == "newTextVector":
+                return events.newTextVector(root, self, self._client)
+            elif root.tag == "newNumberVector":
+                return events.newNumberVector(root, self, self._client)
             elif root.tag == "getProperties":
                 return events.getProperties(root, self, self._client)
             else:
-                raise ParseException("Unrecognised tag received")
+                raise ParseException(f"Unrecognised tag received: {root.tag}")
         except ParseException:
             raise
         except Exception:
