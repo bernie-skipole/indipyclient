@@ -13,37 +13,12 @@ from .propertymembers import ParseException
 logger = logging.getLogger(__name__)
 
 
-# All xml data received from the driver should be contained in one of the following tags
-TAGS = (b'message',
-        b'delProperty',
-        b'defSwitchVector',
-        b'setSwitchVector',
-        b'defLightVector',
-        b'setLightVector',
-        b'defTextVector',
-        b'setTextVector',
-        b'defNumberVector',
-        b'setNumberVector',
-        b'defBLOBVector',
-        b'setBLOBVector',
-        b'getProperties'       # for snooping
-       )
-
 DEFTAGS = ( 'defSwitchVector',
             'defLightVector',
             'defTextVector',
             'defNumberVector',
             'defBLOBVector'
           )
-
-
-def _makestart(element):
-    "Given an xml element, returns a string of its start, including < tag attributes >"
-    attriblist = ["<", element.tag]
-    for key,value in element.attrib.items():
-        attriblist.append(f" {key}=\"{value}\"")
-    attriblist.append(">")
-    return "".join(attriblist)
 
 
 
