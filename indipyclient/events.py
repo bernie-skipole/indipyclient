@@ -626,6 +626,21 @@ class setNumberVector(setVector):
         self.vector._setvector(self)
 
 
+# newXxxVector tags have the same XML structure as setXxxVector (oneNumber /
+# oneSwitch / oneText children).  They are normally client-to-server commands,
+# but some INDI servers echo them back to connected clients.  Treat them
+# identically to their set* counterparts so they update the local property
+# state rather than being dropped as unrecognised tags.
+class newSwitchVector(setSwitchVector):
+    """A newSwitchVector received from the server — treated as setSwitchVector."""
+
+class newTextVector(setTextVector):
+    """A newTextVector received from the server — treated as setTextVector."""
+
+class newNumberVector(setNumberVector):
+    """A newNumberVector received from the server — treated as setNumberVector."""
+
+
 class setLightVector(setVector):
 
     """The remote driver is setting a Light vector property.
