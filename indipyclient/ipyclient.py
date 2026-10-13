@@ -666,6 +666,10 @@ Setting it to None will transmit an enableBLOB for all devices set to the enable
                     else:
                         # if no devicename and not message or getProperties, do nothing
                         return
+                elif xmldata.tag in ("enableBLOB", "newTextVector", "newNumberVector", "newSwitchVector", "newBLOBVector"):
+                    # tags received from other clients
+                    # Currently newXXX tags are ignored, this could change
+                    return
                 elif devicename in self:
                     # device is known about
                     device = self[devicename]
