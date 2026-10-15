@@ -1150,7 +1150,7 @@ class Device(_ParentDevice):
         except ParseException:
             raise
         except Exception:
-            logger.exception("Exception report from IPyClient.rxvector method")
+            logger.exception("Exception report from Device.rxvector method")
             raise ParseException("Error while attempting to parse received data")
 
 
